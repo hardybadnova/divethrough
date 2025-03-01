@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext } from 'react';
 
 // Define types for our game data
@@ -94,7 +93,7 @@ const mockPools: Pool[] = [
     currentPlayers: Math.floor(Math.random() * 5000) + 1000,
     status: 'waiting' as const,
     numberRange: [0, 200] as [number, number],
-    playFrequency: 'daily',
+    playFrequency: 'daily' as const, // Fix: Use 'daily' as const to match the type
   })),
 ];
 
