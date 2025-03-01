@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PoolsScreen from "./pages/PoolsScreen";
 import GameScreen from "./pages/GameScreen";
+import GameResultScreen from "./pages/GameResultScreen";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <GameScreen />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/result/:poolId" 
+                element={
+                  <ProtectedRoute>
+                    <GameResultScreen />
                   </ProtectedRoute>
                 } 
               />

@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext } from 'react';
 
 // Define types for our game data
@@ -21,6 +20,12 @@ interface Pool {
   status: 'waiting' | 'active' | 'completed';
 }
 
+interface Winner {
+  position: number;
+  players: Player[];
+  prize: number;
+}
+
 interface GameContextType {
   pools: Pool[];
   currentPool: Pool | null;
@@ -28,6 +33,8 @@ interface GameContextType {
   joinPool: (poolId: string) => void;
   leavePool: () => void;
   getPoolsByGameType: (gameType: string) => Pool[];
+  getWinners: (poolId: string) => Winner[];
+  resetGame: () => void;
 }
 
 // Mock data for pools
@@ -103,6 +110,47 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const getPoolsByGameType = (gameType: string) => {
     return pools.filter(pool => pool.gameType === gameType);
   };
+  
+  const getWinners = (poolId: string): Winner[] => {
+    const pool = pools.find(p => p.id === poolId);
+    if (!pool) return [];
+    
+    const randomPlayers = () => players.slice(0, Math.floor(Math.random() * 3) + 1);
+    const totalPoolAmount = pool.entryFee * pool.currentPlayers;
+    const taxDeduction = totalPoolAmount * 0.28; // 28% GST
+    const prizePool = totalPoolAmount - taxDeduction;
+    
+    const winners: Winner[] = [];
+    
+    // First prize winner (all game types)
+    winners.push({
+      position: 1,
+      players: randomPlayers(),
+      prize: prizePool * (pool.gameType === 'topspot' ? 0.9 : 0.5)
+    });
+    
+    // Second and third prize for bluff and jackpot
+    if (pool.gameType !== 'topspot') {
+      winners.push({
+        position: 2,
+        players: randomPlayers(),
+        prize: prizePool * 0.25
+      });
+      
+      winners.push({
+        position: 3,
+        players: randomPlayers(),
+        prize: prizePool * 0.15
+      });
+    }
+    
+    return winners;
+  };
+  
+  const resetGame = () => {
+    // Reset game state for starting a new game
+    // In a real app, this would reset more state, but for now it's simple
+  };
 
   return (
     <GameContext.Provider
@@ -113,6 +161,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         joinPool,
         leavePool,
         getPoolsByGameType,
+        getWinners,
+        resetGame,
       }}
     >
       {children}

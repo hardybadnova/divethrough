@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -24,8 +23,15 @@ const GameScreen = () => {
   const navigate = useNavigate();
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [availableNumbers] = useState<number[]>(Array.from({ length: 16 }, (_, i) => i));
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [gameStarted, setGameStarted] = useState(false);
+  
+  // Format time as mm:ss
+  const formattedTime = useMemo(() => {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }, [timeLeft]);
   
   // Find the current pool if not already in context
   const pool = useMemo(() => {
@@ -114,27 +120,16 @@ const GameScreen = () => {
         variant: "destructive",
       });
     } else {
-      // Simulate a win or loss
-      const won = Math.random() > 0.7;
-      
-      if (won) {
-        toast({
-          title: "Congratulations!",
-          description: "You won! Your numbers matched the winning combination.",
-        });
-      } else {
-        toast({
-          title: "Better luck next time",
-          description: "Your numbers didn't match the winning combination.",
-        });
-      }
+      toast({
+        title: "Game Finished",
+        description: "Calculating results...",
+      });
     }
     
-    // Go back to pools after 2 seconds
+    // Navigate to result screen
     setTimeout(() => {
-      leavePool();
-      navigate(`/pools/${pool?.gameType}`);
-    }, 2000);
+      navigate(`/result/${poolId}`);
+    }, 1500);
   };
   
   const handleBackClick = () => {
@@ -166,7 +161,9 @@ const GameScreen = () => {
                 
                 <div className="flex items-center bg-secondary rounded-full px-3 py-1">
                   <Clock className="h-4 w-4 mr-1 text-betster-400" />
-                  <span>{timeLeft}s</span>
+                  <span className={timeLeft < 60 ? "text-red-500 font-bold" : ""}>
+                    {formattedTime}
+                  </span>
                 </div>
               </div>
             </div>
