@@ -71,7 +71,7 @@ const mockPools: Pool[] = [
     maxPlayers: 50,
     currentPlayers: Math.floor(Math.random() * 30) + 5,
     status: 'waiting' as const,
-    numberRange: [0, 15],
+    numberRange: [0, 15] as [number, number],
   })),
   
   // Top Spot pools
@@ -82,10 +82,10 @@ const mockPools: Pool[] = [
     maxPlayers: 50,
     currentPlayers: Math.floor(Math.random() * 30) + 5,
     status: 'waiting' as const,
-    numberRange: [0, 15],
+    numberRange: [0, 15] as [number, number],
   })),
   
-  // Jackpot Horse pools - Modified to have number range 0-200
+  // Jackpot Horse pools
   ...([20, 50] as const).map((fee, index) => ({
     id: `jackpot-${index}`,
     gameType: 'jackpot' as const,
@@ -93,7 +93,7 @@ const mockPools: Pool[] = [
     maxPlayers: 10000,
     currentPlayers: Math.floor(Math.random() * 5000) + 1000,
     status: 'waiting' as const,
-    numberRange: [0, 200],
+    numberRange: [0, 200] as [number, number],
     playFrequency: 'daily',
   })),
 ];
