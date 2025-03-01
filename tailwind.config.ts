@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -52,6 +53,19 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				betster: {
+					"50": "#f3f1ff",
+					"100": "#ebe5ff",
+					"200": "#d9ceff",
+					"300": "#bea6ff",
+					"400": "#9f75ff",
+					"500": "#8347ff",
+					"600": "#7122ff",
+					"700": "#6010f2",
+					"800": "#510cd3",
+					"900": "#4410ab",
+					"950": "#27016e",
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -69,26 +83,54 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			keyframes: {
-				'accordion-down': {
-					from: {
-						height: '0'
-					},
-					to: {
-						height: 'var(--radix-accordion-content-height)'
-					}
+				"accordion-down": {
+					from: { height: "0" },
+					to: { height: "var(--radix-accordion-content-height)" },
 				},
-				'accordion-up': {
-					from: {
-						height: 'var(--radix-accordion-content-height)'
-					},
-					to: {
-						height: '0'
-					}
+				"accordion-up": {
+					from: { height: "var(--radix-accordion-content-height)" },
+					to: { height: "0" },
+				},
+				fadeIn: {
+					'0%': { opacity: '0' },
+					'100%': { opacity: '1' }
+				},
+				slideUp: {
+					'0%': { transform: 'translateY(10px)', opacity: '0' },
+					'100%': { transform: 'translateY(0)', opacity: '1' }
+				},
+				slideDown: {
+					'0%': { transform: 'translateY(-10px)', opacity: '0' },
+					'100%': { transform: 'translateY(0)', opacity: '1' }
+				},
+				pulse: {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.5' },
+				},
+				shimmer: {
+					'0%': { backgroundPosition: '-200% 0' },
+					'100%': { backgroundPosition: '200% 0' },
+				},
+				float: {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-5px)' },
 				}
 			},
 			animation: {
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				"accordion-down": "accordion-down 0.2s ease-out",
+				"accordion-up": "accordion-up 0.2s ease-out",
+				fadeIn: 'fadeIn 0.5s ease-out',
+				slideUp: 'slideUp 0.5s ease-out',
+				slideDown: 'slideDown 0.5s ease-out',
+				pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				shimmer: 'shimmer 2s linear infinite',
+				float: 'float 3s ease-in-out infinite',
+			},
+			backgroundImage: {
+				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+				'betster-gradient': 'linear-gradient(135deg, #1a0033 0%, #4a0080 100%)',
+				'card-gradient': 'linear-gradient(135deg, rgba(74, 0, 128, 0.2) 0%, rgba(26, 0, 51, 0.5) 100%)',
+				'button-gradient': 'linear-gradient(135deg, #7022FF 0%, #9F75FF 100%)',
 			}
 		}
 	},
