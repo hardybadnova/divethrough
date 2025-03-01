@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext } from 'react';
 
 // Define types for our game data
@@ -9,6 +10,13 @@ interface Player {
     totalPlayed: number;
     winRate: number;
   };
+  milestones: {
+    gamesPlayed: number;
+    bonusPercentage: number;
+    bonusAmount: number;
+  };
+  referrals: string[]; // IDs of users referred
+  referralBonus: number;
 }
 
 interface Pool {
@@ -18,12 +26,20 @@ interface Pool {
   maxPlayers: number;
   currentPlayers: number;
   status: 'waiting' | 'active' | 'completed';
+  numberRange: [number, number]; // Range of allowed numbers
+  playFrequency?: 'daily'; // For Jackpot Horse
 }
 
 interface Winner {
   position: number;
   players: Player[];
   prize: number;
+}
+
+interface ReferralInfo {
+  code: string;
+  referrals: number;
+  totalBonus: number;
 }
 
 interface GameContextType {
@@ -35,6 +51,14 @@ interface GameContextType {
   getPoolsByGameType: (gameType: string) => Pool[];
   getWinners: (poolId: string) => Winner[];
   resetGame: () => void;
+  getMilestoneBonus: (gamesPlayed: number) => number;
+  getReferralInfo: () => ReferralInfo;
+  addReferral: (referralCode: string) => boolean;
+  getMilestoneProgress: (userId: string) => { 
+    currentMilestone: number;
+    nextMilestone: number;
+    progress: number;
+  };
 }
 
 // Mock data for pools
@@ -47,6 +71,7 @@ const mockPools: Pool[] = [
     maxPlayers: 50,
     currentPlayers: Math.floor(Math.random() * 30) + 5,
     status: 'waiting' as const,
+    numberRange: [0, 15],
   })),
   
   // Top Spot pools
@@ -57,9 +82,10 @@ const mockPools: Pool[] = [
     maxPlayers: 50,
     currentPlayers: Math.floor(Math.random() * 30) + 5,
     status: 'waiting' as const,
+    numberRange: [0, 15],
   })),
   
-  // Jackpot Horse pools
+  // Jackpot Horse pools - Modified to have number range 0-200
   ...([20, 50] as const).map((fee, index) => ({
     id: `jackpot-${index}`,
     gameType: 'jackpot' as const,
@@ -67,7 +93,18 @@ const mockPools: Pool[] = [
     maxPlayers: 10000,
     currentPlayers: Math.floor(Math.random() * 5000) + 1000,
     status: 'waiting' as const,
+    numberRange: [0, 200],
+    playFrequency: 'daily',
   })),
+];
+
+// Milestone thresholds and bonus percentages
+const milestones = [
+  { threshold: 1000, bonusPercentage: 5 },
+  { threshold: 5000, bonusPercentage: 10 },
+  { threshold: 25000, bonusPercentage: 15 },
+  { threshold: 100000, bonusPercentage: 20 },
+  { threshold: 500000, bonusPercentage: 30 },
 ];
 
 // Generate mock players
@@ -77,6 +114,13 @@ const generateMockPlayers = (count: number): Player[] => {
     .map((_, index) => {
       const wins = Math.floor(Math.random() * 100);
       const totalPlayed = wins + Math.floor(Math.random() * 200);
+      const randomGames = Math.floor(Math.random() * 30000); // Random games played for milestones
+      
+      // Calculate milestone bonus
+      const milestone = milestones.reduce((prev, curr) => {
+        return randomGames >= curr.threshold ? curr : prev;
+      }, { threshold: 0, bonusPercentage: 0 });
+      
       return {
         id: `player-${index}`,
         username: `Player${index + 1}`,
@@ -85,6 +129,15 @@ const generateMockPlayers = (count: number): Player[] => {
           totalPlayed,
           winRate: totalPlayed > 0 ? Math.round((wins / totalPlayed) * 100) : 0,
         },
+        milestones: {
+          gamesPlayed: randomGames,
+          bonusPercentage: milestone.bonusPercentage,
+          bonusAmount: Math.floor(Math.random() * 5000 * (milestone.bonusPercentage / 100)),
+        },
+        referrals: Array(Math.floor(Math.random() * 5))
+          .fill(null)
+          .map((_, i) => `referred-player-${index}-${i}`),
+        referralBonus: Math.floor(Math.random() * 2000),
       };
     });
 };
@@ -147,6 +200,55 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return winners;
   };
   
+  const getMilestoneBonus = (gamesPlayed: number): number => {
+    // Find the highest milestone achieved
+    for (let i = milestones.length - 1; i >= 0; i--) {
+      if (gamesPlayed >= milestones[i].threshold) {
+        return milestones[i].bonusPercentage;
+      }
+    }
+    return 0;
+  };
+  
+  const getMilestoneProgress = (userId: string) => {
+    const player = players.find(p => p.id === userId) || players[0];
+    const gamesPlayed = player.milestones.gamesPlayed;
+    
+    // Find current and next milestone
+    let currentMilestone = 0;
+    let nextMilestone = milestones[0].threshold;
+    
+    for (let i = 0; i < milestones.length; i++) {
+      if (gamesPlayed >= milestones[i].threshold) {
+        currentMilestone = milestones[i].threshold;
+        nextMilestone = i < milestones.length - 1 ? milestones[i + 1].threshold : currentMilestone;
+      }
+    }
+    
+    // Calculate progress percentage towards next milestone
+    const progress = currentMilestone === nextMilestone 
+      ? 100 
+      : Math.min(100, Math.round(((gamesPlayed - currentMilestone) / (nextMilestone - currentMilestone)) * 100));
+    
+    return { currentMilestone, nextMilestone, progress };
+  };
+  
+  const getReferralInfo = (): ReferralInfo => {
+    // Mock referral info for current user
+    const currentUser = players[0];
+    return {
+      code: `${currentUser.username.toLowerCase()}${Math.floor(Math.random() * 1000)}`,
+      referrals: currentUser.referrals.length,
+      totalBonus: currentUser.referralBonus,
+    };
+  };
+  
+  const addReferral = (referralCode: string): boolean => {
+    // Mock adding a referral - in real app would validate the code
+    // and add the referral to the database
+    return referralCode.length > 0;
+  };
+  
   const resetGame = () => {
     // Reset game state for starting a new game
     // In a real app, this would reset more state, but for now it's simple
@@ -163,6 +265,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getPoolsByGameType,
         getWinners,
         resetGame,
+        getMilestoneBonus,
+        getReferralInfo,
+        addReferral,
+        getMilestoneProgress,
       }}
     >
       {children}

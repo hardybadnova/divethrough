@@ -14,6 +14,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PoolsScreen from "./pages/PoolsScreen";
 import GameScreen from "./pages/GameScreen";
 import GameResultScreen from "./pages/GameResultScreen";
+import MilestonesScreen from "./pages/MilestonesScreen";
+import ReferralScreen from "./pages/ReferralScreen";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +59,22 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <GameResultScreen />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/milestones" 
+                element={
+                  <ProtectedRoute>
+                    <MilestonesScreen />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/referral" 
+                element={
+                  <ProtectedRoute>
+                    <ReferralScreen />
                   </ProtectedRoute>
                 } 
               />

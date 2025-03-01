@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, Wallet, History, Trophy, MessageSquare, LogOut, User } from "lucide-react";
+import { Menu, Wallet, Home, Trophy, MessageSquare, LogOut, User, Award, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/formatters";
@@ -20,10 +20,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
   const menuItems = [
     { label: "Profile", icon: User, path: "/profile" },
-    { label: "Transaction History", icon: History, path: "/transactions" },
+    { label: "Transaction History", icon: Wallet, path: "/transactions" },
     { label: "Leaderboard", icon: Trophy, path: "/leaderboard" },
+    { label: "Milestones & Bonuses", icon: Award, path: "/milestones" },
+    { label: "Referral Program", icon: Percent, path: "/referral" },
     { label: "Chat Support", icon: MessageSquare, path: "/support" },
-    { label: "Game History", icon: History, path: "/game-history" },
+    { label: "Game History", icon: Home, path: "/game-history" },
   ];
 
   const handleLogout = () => {
@@ -169,11 +171,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         <footer className="fixed bottom-0 left-0 right-0 z-30 bg-background/80 backdrop-blur-lg border-t border-border/40">
           <div className="flex h-16 items-center justify-between px-4">
             <Link
-              to="/bet-history"
+              to="/dashboard"
               className="flex flex-1 flex-col items-center justify-center py-1"
             >
-              <History className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground mt-1">Bet History</span>
+              <Home className="h-5 w-5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground mt-1">Home</span>
             </Link>
             <Link
               to="/milestones"
