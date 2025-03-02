@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -27,20 +26,17 @@ const GameScreen = () => {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [gameStarted, setGameStarted] = useState(false);
   
-  // Format time as mm:ss
   const formattedTime = useMemo(() => {
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }, [timeLeft]);
   
-  // Find the current pool if not already in context
   const pool = useMemo(() => {
     if (currentPool) return currentPool;
     return pools.find(p => p.id === poolId);
   }, [currentPool, poolId, pools]);
   
-  // Get a subset of players for this pool
   const poolPlayers = useMemo(() => {
     return players.slice(0, pool?.gameType === 'jackpot' ? 30 : 50);
   }, [players, pool]);
@@ -51,17 +47,14 @@ const GameScreen = () => {
       return;
     }
     
-    // Set available numbers based on pool type
     const maxNumber = pool.numberRange[1];
     setAvailableNumbers(Array.from({ length: maxNumber + 1 }, (_, i) => i));
   }, [pool, navigate]);
   
   useEffect(() => {
-    // Start the countdown timer after 3 seconds
     const initialTimer = setTimeout(() => {
       setGameStarted(true);
       
-      // Start the main countdown
       const interval = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -88,7 +81,6 @@ const GameScreen = () => {
   };
   
   const handleGetHint = () => {
-    // Calculate 2% of entry fee
     const hintCost = (pool?.entryFee || 0) * 0.02;
     
     toast({
@@ -96,7 +88,6 @@ const GameScreen = () => {
       description: `You've spent ${hintCost} INR for a hint.`,
     });
     
-    // Show a random hint
     const hints = [
       "Numbers with less frequency of selection tend to win more.",
       "Consider choosing a number that others might not pick.",
@@ -126,7 +117,6 @@ const GameScreen = () => {
         description: "Calculating results...",
       });
       
-      // Navigate to result screen
       setTimeout(() => {
         navigate(`/result/${poolId}`);
       }, 1500);
@@ -177,7 +167,6 @@ const GameScreen = () => {
         </div>
         
         <div className="flex-1 container max-w-5xl mx-auto px-4 py-4 md:py-6 grid md:grid-cols-2 gap-6 h-full overflow-hidden">
-          {/* Left side: Number selection */}
           <div className="flex flex-col h-full">
             <div className="mb-4">
               <h2 className="text-lg font-medium">Select Your Number</h2>
@@ -205,6 +194,7 @@ const GameScreen = () => {
                             : "bg-secondary hover:bg-secondary/80 text-foreground"
                         }`}
                         onClick={() => handleNumberSelect(num)}
+                        disabled={selectedNumber !== null}
                       >
                         {num}
                       </motion.button>
@@ -230,11 +220,11 @@ const GameScreen = () => {
                     </div>
                     
                     <button 
-                      className="betster-button w-full py-3"
-                      onClick={() => handleGameEnd()}
+                      className={`betster-button w-full py-3 ${selectedNumber !== null ? 'bg-green-600' : ''}`}
+                      onClick={handleGameEnd}
                       disabled={timeLeft === 0}
                     >
-                      {selectedNumber !== null ? "Waiting for timer to end..." : "Lock In Selection"}
+                      {selectedNumber !== null ? "Number Locked - Waiting for timer..." : "Lock In Selection"}
                     </button>
                   </div>
                 </>
@@ -242,7 +232,6 @@ const GameScreen = () => {
             </div>
           </div>
           
-          {/* Right side: Tabs with players, chat, and hints */}
           <div className="flex flex-col h-full">
             <Tabs defaultValue="players" className="flex flex-col h-full">
               <TabsList className="grid grid-cols-3 mb-4">
