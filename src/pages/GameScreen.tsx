@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -14,7 +15,9 @@ import {
   ChevronLeft,
   Users,
   Home,
-  Trophy
+  Trophy,
+  ArrowRight,
+  AlertCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
@@ -28,12 +31,19 @@ const GameScreen = () => {
   const [availableNumbers, setAvailableNumbers] = useState<number[]>([]);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [gameStarted, setGameStarted] = useState(false);
+  const [gameCountdown, setGameCountdown] = useState(60); // 1 minute countdown before game starts
+  const [isLocked, setIsLocked] = useState(false);
   
   const formattedTime = useMemo(() => {
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }, [timeLeft]);
+  
+  const formattedCountdown = useMemo(() => {
+    const seconds = gameCountdown % 60;
+    return `${seconds.toString().padStart(2, '0')}`;
+  }, [gameCountdown]);
   
   const pool = useMemo(() => {
     if (currentPool) return currentPool;
@@ -55,31 +65,58 @@ const GameScreen = () => {
   }, [pool, navigate]);
   
   useEffect(() => {
-    const initialTimer = setTimeout(() => {
-      setGameStarted(true);
-      
-      const interval = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            handleGameEnd();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      
-      return () => clearInterval(interval);
-    }, 3000);
+    // First, we'll run the countdown before the game starts
+    const countdownInterval = setInterval(() => {
+      setGameCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          setGameStarted(true);
+          
+          // Start the game timer only after countdown completes
+          const gameInterval = setInterval(() => {
+            setTimeLeft((prev) => {
+              if (prev <= 1) {
+                clearInterval(gameInterval);
+                handleGameEnd();
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+          
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
     
-    return () => clearTimeout(initialTimer);
+    return () => clearInterval(countdownInterval);
   }, []);
   
   const handleNumberSelect = (num: number) => {
+    if (isLocked) return;
+    
     setSelectedNumber(num);
     toast({
       title: "Number Selected",
       description: `You have selected number ${num}`,
+    });
+  };
+  
+  const handleLockSelection = () => {
+    if (selectedNumber === null) {
+      toast({
+        title: "No Number Selected",
+        description: "Please select a number first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsLocked(true);
+    toast({
+      title: "Number Locked",
+      description: `You've locked in number ${selectedNumber}. Good luck!`,
     });
   };
   
@@ -123,15 +160,35 @@ const GameScreen = () => {
       setTimeout(() => {
         navigate(`/result/${poolId}`);
       }, 1500);
-    } else if (selectedNumber !== null) {
-      toast({
-        title: "Number Locked",
-        description: `You've selected number ${selectedNumber}. Wait for the timer to end.`,
-      });
     }
   };
   
   const handleBackClick = () => {
+    // Only allow leaving before the game has started
+    if (gameStarted) {
+      toast({
+        title: "Game in Progress",
+        description: "You cannot leave once the game has started.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    leavePool();
+    navigate(`/pools/${pool?.gameType}`);
+  };
+  
+  const handleChangeTable = () => {
+    // Only allow changing tables before the game has started
+    if (gameStarted) {
+      toast({
+        title: "Game in Progress",
+        description: "You cannot change tables once the game has started.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     leavePool();
     navigate(`/pools/${pool?.gameType}`);
   };
@@ -146,7 +203,8 @@ const GameScreen = () => {
             <div className="flex items-center justify-between">
               <button 
                 onClick={handleBackClick}
-                className="flex items-center text-muted-foreground hover:text-foreground"
+                className={`flex items-center ${gameStarted ? "text-muted-foreground/50 cursor-not-allowed" : "text-muted-foreground hover:text-foreground"}`}
+                disabled={gameStarted}
               >
                 <ChevronLeft className="h-5 w-5 mr-1" />
                 <span>Back</span>
@@ -160,9 +218,15 @@ const GameScreen = () => {
                 
                 <div className="flex items-center bg-secondary rounded-full px-3 py-1">
                   <Clock className="h-4 w-4 mr-1 text-betster-400" />
-                  <span className={timeLeft < 60 ? "text-red-500 font-bold" : ""}>
-                    {formattedTime}
-                  </span>
+                  {!gameStarted ? (
+                    <span className="text-yellow-500 font-bold">
+                      Starts in {formattedCountdown}s
+                    </span>
+                  ) : (
+                    <span className={timeLeft < 60 ? "text-red-500 font-bold" : ""}>
+                      {formattedTime}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -172,8 +236,14 @@ const GameScreen = () => {
         <div className="flex-1 container max-w-5xl mx-auto px-4 py-4 md:py-6 grid md:grid-cols-2 gap-6 h-full overflow-hidden">
           <div className="flex flex-col h-full">
             <div className="mb-4">
-              <h2 className="text-lg font-medium">Select Your Number</h2>
-              <p className="text-sm text-muted-foreground">Choose one number. Remember, the least picked number wins!</p>
+              <h2 className="text-lg font-medium">
+                {!gameStarted ? "Waiting for Game to Start" : "Select Your Number"}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {!gameStarted 
+                  ? "You can change tables or exit before the game starts" 
+                  : "Choose one number. Remember, the least picked number wins!"}
+              </p>
             </div>
             
             <div className="glass-card p-4 rounded-xl flex-1 overflow-hidden flex flex-col">
@@ -181,7 +251,24 @@ const GameScreen = () => {
                 <div className="flex-1 flex flex-col items-center justify-center">
                   <div className="text-center space-y-3">
                     <div className="loader mx-auto"></div>
-                    <p className="text-muted-foreground mt-4">Game is about to start...</p>
+                    <p className="text-xl font-medium mt-4">Game starts in</p>
+                    <p className="text-4xl font-bold text-betster-500">{formattedCountdown}s</p>
+                    <p className="text-muted-foreground mt-2">You are at Table #{poolId?.split('-')[1] || '1'}</p>
+                    
+                    <div className="flex gap-3 mt-6">
+                      <button 
+                        onClick={handleChangeTable}
+                        className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
+                      >
+                        Change Table
+                      </button>
+                      <button 
+                        onClick={handleBackClick}
+                        className="px-4 py-2 rounded-lg bg-destructive/20 hover:bg-destructive/30 text-destructive transition-colors"
+                      >
+                        Exit Game
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -195,9 +282,9 @@ const GameScreen = () => {
                           selectedNumber === num
                             ? "bg-betster-600 text-white shadow-lg"
                             : "bg-secondary hover:bg-secondary/80 text-foreground"
-                        }`}
+                        } ${isLocked ? "cursor-not-allowed opacity-70" : ""}`}
                         onClick={() => handleNumberSelect(num)}
-                        disabled={selectedNumber !== null}
+                        disabled={isLocked}
                       >
                         {num}
                       </motion.button>
@@ -223,12 +310,27 @@ const GameScreen = () => {
                     </div>
                     
                     <button 
-                      className={`betster-button w-full py-3 ${selectedNumber !== null ? 'bg-green-600' : ''}`}
-                      onClick={handleGameEnd}
-                      disabled={timeLeft === 0}
+                      className={`betster-button w-full py-3 ${
+                        isLocked 
+                          ? 'bg-green-600 cursor-not-allowed' 
+                          : selectedNumber !== null 
+                            ? 'bg-betster-600 hover:bg-betster-700' 
+                            : ''
+                      }`}
+                      onClick={handleLockSelection}
+                      disabled={isLocked || selectedNumber === null}
                     >
-                      {selectedNumber !== null ? "Number Locked - Waiting for timer..." : "Lock In Selection"}
+                      {isLocked 
+                        ? "Number Locked - Waiting for timer..." 
+                        : "Lock In Selection"}
                     </button>
+                    
+                    {timeLeft < 60 && !isLocked && (
+                      <div className="flex items-center justify-center gap-2 p-2 bg-red-500/20 text-red-500 rounded-lg text-sm">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>Less than a minute left! Choose quickly!</span>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
