@@ -22,6 +22,7 @@ const GameResultScreen = () => {
   const [results, setResults] = useState<NumberResult[]>([]);
   const [winners, setWinners] = useState<{position: number, number: number, players: string[], prize: number}[]>([]);
   const [userResult, setUserResult] = useState<"winner" | "loser" | null>(null);
+  const [userPosition, setUserPosition] = useState<number | null>(null);
   
   const pool = pools.find(p => p.id === poolId);
   
@@ -31,14 +32,39 @@ const GameResultScreen = () => {
       return;
     }
     
-    // Generate mock results for the game
-    const mockNumberResults: NumberResult[] = Array.from({ length: 16 }, (_, i) => ({
-      number: i,
-      count: Math.floor(Math.random() * 10) + (i % 3 === 0 ? 1 : 2), // Ensure some variation
-      players: players
-        .slice(0, Math.floor(Math.random() * 5) + 1)
-        .map(p => p.username)
-    }));
+    // Generate mock results for the game - simulate number frequency
+    const maxNumber = pool.numberRange[1];
+    const mockNumberResults: NumberResult[] = [];
+    
+    // Create the distribution of number selections
+    for (let i = 0; i <= maxNumber; i++) {
+      // Set predefined counts for our example from the user's message
+      let count;
+      let playersList: string[] = [];
+      
+      if (i === 2) { // Example: A chooses 2 (least picked)
+        count = 1;
+        playersList = ["Player A"];
+      } else if (i === 3) { // Example: B, C, D choose 3 (second least picked)
+        count = 3;
+        playersList = ["Player B", "Player C", "Player D"];
+      } else if (i === 9) { // Example: E, F, G, H, I choose 9 (third least picked)
+        count = 5;
+        playersList = ["Player E", "Player F", "Player G", "Player H", "Player I"];
+      } else {
+        // Random distribution for other numbers
+        count = Math.floor(Math.random() * 10) + 5;
+        playersList = players
+          .slice(0, count)
+          .map(p => p.username);
+      }
+      
+      mockNumberResults.push({
+        number: i,
+        count,
+        players: playersList
+      });
+    }
     
     // Sort by count to find least chosen numbers
     const sortedResults = [...mockNumberResults].sort((a, b) => a.count - b.count);
@@ -50,11 +76,11 @@ const GameResultScreen = () => {
     const taxDeduction = totalPoolAmount * 0.28; // 28% GST
     const prizePool = totalPoolAmount - taxDeduction;
     
-    // First place (all game types)
+    // First place - least picked number (all game types)
     gameWinners.push({
       position: 1,
-      number: sortedResults[0].number,
-      players: sortedResults[0].players,
+      number: sortedResults[0].number, // Number 2 in our example
+      players: sortedResults[0].players, // Player A
       prize: prizePool * (pool.gameType === 'topspot' ? 0.9 : 0.5)
     });
     
@@ -62,32 +88,34 @@ const GameResultScreen = () => {
     if (pool.gameType !== 'topspot') {
       gameWinners.push({
         position: 2,
-        number: sortedResults[1].number,
-        players: sortedResults[1].players,
+        number: sortedResults[1].number, // Number 3 in our example
+        players: sortedResults[1].players, // Players B, C, D
         prize: prizePool * 0.25
       });
       
       gameWinners.push({
         position: 3,
-        number: sortedResults[2].number,
-        players: sortedResults[2].players,
+        number: sortedResults[2].number, // Number 9 in our example
+        players: sortedResults[2].players, // Players E, F, G, H, I
         prize: prizePool * 0.15
       });
     }
     
     setWinners(gameWinners);
     
-    // Simulate if current user is a winner
-    const isWinner = Math.random() > 0.7;
-    setUserResult(isWinner ? "winner" : "loser");
-    
-    // Show toast notification
-    if (isWinner) {
+    // Simulate if current user is a winner and which position
+    const randomChance = Math.random();
+    if (randomChance > 0.7) {
+      const position = randomChance > 0.9 ? 1 : randomChance > 0.8 ? 2 : 3;
+      setUserResult("winner");
+      setUserPosition(position);
+      
       toast({
-        title: "Congratulations!",
-        description: "You won! Your number was among the least chosen.",
+        title: `Congratulations! ${position === 1 ? "First" : position === 2 ? "Second" : "Third"} place!`,
+        description: "Your number was among the least chosen!",
       });
     } else {
+      setUserResult("loser");
       toast({
         title: "Better luck next time",
         description: "Your number wasn't among the least chosen numbers.",
@@ -159,10 +187,14 @@ const GameResultScreen = () => {
                 }}
                 className="flex justify-center"
               >
-                <Trophy className="h-16 w-16 text-yellow-500" />
+                <Trophy className={`h-16 w-16 ${
+                  userPosition === 1 ? "text-yellow-500" :
+                  userPosition === 2 ? "text-gray-400" :
+                  "text-amber-700"
+                }`} />
               </motion.div>
               <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-betster-300 to-betster-600">
-                Congratulations!
+                Congratulations! {userPosition === 1 ? "First" : userPosition === 2 ? "Second" : "Third"} Place!
               </h1>
               <p className="text-lg text-muted-foreground">
                 Your number was among the least chosen!
@@ -205,7 +237,7 @@ const GameResultScreen = () => {
         {/* Winners List */}
         <div className="glass-card rounded-xl mb-6 overflow-hidden">
           <div className="p-4 border-b border-border/40">
-            <h2 className="font-medium text-lg">Winners</h2>
+            <h2 className="font-medium text-lg">Winners - Least Picked Numbers</h2>
           </div>
           
           <div className="divide-y divide-border/20">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -21,8 +22,8 @@ const GameScreen = () => {
   const { poolId } = useParams<{ poolId: string }>();
   const { pools, players, currentPool, leavePool } = useGame();
   const navigate = useNavigate();
-  const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
-  const [availableNumbers] = useState<number[]>(Array.from({ length: 16 }, (_, i) => i));
+  const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
+  const [availableNumbers, setAvailableNumbers] = useState<number[]>([]);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [gameStarted, setGameStarted] = useState(false);
   
@@ -47,7 +48,12 @@ const GameScreen = () => {
   useEffect(() => {
     if (!pool) {
       navigate('/dashboard');
+      return;
     }
+    
+    // Set available numbers based on pool type
+    const maxNumber = pool.numberRange[1];
+    setAvailableNumbers(Array.from({ length: maxNumber + 1 }, (_, i) => i));
   }, [pool, navigate]);
   
   useEffect(() => {
@@ -74,16 +80,11 @@ const GameScreen = () => {
   }, []);
   
   const handleNumberSelect = (num: number) => {
-    if (selectedNumbers.includes(num)) {
-      setSelectedNumbers(selectedNumbers.filter(n => n !== num));
-    } else if (selectedNumbers.length < 3) {
-      setSelectedNumbers([...selectedNumbers, num]);
-    } else {
-      toast({
-        title: "Selection Limit",
-        description: "You can select maximum 3 numbers",
-      });
-    }
+    setSelectedNumber(num);
+    toast({
+      title: "Number Selected",
+      description: `You have selected number ${num}`,
+    });
   };
   
   const handleGetHint = () => {
@@ -97,11 +98,11 @@ const GameScreen = () => {
     
     // Show a random hint
     const hints = [
-      "Numbers 5, 8, and 12 have been popular in recent games.",
-      "Most winners select at least one number above 10.",
-      "Consider choosing numbers that form a pattern.",
-      "The most frequently winning combination includes at least one even and one odd number.",
-      "Players who select their numbers early tend to win more often."
+      "Numbers with less frequency of selection tend to win more.",
+      "Consider choosing a number that others might not pick.",
+      "In previous games, numbers between 10-20 were less frequently chosen.",
+      "The least picked numbers have the highest chance of winning.",
+      "Most players avoid very high or very low numbers."
     ];
     
     setTimeout(() => {
@@ -113,23 +114,28 @@ const GameScreen = () => {
   };
   
   const handleGameEnd = () => {
-    if (selectedNumbers.length === 0) {
+    if (selectedNumber === null && timeLeft === 0) {
       toast({
         title: "Game Over",
-        description: "You didn't select any numbers.",
+        description: "You didn't select any number.",
         variant: "destructive",
       });
-    } else {
+    } else if (timeLeft === 0) {
       toast({
         title: "Game Finished",
         description: "Calculating results...",
       });
+      
+      // Navigate to result screen
+      setTimeout(() => {
+        navigate(`/result/${poolId}`);
+      }, 1500);
+    } else if (selectedNumber !== null) {
+      toast({
+        title: "Number Locked",
+        description: `You've selected number ${selectedNumber}. Wait for the timer to end.`,
+      });
     }
-    
-    // Navigate to result screen
-    setTimeout(() => {
-      navigate(`/result/${poolId}`);
-    }, 1500);
   };
   
   const handleBackClick = () => {
@@ -174,8 +180,8 @@ const GameScreen = () => {
           {/* Left side: Number selection */}
           <div className="flex flex-col h-full">
             <div className="mb-4">
-              <h2 className="text-lg font-medium">Select Your Numbers</h2>
-              <p className="text-sm text-muted-foreground">Choose up to 3 numbers</p>
+              <h2 className="text-lg font-medium">Select Your Number</h2>
+              <p className="text-sm text-muted-foreground">Choose one number. Remember, the least picked number wins!</p>
             </div>
             
             <div className="glass-card p-4 rounded-xl flex-1 overflow-hidden flex flex-col">
@@ -188,13 +194,13 @@ const GameScreen = () => {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-4 gap-3 mb-4">
+                  <div className="grid grid-cols-5 gap-2 mb-4 overflow-y-auto max-h-[400px] p-2">
                     {availableNumbers.map((num) => (
                       <motion.button
                         key={num}
                         whileTap={{ scale: 0.95 }}
                         className={`aspect-square flex items-center justify-center rounded-lg text-lg font-medium transition-all ${
-                          selectedNumbers.includes(num)
+                          selectedNumber === num
                             ? "bg-betster-600 text-white shadow-lg"
                             : "bg-secondary hover:bg-secondary/80 text-foreground"
                         }`}
@@ -209,18 +215,15 @@ const GameScreen = () => {
                     <div className="rounded-lg bg-secondary/50 p-3">
                       <p className="text-sm font-medium mb-2">Your Selection:</p>
                       <div className="flex gap-2">
-                        {selectedNumbers.length > 0 ? (
-                          selectedNumbers.map((num) => (
-                            <div
-                              key={num}
-                              className="w-10 h-10 rounded-lg bg-betster-600 flex items-center justify-center text-white font-medium"
-                            >
-                              {num}
-                            </div>
-                          ))
+                        {selectedNumber !== null ? (
+                          <div
+                            className="w-10 h-10 rounded-lg bg-betster-600 flex items-center justify-center text-white font-medium"
+                          >
+                            {selectedNumber}
+                          </div>
                         ) : (
                           <p className="text-sm text-muted-foreground">
-                            No numbers selected yet
+                            No number selected yet
                           </p>
                         )}
                       </div>
@@ -228,10 +231,10 @@ const GameScreen = () => {
                     
                     <button 
                       className="betster-button w-full py-3"
-                      disabled={timeLeft === 0}
                       onClick={() => handleGameEnd()}
+                      disabled={timeLeft === 0}
                     >
-                      Lock In Selection
+                      {selectedNumber !== null ? "Waiting for timer to end..." : "Lock In Selection"}
                     </button>
                   </div>
                 </>
