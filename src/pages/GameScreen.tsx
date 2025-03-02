@@ -12,10 +12,13 @@ import {
   UserCheck, 
   Award, 
   ChevronLeft,
-  Users
+  Users,
+  Home,
+  Trophy
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 
 const GameScreen = () => {
   const { poolId } = useParams<{ poolId: string }>();
@@ -378,6 +381,32 @@ const GameScreen = () => {
                 </ScrollArea>
               </TabsContent>
             </Tabs>
+          </div>
+        </div>
+        
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-background/80 backdrop-blur-lg border-t border-border/40">
+          <div className="flex h-16 items-center justify-between px-4">
+            <Link
+              to="/dashboard"
+              className="flex flex-1 flex-col items-center justify-center py-1"
+            >
+              <Home className="h-5 w-5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground mt-1">Home</span>
+            </Link>
+            <Link
+              to="/milestones"
+              className="flex flex-1 flex-col items-center justify-center py-1"
+            >
+              <Trophy className="h-5 w-5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground mt-1">Milestones</span>
+            </Link>
+            <Link
+              to="/support"
+              className="flex flex-1 flex-col items-center justify-center py-1"
+            >
+              <MessageSquare className="h-5 w-5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground mt-1">Support</span>
+            </Link>
           </div>
         </div>
       </div>
