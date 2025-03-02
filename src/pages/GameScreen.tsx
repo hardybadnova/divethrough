@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -16,7 +15,6 @@ import {
   Users,
   Home,
   Trophy,
-  ArrowRight,
   AlertCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -29,9 +27,9 @@ const GameScreen = () => {
   const navigate = useNavigate();
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
   const [availableNumbers, setAvailableNumbers] = useState<number[]>([]);
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds instead of 5
   const [gameStarted, setGameStarted] = useState(false);
-  const [gameCountdown, setGameCountdown] = useState(60); // 1 minute countdown before game starts
+  const [gameCountdown, setGameCountdown] = useState(20); // Changed from 60 to 20 seconds
   const [isLocked, setIsLocked] = useState(false);
   
   const formattedTime = useMemo(() => {
@@ -65,14 +63,14 @@ const GameScreen = () => {
   }, [pool, navigate]);
   
   useEffect(() => {
-    // First, we'll run the countdown before the game starts
+    // First, we'll run the countdown before the game starts (20 seconds)
     const countdownInterval = setInterval(() => {
       setGameCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(countdownInterval);
           setGameStarted(true);
           
-          // Start the game timer only after countdown completes
+          // Start the game timer only after countdown completes (2 minutes)
           const gameInterval = setInterval(() => {
             setTimeLeft((prev) => {
               if (prev <= 1) {
@@ -157,6 +155,7 @@ const GameScreen = () => {
         description: "Calculating results...",
       });
       
+      // Navigate to result screen after a short delay
       setTimeout(() => {
         navigate(`/result/${poolId}`);
       }, 1500);
@@ -223,7 +222,7 @@ const GameScreen = () => {
                       Starts in {formattedCountdown}s
                     </span>
                   ) : (
-                    <span className={timeLeft < 60 ? "text-red-500 font-bold" : ""}>
+                    <span className={timeLeft < 30 ? "text-red-500 font-bold" : ""}>
                       {formattedTime}
                     </span>
                   )}
@@ -241,7 +240,7 @@ const GameScreen = () => {
               </h2>
               <p className="text-sm text-muted-foreground">
                 {!gameStarted 
-                  ? "You can change tables or exit before the game starts" 
+                  ? "You have 20 seconds to change tables or exit before the game starts" 
                   : "Choose one number. Remember, the least picked number wins!"}
               </p>
             </div>
@@ -273,7 +272,7 @@ const GameScreen = () => {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-5 gap-2 mb-4 overflow-y-auto max-h-[400px] p-2">
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 mb-4 overflow-y-auto max-h-[400px] p-2">
                     {availableNumbers.map((num) => (
                       <motion.button
                         key={num}
@@ -321,14 +320,14 @@ const GameScreen = () => {
                       disabled={isLocked || selectedNumber === null}
                     >
                       {isLocked 
-                        ? "Number Locked - Waiting for timer..." 
+                        ? "Number Locked - Waiting for results..." 
                         : "Lock In Selection"}
                     </button>
                     
-                    {timeLeft < 60 && !isLocked && (
+                    {timeLeft < 30 && !isLocked && (
                       <div className="flex items-center justify-center gap-2 p-2 bg-red-500/20 text-red-500 rounded-lg text-sm">
                         <AlertCircle className="h-4 w-4" />
-                        <span>Less than a minute left! Choose quickly!</span>
+                        <span>Less than 30 seconds left! Choose quickly!</span>
                       </div>
                     )}
                   </div>
