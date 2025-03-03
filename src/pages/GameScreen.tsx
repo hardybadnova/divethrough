@@ -1,56 +1,39 @@
-import { useState, useEffect, useMemo } from "react";
+
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useGame } from "@/contexts/GameContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  BarChart3, 
-  MessageSquare, 
-  Lightbulb, 
-  Clock, 
-  UserCheck, 
-  Award, 
-  ChevronLeft,
-  Users,
-  Home,
-  Trophy,
-  AlertCircle
-} from "lucide-react";
+import { formatCurrency } from "@/lib/formatters";
+import { ArrowLeft, HelpCircle, Table } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Progress } from "@/components/ui/progress";
 
 const GameScreen = () => {
   const { poolId } = useParams<{ poolId: string }>();
-  const { pools, players, currentPool, leavePool } = useGame();
+  const { pools, joinPool, leavePool } = useGame();
   const navigate = useNavigate();
+  
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
-  const [availableNumbers, setAvailableNumbers] = useState<number[]>([]);
-  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds instead of 5
-  const [gameStarted, setGameStarted] = useState(false);
-  const [gameCountdown, setGameCountdown] = useState(20); // Changed from 60 to 20 seconds
   const [isLocked, setIsLocked] = useState(false);
-  
-  const formattedTime = useMemo(() => {
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  }, [timeLeft]);
-  
-  const formattedCountdown = useMemo(() => {
-    const seconds = gameCountdown % 60;
-    return `${seconds.toString().padStart(2, '0')}`;
-  }, [gameCountdown]);
-  
-  const pool = useMemo(() => {
-    if (currentPool) return currentPool;
-    return pools.find(p => p.id === poolId);
-  }, [currentPool, poolId, pools]);
-  
-  const poolPlayers = useMemo(() => {
-    return players.slice(0, pool?.gameType === 'jackpot' ? 30 : 50);
-  }, [players, pool]);
+  const [gameState, setGameState] = useState<"pre-game" | "in-progress" | "completed">("pre-game");
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(0);
+  const [preGameCountdown, setPreGameCountdown] = useState(20); // 20 seconds to change table
+  const [gameTimer, setGameTimer] = useState(120); // 2 minutes game duration
+
+  // Find the current pool
+  const pool = pools.find(p => p.id === poolId);
   
   useEffect(() => {
     if (!pool) {
@@ -58,456 +41,336 @@ const GameScreen = () => {
       return;
     }
     
-    const maxNumber = pool.numberRange[1];
-    setAvailableNumbers(Array.from({ length: maxNumber + 1 }, (_, i) => i));
-  }, [pool, navigate]);
-  
-  useEffect(() => {
-    // First, we'll run the countdown before the game starts (20 seconds)
-    const countdownInterval = setInterval(() => {
-      setGameCountdown((prev) => {
+    // Join the pool when component mounts
+    joinPool(poolId || "");
+    
+    // Start pre-game countdown
+    const preGameInterval = setInterval(() => {
+      setPreGameCountdown(prev => {
         if (prev <= 1) {
-          clearInterval(countdownInterval);
-          setGameStarted(true);
-          
-          // Start the game timer only after countdown completes (2 minutes)
-          const gameInterval = setInterval(() => {
-            setTimeLeft((prev) => {
-              if (prev <= 1) {
-                clearInterval(gameInterval);
-                handleGameEnd();
-                return 0;
-              }
-              return prev - 1;
-            });
-          }, 1000);
-          
+          clearInterval(preGameInterval);
+          setGameState("in-progress");
+          // Toast notification that game has started
+          toast({
+            title: "Game Started!",
+            description: "Choose your number and lock it in",
+          });
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     
-    return () => clearInterval(countdownInterval);
-  }, []);
+    // Clean up interval on unmount
+    return () => {
+      clearInterval(preGameInterval);
+      leavePool();
+    };
+  }, [pool, poolId, joinPool, leavePool, navigate]);
   
-  const handleNumberSelect = (num: number) => {
-    if (isLocked) return;
+  // Start game timer when game state changes to in-progress
+  useEffect(() => {
+    if (gameState !== "in-progress") return;
     
-    setSelectedNumber(num);
+    const gameInterval = setInterval(() => {
+      setGameTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(gameInterval);
+          setGameState("completed");
+          
+          // Navigate to results screen when timer ends
+          navigate(`/result/${poolId}`);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    // Clean up interval on unmount
+    return () => clearInterval(gameInterval);
+  }, [gameState, navigate, poolId]);
+  
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+  
+  const handleNumberSelect = (number: number) => {
+    if (gameState !== "in-progress" || isLocked) return;
+    setSelectedNumber(number);
+    
     toast({
-      title: "Number Selected",
-      description: `You have selected number ${num}`,
+      title: `Number ${number} Selected`,
+      description: "Lock it in to confirm your selection",
     });
   };
   
-  const handleLockSelection = () => {
-    if (selectedNumber === null) {
-      toast({
-        title: "No Number Selected",
-        description: "Please select a number first",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleLockNumber = () => {
+    if (!selectedNumber || gameState !== "in-progress" || isLocked) return;
     
     setIsLocked(true);
     toast({
-      title: "Number Locked",
+      title: "Number Locked!",
       description: `You've locked in number ${selectedNumber}. Good luck!`,
     });
   };
   
-  const handleGetHint = () => {
-    const hintCost = (pool?.entryFee || 0) * 0.02;
-    
-    toast({
-      title: "Hint Purchased",
-      description: `You've spent ${hintCost} INR for a hint.`,
-    });
-    
-    const hints = [
-      "Numbers with less frequency of selection tend to win more.",
-      "Consider choosing a number that others might not pick.",
-      "In previous games, numbers between 10-20 were less frequently chosen.",
-      "The least picked numbers have the highest chance of winning.",
-      "Most players avoid very high or very low numbers."
-    ];
-    
-    setTimeout(() => {
-      toast({
-        title: "Game Hint",
-        description: hints[Math.floor(Math.random() * hints.length)],
-      });
-    }, 500);
+  const handleExitGame = () => {
+    setShowExitDialog(true);
   };
   
-  const handleGameEnd = () => {
-    if (selectedNumber === null && timeLeft === 0) {
-      toast({
-        title: "Game Over",
-        description: "You didn't select any number.",
-        variant: "destructive",
-      });
-    } else if (timeLeft === 0) {
-      toast({
-        title: "Game Finished",
-        description: "Calculating results...",
-      });
-      
-      // Navigate to result screen after a short delay
-      setTimeout(() => {
-        navigate(`/result/${poolId}`);
-      }, 1500);
-    }
-  };
-  
-  const handleBackClick = () => {
-    // Only allow leaving before the game has started
-    if (gameStarted) {
-      toast({
-        title: "Game in Progress",
-        description: "You cannot leave once the game has started.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+  const confirmExit = () => {
     leavePool();
     navigate(`/pools/${pool?.gameType}`);
   };
   
   const handleChangeTable = () => {
-    // Only allow changing tables before the game has started
-    if (gameStarted) {
-      toast({
-        title: "Game in Progress",
-        description: "You cannot change tables once the game has started.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Only allow changing tables during pre-game state
+    if (gameState !== "pre-game") return;
     
-    leavePool();
     navigate(`/pools/${pool?.gameType}`);
+  };
+  
+  // Generate number buttons based on pool's number range
+  const renderNumberButtons = () => {
+    if (!pool) return null;
+    
+    const [min, max] = pool.numberRange;
+    const numbers = Array.from({ length: max - min + 1 }, (_, i) => i + min);
+    
+    return (
+      <div className="grid grid-cols-5 gap-3">
+        {numbers.map(num => (
+          <button
+            key={num}
+            onClick={() => handleNumberSelect(num)}
+            className={`h-12 w-12 rounded-full font-medium flex items-center justify-center 
+              ${selectedNumber === num ? 'bg-betster-600 text-white' : 'bg-secondary hover:bg-secondary/80'}
+              ${isLocked && selectedNumber === num ? 'ring-2 ring-green-500' : ''}
+              ${isLocked && selectedNumber !== num ? 'opacity-30 cursor-not-allowed' : ''}
+              transition-all`}
+            disabled={isLocked && selectedNumber !== num}
+          >
+            {num}
+          </button>
+        ))}
+      </div>
+    );
   };
   
   if (!pool) return null;
   
   return (
     <AppLayout>
-      <div className="flex-1 flex flex-col h-full max-h-screen">
-        <div className="border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-          <div className="container max-w-5xl mx-auto px-4 py-3">
-            <div className="flex items-center justify-between">
+      <div className="flex-1 container max-w-5xl mx-auto px-4 py-4 md:py-6">
+        {/* Header */}
+        <div className="border-b border-border/40 pb-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
               <button 
-                onClick={handleBackClick}
-                className={`flex items-center ${gameStarted ? "text-muted-foreground/50 cursor-not-allowed" : "text-muted-foreground hover:text-foreground"}`}
-                disabled={gameStarted}
+                onClick={handleExitGame}
+                className="flex items-center text-muted-foreground hover:text-foreground mr-4"
+                aria-label="Exit game"
               >
-                <ChevronLeft className="h-5 w-5 mr-1" />
-                <span>Back</span>
+                <ArrowLeft className="h-5 w-5 mr-1" />
+                <span>Exit</span>
               </button>
               
-              <div className="flex items-center text-sm">
-                <span className="text-muted-foreground mr-2">
-                  <Users className="h-4 w-4 inline mr-1" />
-                  {poolPlayers.length} players
-                </span>
-                
-                <div className="flex items-center bg-secondary rounded-full px-3 py-1">
-                  <Clock className="h-4 w-4 mr-1 text-betster-400" />
-                  {!gameStarted ? (
-                    <span className="text-yellow-500 font-bold">
-                      Starts in {formattedCountdown}s
-                    </span>
-                  ) : (
-                    <span className={timeLeft < 30 ? "text-red-500 font-bold" : ""}>
-                      {formattedTime}
-                    </span>
-                  )}
-                </div>
+              {gameState === "pre-game" && (
+                <button 
+                  onClick={handleChangeTable}
+                  className="flex items-center text-muted-foreground hover:text-foreground"
+                  aria-label="Change table"
+                >
+                  <Table className="h-5 w-5 mr-1" />
+                  <span>Change Table</span>
+                </button>
+              )}
+            </div>
+            
+            <div className="flex items-center">
+              <div className="betster-chip bg-betster-600 text-white">
+                {pool.gameType === 'bluff' ? 'Bluff The Tough' : 
+                 pool.gameType === 'topspot' ? 'Top Spot' : 'Jackpot Horse'}
+              </div>
+              <div className="betster-chip ml-2">
+                {formatCurrency(pool.entryFee)}
               </div>
             </div>
           </div>
         </div>
         
-        <div className="flex-1 container max-w-5xl mx-auto px-4 py-4 md:py-6 grid md:grid-cols-2 gap-6 h-full overflow-hidden">
-          <div className="flex flex-col h-full">
-            <div className="mb-4">
-              <h2 className="text-lg font-medium">
-                {!gameStarted ? "Waiting for Game to Start" : "Select Your Number"}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {!gameStarted 
-                  ? "You have 20 seconds to change tables or exit before the game starts" 
-                  : "Choose one number. Remember, the least picked number wins!"}
-              </p>
-            </div>
-            
-            <div className="glass-card p-4 rounded-xl flex-1 overflow-hidden flex flex-col">
-              {!gameStarted ? (
-                <div className="flex-1 flex flex-col items-center justify-center">
-                  <div className="text-center space-y-3">
-                    <div className="loader mx-auto"></div>
-                    <p className="text-xl font-medium mt-4">Game starts in</p>
-                    <p className="text-4xl font-bold text-betster-500">{formattedCountdown}s</p>
-                    <p className="text-muted-foreground mt-2">You are at Table #{poolId?.split('-')[1] || '1'}</p>
-                    
-                    <div className="flex gap-3 mt-6">
-                      <button 
-                        onClick={handleChangeTable}
-                        className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
-                      >
-                        Change Table
-                      </button>
-                      <button 
-                        onClick={handleBackClick}
-                        className="px-4 py-2 rounded-lg bg-destructive/20 hover:bg-destructive/30 text-destructive transition-colors"
-                      >
-                        Exit Game
-                      </button>
-                    </div>
-                  </div>
+        {/* Game Area */}
+        <div className="glass-card rounded-xl p-6 mb-6">
+          {/* Game State Display */}
+          <div className="mb-6 text-center">
+            {gameState === "pre-game" ? (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-2"
+              >
+                <h2 className="text-xl font-medium">Table Open</h2>
+                <p className="text-muted-foreground">
+                  Game starts in <span className="font-bold text-betster-600">{formatTime(preGameCountdown)}</span>
+                </p>
+                <div className="w-full mt-2">
+                  <Progress value={(preGameCountdown / 20) * 100} className="h-2" />
                 </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 mb-4 overflow-y-auto max-h-[400px] p-2">
-                    {availableNumbers.map((num) => (
-                      <motion.button
-                        key={num}
-                        whileTap={{ scale: 0.95 }}
-                        className={`aspect-square flex items-center justify-center rounded-lg text-lg font-medium transition-all ${
-                          selectedNumber === num
-                            ? "bg-betster-600 text-white shadow-lg"
-                            : "bg-secondary hover:bg-secondary/80 text-foreground"
-                        } ${isLocked ? "cursor-not-allowed opacity-70" : ""}`}
-                        onClick={() => handleNumberSelect(num)}
-                        disabled={isLocked}
-                      >
-                        {num}
-                      </motion.button>
-                    ))}
-                  </div>
-                  
-                  <div className="mt-auto space-y-4">
-                    <div className="rounded-lg bg-secondary/50 p-3">
-                      <p className="text-sm font-medium mb-2">Your Selection:</p>
-                      <div className="flex gap-2">
-                        {selectedNumber !== null ? (
-                          <div
-                            className="w-10 h-10 rounded-lg bg-betster-600 flex items-center justify-center text-white font-medium"
-                          >
-                            {selectedNumber}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            No number selected yet
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <button 
-                      className={`betster-button w-full py-3 ${
-                        isLocked 
-                          ? 'bg-green-600 cursor-not-allowed' 
-                          : selectedNumber !== null 
-                            ? 'bg-betster-600 hover:bg-betster-700' 
-                            : ''
-                      }`}
-                      onClick={handleLockSelection}
-                      disabled={isLocked || selectedNumber === null}
-                    >
-                      {isLocked 
-                        ? "Number Locked - Waiting for results..." 
-                        : "Lock In Selection"}
-                    </button>
-                    
-                    {timeLeft < 30 && !isLocked && (
-                      <div className="flex items-center justify-center gap-2 p-2 bg-red-500/20 text-red-500 rounded-lg text-sm">
-                        <AlertCircle className="h-4 w-4" />
-                        <span>Less than 30 seconds left! Choose quickly!</span>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-2"
+              >
+                <h2 className="text-xl font-medium">Game In Progress</h2>
+                <p className="text-muted-foreground">
+                  Time remaining: <span className="font-bold text-betster-600">{formatTime(gameTimer)}</span>
+                </p>
+                <div className="w-full mt-2">
+                  <Progress value={(gameTimer / 120) * 100} className="h-2" />
+                </div>
+              </motion.div>
+            )}
+          </div>
+          
+          {/* Game Instructions */}
+          <div className="bg-muted/50 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <HelpCircle className="h-5 w-5 text-muted-foreground mr-2 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-medium mb-1">How to Play</h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {pool.gameType === 'bluff' || pool.gameType === 'topspot' ? (
+                    <>Choose a number between {pool.numberRange[0]} and {pool.numberRange[1]}. The players who choose the least picked numbers win!</>
+                  ) : (
+                    <>Choose a number between {pool.numberRange[0]} and {pool.numberRange[1]}. The closest number to the secret number without going over wins!</>
+                  )}
+                </p>
+                {gameState === "pre-game" && (
+                  <p className="text-sm text-amber-600">
+                    You can change tables or exit before the game starts.
+                  </p>
+                )}
+                {gameState === "in-progress" && !isLocked && (
+                  <p className="text-sm text-amber-600">
+                    Select a number and lock it in before time runs out!
+                  </p>
+                )}
+              </div>
             </div>
           </div>
           
-          <div className="flex flex-col h-full">
-            <Tabs defaultValue="players" className="flex flex-col h-full">
-              <TabsList className="grid grid-cols-3 mb-4">
-                <TabsTrigger value="players" className="flex items-center gap-1.5">
-                  <UserCheck className="h-4 w-4" />
-                  <span>Players</span>
-                </TabsTrigger>
-                <TabsTrigger value="chat" className="flex items-center gap-1.5">
-                  <MessageSquare className="h-4 w-4" />
-                  <span>Chat</span>
-                </TabsTrigger>
-                <TabsTrigger value="hints" className="flex items-center gap-1.5">
-                  <Lightbulb className="h-4 w-4" />
-                  <span>Hints</span>
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="players" className="flex-1 overflow-hidden glass-card rounded-xl">
-                <div className="p-4 border-b border-border/40">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">Players in this pool</h3>
-                    <div className="betster-chip">
-                      {poolPlayers.length} Active
-                    </div>
-                  </div>
-                </div>
-                
-                <ScrollArea className="h-[calc(100%-56px)]">
-                  <div className="p-2">
-                    {poolPlayers.map((player, index) => (
-                      <div 
-                        key={player.id} 
-                        className="p-2 rounded-lg hover:bg-secondary/50 transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-full bg-betster-600/20 flex items-center justify-center text-sm font-medium mr-3">
-                              {player.username.charAt(0)}
-                            </div>
-                            <div>
-                              <p className="font-medium">{player.username}</p>
-                              <div className="flex items-center text-xs text-muted-foreground">
-                                <Award className="h-3 w-3 mr-1" />
-                                <span>Win rate: {player.stats.winRate}%</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </TabsContent>
-              
-              <TabsContent value="chat" className="flex-1 overflow-hidden glass-card rounded-xl flex flex-col">
-                <div className="p-4 border-b border-border/40">
-                  <h3 className="font-medium">Game Chat</h3>
-                </div>
-                
-                <ScrollArea className="flex-1">
-                  <div className="p-4 space-y-4">
-                    <div className="chat-message">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-betster-600/20 flex items-center justify-center text-sm font-medium">
-                          P
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-sm">Player42</p>
-                            <span className="text-xs text-muted-foreground">2m ago</span>
-                          </div>
-                          <p className="text-sm mt-1">
-                            Good luck everyone! Which numbers are you picking?
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="chat-message">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-betster-600/20 flex items-center justify-center text-sm font-medium">
-                          B
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-sm">BetMaster</p>
-                            <span className="text-xs text-muted-foreground">1m ago</span>
-                          </div>
-                          <p className="text-sm mt-1">
-                            I'm going with my lucky numbers as always
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </ScrollArea>
-                
-                <div className="p-3 border-t border-border/40">
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="Type your message..." 
-                      className="flex-1 rounded-lg bg-secondary px-3 py-2 text-sm focus:outline-none"
-                    />
-                    <button className="betster-button">
-                      Send
-                    </button>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="hints" className="flex-1 overflow-hidden glass-card rounded-xl flex flex-col">
-                <div className="p-4 border-b border-border/40">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">Game Hints</h3>
-                    <button 
-                      className="betster-chip flex items-center"
-                      onClick={handleGetHint}
-                    >
-                      <Lightbulb className="h-3.5 w-3.5 mr-1" />
-                      Get hint
-                    </button>
-                  </div>
-                </div>
-                
-                <ScrollArea className="flex-1">
-                  <div className="p-4 space-y-4">
-                    <div className="rounded-lg bg-secondary/50 p-3">
-                      <p className="text-sm font-medium mb-1">Last 10 Games Stats</p>
-                      <p className="text-xs text-muted-foreground">
-                        Purchase hints to see winning patterns
-                      </p>
-                    </div>
-                    
-                    <div className="rounded-lg bg-secondary/50 p-3">
-                      <p className="text-sm font-medium mb-1">Number Frequency</p>
-                      <p className="text-xs text-muted-foreground">
-                        Purchase hints to see most frequent numbers
-                      </p>
-                    </div>
-                  </div>
-                </ScrollArea>
-              </TabsContent>
-            </Tabs>
+          {/* Number Selection Area */}
+          <div className="space-y-6">
+            <h3 className="font-medium">Choose your number:</h3>
+            <div className="flex justify-center">
+              {renderNumberButtons()}
+            </div>
+            
+            {/* Lock button */}
+            <div className="flex justify-center mt-8">
+              <button
+                onClick={handleLockNumber}
+                disabled={!selectedNumber || isLocked || gameState !== "in-progress"}
+                className={`betster-button w-full max-w-xs ${
+                  (!selectedNumber || isLocked || gameState !== "in-progress") 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'animate-pulse'
+                }`}
+              >
+                {isLocked 
+                  ? `Locked: Number ${selectedNumber}` 
+                  : selectedNumber 
+                    ? `Lock in Number ${selectedNumber}` 
+                    : 'Select a Number First'}
+              </button>
+            </div>
           </div>
         </div>
         
-        <div className="fixed bottom-0 left-0 right-0 z-30 bg-background/80 backdrop-blur-lg border-t border-border/40">
-          <div className="flex h-16 items-center justify-between px-4">
-            <Link
-              to="/dashboard"
-              className="flex flex-1 flex-col items-center justify-center py-1"
+        {/* Player List */}
+        <div className="glass-card rounded-xl overflow-hidden">
+          <div className="p-4 border-b border-border/40">
+            <div className="flex items-center justify-between">
+              <h2 className="font-medium">Players in This Pool</h2>
+              <span className="text-sm text-muted-foreground">
+                {pool.currentPlayers}/{pool.maxPlayers}
+              </span>
+            </div>
+          </div>
+          
+          <div className="p-4 max-h-64 overflow-y-auto">
+            <div className="space-y-2">
+              {/* Generate random players for the pool */}
+              {Array.from({ length: Math.min(pool.currentPlayers, 20) }, (_, i) => (
+                <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-medium">
+                      {String.fromCharCode(65 + i)}
+                    </div>
+                    <span className="ml-2 font-medium">Player {String.fromCharCode(65 + i)}</span>
+                  </div>
+                  {isLocked && i === 0 && (
+                    <span className="text-xs bg-green-500/20 text-green-700 px-2 py-1 rounded-full">
+                      Locked In
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Exit Confirmation Dialog */}
+      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Exit Game?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {gameState === "pre-game" 
+                ? "You are about to leave this table. Your entry fee will be refunded."
+                : "You are about to forfeit this game. Your entry fee will not be refunded."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmExit}>
+              Exit Game
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 z-10 bg-background/80 backdrop-blur-sm border-t border-border">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-around py-3">
+            <button 
+              className="flex flex-col items-center text-sm text-muted-foreground p-2 hover:text-foreground"
+              onClick={() => navigate('/dashboard')}
             >
-              <Home className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground mt-1">Home</span>
-            </Link>
-            <Link
-              to="/milestones"
-              className="flex flex-1 flex-col items-center justify-center py-1"
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 mb-1"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              <span>Home</span>
+            </button>
+            
+            <button
+              className="flex flex-col items-center text-sm text-muted-foreground p-2 hover:text-foreground"
+              onClick={() => navigate('/milestones')}
             >
-              <Trophy className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground mt-1">Milestones</span>
-            </Link>
-            <Link
-              to="/support"
-              className="flex flex-1 flex-col items-center justify-center py-1"
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 mb-1"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+              <span>Milestones</span>
+            </button>
+            
+            <button
+              className="flex flex-col items-center text-sm text-muted-foreground p-2 hover:text-foreground"
             >
-              <MessageSquare className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground mt-1">Support</span>
-            </Link>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 mb-1"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+              <span>Support</span>
+            </button>
           </div>
         </div>
       </div>

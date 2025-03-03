@@ -186,7 +186,7 @@ const GameResultScreen = () => {
           </div>
         ) : (
           <>
-            {/* Winner announcement */}
+            {/* Winner announcement with podium animation */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -250,6 +250,90 @@ const GameResultScreen = () => {
                   Choose Different Pool
                 </button>
               </div>
+            </motion.div>
+            
+            {/* Podium visualization */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="glass-card p-6 rounded-xl mb-6"
+            >
+              <h2 className="font-medium text-lg mb-4 text-center">Winner's Podium</h2>
+              
+              <div className="flex justify-center items-end h-64 mb-4">
+                {/* Second Place */}
+                {winners.length > 1 && (
+                  <motion.div 
+                    initial={{ height: 0 }}
+                    animate={{ height: "80%" }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                    className="w-1/4 bg-gray-400 mx-1 rounded-t-lg flex flex-col justify-between items-center"
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 1.2 }}
+                      className="bg-gray-200 rounded-full p-2 mt-2"
+                    >
+                      <Trophy className="h-6 w-6 text-gray-500" />
+                    </motion.div>
+                    <div className="text-center p-2">
+                      <p className="font-bold text-white text-lg">2</p>
+                      <p className="text-white text-xs">Number {winners[1].number}</p>
+                      <p className="text-white text-xs font-semibold">{formatCurrency(winners[1].prize)}</p>
+                    </div>
+                  </motion.div>
+                )}
+                
+                {/* First Place */}
+                <motion.div 
+                  initial={{ height: 0 }}
+                  animate={{ height: "100%" }}
+                  transition={{ duration: 0.8 }}
+                  className="w-1/4 bg-yellow-500 mx-1 rounded-t-lg flex flex-col justify-between items-center"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 1 }}
+                    className="bg-yellow-200 rounded-full p-2 mt-2"
+                  >
+                    <Trophy className="h-8 w-8 text-yellow-600" />
+                  </motion.div>
+                  <div className="text-center p-2">
+                    <p className="font-bold text-white text-2xl">1</p>
+                    <p className="text-white text-sm">Number {winners[0].number}</p>
+                    <p className="text-white text-sm font-semibold">{formatCurrency(winners[0].prize)}</p>
+                  </div>
+                </motion.div>
+                
+                {/* Third Place */}
+                {winners.length > 2 && (
+                  <motion.div 
+                    initial={{ height: 0 }}
+                    animate={{ height: "60%" }}
+                    transition={{ duration: 0.4, delay: 0.6 }}
+                    className="w-1/4 bg-amber-700 mx-1 rounded-t-lg flex flex-col justify-between items-center"
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 1.4 }}
+                      className="bg-amber-200 rounded-full p-2 mt-2"
+                    >
+                      <Trophy className="h-5 w-5 text-amber-800" />
+                    </motion.div>
+                    <div className="text-center p-2">
+                      <p className="font-bold text-white text-lg">3</p>
+                      <p className="text-white text-xs">Number {winners[2].number}</p>
+                      <p className="text-white text-xs font-semibold">{formatCurrency(winners[2].prize)}</p>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+              
+              <div className="w-full h-4 bg-gray-200 rounded-lg"></div>
             </motion.div>
             
             {/* Winners List */}
@@ -320,12 +404,12 @@ const GameResultScreen = () => {
               </div>
               
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-4">
-                {results.map((result) => (
+                {results.map((result, index) => (
                   <motion.div
                     key={result.number}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: result.number * 0.05 }}
+                    transition={{ delay: index * 0.05 }}
                     className={`p-3 rounded-lg ${
                       winners.some(w => w.number === result.number) 
                         ? 'bg-betster-600/20 border border-betster-600/40' 
@@ -367,6 +451,36 @@ const GameResultScreen = () => {
             </div>
           </>
         )}
+      </div>
+      
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 z-10 bg-background/80 backdrop-blur-sm border-t border-border">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-around py-3">
+            <button 
+              className="flex flex-col items-center text-sm text-muted-foreground p-2 hover:text-foreground"
+              onClick={() => navigate('/dashboard')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 mb-1"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              <span>Home</span>
+            </button>
+            
+            <button
+              className="flex flex-col items-center text-sm text-muted-foreground p-2 hover:text-foreground"
+              onClick={() => navigate('/milestones')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 mb-1"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+              <span>Milestones</span>
+            </button>
+            
+            <button
+              className="flex flex-col items-center text-sm text-muted-foreground p-2 hover:text-foreground"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 mb-1"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+              <span>Support</span>
+            </button>
+          </div>
+        </div>
       </div>
     </AppLayout>
   );
