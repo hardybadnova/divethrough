@@ -36,27 +36,27 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const isGameScreen = location.pathname.includes("/game/");
 
   return (
-    <div className="flex flex-col min-h-screen bg-background overflow-hidden">
+    <div className="flex flex-col min-h-screen overflow-hidden bg-gradient-to-br from-[#1a0033] to-[#4a0080]">
       {/* Top Bar */}
-      <header className="sticky top-0 z-30 w-full border-b backdrop-blur-lg bg-background/80 border-border/40">
+      <header className="sticky top-0 z-30 w-full border-b backdrop-blur-lg bg-black/30 border-betster-600/40">
         <div className="flex h-16 items-center justify-between px-4">
           <div className="flex items-center">
             <Sheet>
               <SheetTrigger asChild>
-                <button className="rounded-full p-2 hover:bg-secondary flex items-center justify-center">
-                  <Menu className="h-5 w-5 text-foreground" />
+                <button className="rounded-full p-2 hover:bg-betster-800/30 flex items-center justify-center">
+                  <Menu className="h-5 w-5 text-betster-300" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="left" className="bg-background/95 backdrop-blur-xl border-r border-border/40 p-0">
+              <SheetContent side="left" className="bg-black/95 backdrop-blur-xl border-r border-betster-700/40 p-0">
                 <div className="flex flex-col h-full">
-                  <div className="py-6 px-4 border-b border-border/40">
+                  <div className="py-6 px-4 border-b border-betster-700/40">
                     <div className="flex items-center gap-4">
-                      <div className="rounded-full bg-betster-600 h-12 w-12 flex items-center justify-center">
+                      <div className="rounded-full bg-gradient-to-br from-betster-500 to-betster-700 h-12 w-12 flex items-center justify-center">
                         <User className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <p className="font-medium">{user?.username}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-medium text-white">{user?.username}</p>
+                        <p className="text-sm text-betster-300">
                           {formatCurrency(user?.wallet || 0)}
                         </p>
                       </div>
@@ -67,15 +67,15 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                       <Link
                         key={index}
                         to={item.path}
-                        className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-secondary transition-colors"
+                        className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-betster-800/30 transition-colors"
                       >
                         <item.icon className="h-5 w-5 text-betster-400" />
-                        <span>{item.label}</span>
+                        <span className="text-betster-100">{item.label}</span>
                       </Link>
                     ))}
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-secondary text-left text-destructive transition-colors mt-auto"
+                      className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-betster-800/30 text-left text-destructive transition-colors mt-auto"
                     >
                       <LogOut className="h-5 w-5" />
                       <span>Logout</span>
@@ -101,16 +101,16 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                   <span>{formatCurrency(user?.wallet || 0)}</span>
                 </button>
               </SheetTrigger>
-              <SheetContent side="right" className="bg-background/95 backdrop-blur-xl">
-                <h3 className="text-lg font-semibold mb-4">Deposit Funds</h3>
+              <SheetContent side="right" className="bg-black/95 backdrop-blur-xl border-l border-betster-700/40">
+                <h3 className="text-lg font-semibold mb-4 text-white">Deposit Funds</h3>
                 <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-betster-300">
                     Enter the amount you wish to deposit into your wallet.
                   </p>
                   <input
                     type="number"
                     placeholder="Amount in INR"
-                    className="w-full px-3 py-2 rounded-md border bg-background"
+                    className="w-full px-3 py-2 rounded-md border bg-betster-900/50 border-betster-700/50 text-white"
                   />
                   <button className="betster-button w-full">Deposit</button>
                   
@@ -130,16 +130,16 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </Sheet>
             
             <Sheet open={isWithdrawOpen} onOpenChange={setIsWithdrawOpen}>
-              <SheetContent side="right" className="bg-background/95 backdrop-blur-xl">
-                <h3 className="text-lg font-semibold mb-4">Withdraw Funds</h3>
+              <SheetContent side="right" className="bg-black/95 backdrop-blur-xl border-l border-betster-700/40">
+                <h3 className="text-lg font-semibold mb-4 text-white">Withdraw Funds</h3>
                 <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-betster-300">
                     Enter the amount you wish to withdraw from your wallet.
                   </p>
                   <input
                     type="number"
                     placeholder="Amount in INR"
-                    className="w-full px-3 py-2 rounded-md border bg-background"
+                    className="w-full px-3 py-2 rounded-md border bg-betster-900/50 border-betster-700/50 text-white"
                   />
                   <button className="betster-button w-full">Withdraw</button>
                   
@@ -168,28 +168,28 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Bottom Bar */}
       {!isGameScreen && (
-        <footer className="fixed bottom-0 left-0 right-0 z-30 bg-background/80 backdrop-blur-lg border-t border-border/40">
+        <footer className="fixed bottom-0 left-0 right-0 z-30 bg-black/30 backdrop-blur-lg border-t border-betster-700/40">
           <div className="flex h-16 items-center justify-between px-4">
             <Link
               to="/dashboard"
               className="flex flex-1 flex-col items-center justify-center py-1"
             >
-              <Home className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground mt-1">Home</span>
+              <Home className="h-5 w-5 text-betster-300" />
+              <span className="text-xs text-betster-300 mt-1">Home</span>
             </Link>
             <Link
               to="/milestones"
               className="flex flex-1 flex-col items-center justify-center py-1"
             >
-              <Trophy className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground mt-1">Milestones</span>
+              <Trophy className="h-5 w-5 text-betster-300" />
+              <span className="text-xs text-betster-300 mt-1">Milestones</span>
             </Link>
             <Link
               to="/support"
               className="flex flex-1 flex-col items-center justify-center py-1"
             >
-              <MessageSquare className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground mt-1">Support</span>
+              <MessageSquare className="h-5 w-5 text-betster-300" />
+              <span className="text-xs text-betster-300 mt-1">Support</span>
             </Link>
           </div>
         </footer>

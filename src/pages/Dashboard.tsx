@@ -38,10 +38,10 @@ const Dashboard = () => {
     <AppLayout>
       <div className="flex-1 container max-w-2xl mx-auto px-4 py-6">
         <div className="space-y-2 mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight text-gradient">
             Game Modules
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-betster-300">
             Select a game module to start playing. Remember, the least picked numbers win!
           </p>
         </div>
@@ -55,10 +55,10 @@ const Dashboard = () => {
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
               <div
-                className="group w-full rounded-xl glass-card overflow-hidden transition-all hover:shadow-lg hover:shadow-betster-500/20"
+                className="group w-full rounded-xl premium-glass overflow-hidden transition-all hover:shadow-lg hover:shadow-betster-500/20"
               >
                 <div className="aspect-video relative overflow-hidden">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-30 group-hover:opacity-40 transition-opacity`}></div>
+                  <div className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-20 group-hover:opacity-30 transition-opacity`}></div>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="bg-white/10 backdrop-blur-md rounded-full p-6 shadow-lg">
                       <img
@@ -82,9 +82,9 @@ const Dashboard = () => {
                     }`}>
                       {game.icon}
                     </div>
-                    <h3 className="text-xl font-semibold">{game.title}</h3>
+                    <h3 className="text-xl font-semibold text-white">{game.title}</h3>
                   </div>
-                  <p className="text-muted-foreground mb-4">{game.description}</p>
+                  <p className="text-betster-300 mb-4">{game.description}</p>
                   
                   <div className="mt-4 flex justify-end">
                     <button
@@ -100,9 +100,9 @@ const Dashboard = () => {
           ))}
         </div>
         
-        <div className="mt-8 p-4 bg-secondary/30 rounded-lg">
-          <h2 className="font-semibold mb-2">How to Play</h2>
-          <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+        <div className="mt-8 p-4 bg-black/30 backdrop-blur-sm rounded-lg border border-betster-700/30">
+          <h2 className="font-semibold mb-2 text-white">How to Play</h2>
+          <ul className="list-disc pl-5 space-y-1 text-sm text-betster-300">
             <li>Choose a game type and select a pool based on your preferred entry fee</li>
             <li>Pick one number - the goal is to choose a number that few others will pick</li>
             <li>Wait for the timer to end and see the results</li>

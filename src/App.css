@@ -1,3 +1,4 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -12,10 +13,10 @@
   transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em #7022FF);
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 2em #7022FF);
 }
 
 @keyframes logo-spin {
@@ -39,4 +40,20 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Purple glow effects */
+.purple-glow {
+  box-shadow: 0 0 15px 2px rgba(112, 34, 255, 0.5);
+}
+
+.purple-text-glow {
+  text-shadow: 0 0 8px rgba(159, 117, 255, 0.7);
+}
+
+/* Glass card hover effects */
+.glass-card:hover {
+  box-shadow: 0 10px 25px -5px rgba(112, 34, 255, 0.4);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
 }

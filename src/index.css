@@ -5,33 +5,33 @@
  
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 247 74% 16%;
+    --foreground: 210 40% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 247 74% 16%;
+    --card-foreground: 210 40% 98%;
  
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 247 74% 16%;
+    --popover-foreground: 210 40% 98%;
  
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 252 78% 40%;
     --primary-foreground: 210 40% 98%;
  
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 250 74% 33%;
+    --secondary-foreground: 210 40% 98%;
  
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
  
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 255 87% 57%;
+    --accent-foreground: 210 40% 98%;
  
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 214.3 31.8% 30%;
+    --input: 214.3 31.8% 30%;
+    --ring: 252 78% 40%;
  
     --radius: 0.5rem;
     
@@ -84,30 +84,43 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-betster-950 text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background: linear-gradient(135deg, #1a0033 0%, #4a0080 100%) fixed;
   }
 }
 
 @layer components {
   .betster-button {
     @apply bg-betster-600 hover:bg-betster-700 text-white px-4 py-2 rounded-md transition-colors;
+    background: linear-gradient(135deg, #7022FF 0%, #9F75FF 100%);
   }
   
   .betster-button-outline {
-    @apply border border-betster-600 text-betster-600 hover:bg-betster-50 px-4 py-2 rounded-md transition-colors;
+    @apply border border-betster-600 text-betster-300 hover:bg-betster-950/50 px-4 py-2 rounded-md transition-colors;
   }
   
   .betster-chip {
-    @apply text-xs px-3 py-1 rounded-full bg-secondary;
+    @apply text-xs px-3 py-1 rounded-full bg-betster-900/50 text-betster-200;
   }
   
   .glass-card {
-    @apply bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm border border-gray-200 dark:border-gray-700/30;
+    @apply bg-black/30 dark:bg-gray-800/30 backdrop-blur-sm border border-betster-700/30;
+    background: linear-gradient(135deg, rgba(74, 0, 128, 0.2) 0%, rgba(26, 0, 51, 0.5) 100%);
   }
   
   /* Loader animation */
   .loader {
-    @apply w-12 h-12 rounded-full border-4 border-transparent border-t-betster-600 animate-spin;
+    @apply w-12 h-12 rounded-full border-4 border-transparent border-t-betster-500 animate-spin;
+  }
+  
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-gradient-to-r from-betster-300 to-betster-600 bg-clip-text text-transparent;
+  }
+  
+  /* Premium glass effect */
+  .premium-glass {
+    @apply bg-black/40 backdrop-blur-xl border border-betster-700/30 shadow-lg shadow-betster-600/10;
   }
 }
