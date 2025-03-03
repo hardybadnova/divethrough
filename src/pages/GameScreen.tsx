@@ -39,6 +39,7 @@ const GameScreen = () => {
   ]);
   const [showStats, setShowStats] = useState(false);
   const [statsCharged, setStatsCharged] = useState(false);
+  const [preGameTimer, setPreGameTimer] = useState(20); // 20 second visible timer
 
   const pool = pools.find(p => p.id === poolId);
   
@@ -100,6 +101,27 @@ const GameScreen = () => {
       navigate(`/result/${poolId}`);
     }
   }, [gameState, navigate, poolId]);
+
+  useEffect(() => {
+    if (gameState !== "pre-game") return;
+    
+    const timer = setInterval(() => {
+      setPreGameTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setGameState("in-progress");
+          toast({
+            title: "Game Started!",
+            description: "Choose your number and lock it in",
+          });
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  
+    return () => clearInterval(timer);
+  }, [gameState]);
   
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -326,6 +348,25 @@ const GameScreen = () => {
                   </div>
                 </div>
               </div>
+
+              {gameState === "pre-game" && (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Info className="h-5 w-5 text-amber-400 mr-2" />
+                      <span className="text-amber-400">Preparation Time</span>
+                    </div>
+                    <span className="text-2xl font-bold text-amber-400">{preGameTimer}s</span>
+                  </div>
+                  <Progress 
+                    value={(preGameTimer / 20) * 100} 
+                    className="h-2 mt-2 bg-amber-950 [&>[data-state=complete]]:bg-amber-500"
+                  />
+                  <p className="text-sm text-amber-400/80 mt-2">
+                    You can change table or exit during this time
+                  </p>
+                </div>
+              )}
               
               <div className="space-y-6">
                 <h3 className="font-medium">Choose your number:</h3>
