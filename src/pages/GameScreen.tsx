@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useGame } from "@/contexts/GameContext";
 import { formatCurrency } from "@/lib/formatters";
-import { ArrowLeft, HelpCircle, Table, MessageCircle, Info } from "lucide-react";
+import { ArrowLeft, HelpCircle, Table, MessageCircle, Info, BarChart } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -38,8 +37,9 @@ const GameScreen = () => {
     {sender: "Player B", message: "Hello everyone!", timestamp: new Date().toLocaleTimeString()},
     {sender: "Player D", message: "Good luck!", timestamp: new Date().toLocaleTimeString()},
   ]);
+  const [showStats, setShowStats] = useState(false);
+  const [statsCharged, setStatsCharged] = useState(false);
 
-  // Find the current pool
   const pool = pools.find(p => p.id === poolId);
   
   useEffect(() => {
@@ -48,16 +48,13 @@ const GameScreen = () => {
       return;
     }
     
-    // Join the pool when component mounts
     joinPool(poolId || "");
     
-    // Start pre-game countdown
     const preGameInterval = setInterval(() => {
       setPreGameCountdown(prev => {
         if (prev <= 1) {
           clearInterval(preGameInterval);
           setGameState("in-progress");
-          // Toast notification that game has started
           toast({
             title: "Game Started!",
             description: "Choose your number and lock it in",
@@ -68,14 +65,12 @@ const GameScreen = () => {
       });
     }, 1000);
     
-    // Clean up interval on unmount
     return () => {
       clearInterval(preGameInterval);
       leavePool();
     };
   }, [pool, poolId, joinPool, leavePool, navigate]);
   
-  // Start game timer when game state changes to in-progress
   useEffect(() => {
     if (gameState !== "in-progress") return;
     
@@ -85,7 +80,6 @@ const GameScreen = () => {
           clearInterval(gameInterval);
           setGameState("completed");
           
-          // Add a slight delay before navigating to ensure state updates
           setTimeout(() => {
             console.log("Game timer ended, navigating to results");
             navigate(`/result/${poolId}`);
@@ -97,12 +91,9 @@ const GameScreen = () => {
       });
     }, 1000);
     
-    // Clean up interval on unmount
     return () => clearInterval(gameInterval);
   }, [gameState, navigate, poolId]);
   
-  // Add another effect to handle navigation when game is completed
-  // This ensures navigation happens even if the timer state update doesn't trigger properly
   useEffect(() => {
     if (gameState === "completed") {
       console.log("Game state is completed, navigating to results");
@@ -146,7 +137,6 @@ const GameScreen = () => {
   };
   
   const handleChangeTable = () => {
-    // Allow changing tables at any time (no longer limited to pre-game)
     navigate(`/pools/${pool?.gameType}`);
   };
 
@@ -163,7 +153,6 @@ const GameScreen = () => {
     setChatMessages(prev => [...prev, newMessage]);
     setChatMessage("");
     
-    // Simulate a response after a random delay
     setTimeout(() => {
       const responses = [
         "Good luck!",
@@ -184,7 +173,6 @@ const GameScreen = () => {
     }, Math.random() * 3000 + 1000);
   };
   
-  // Generate number buttons based on pool's number range
   const renderNumberButtons = () => {
     if (!pool) return null;
     
@@ -211,12 +199,42 @@ const GameScreen = () => {
     );
   };
   
+  const handleViewStats = () => {
+    if (statsCharged) {
+      setShowStats(true);
+      return;
+    }
+    
+    if (!pool) return;
+    
+    const statsFee = pool.entryFee * 0.02;
+    
+    toast({
+      title: "Stats Access Fee",
+      description: `View detailed stats from the last 10 games for ${formatCurrency(statsFee)}?`,
+      action: (
+        <button 
+          className="betster-button py-1 px-3 text-xs"
+          onClick={() => {
+            setStatsCharged(true);
+            setShowStats(true);
+            toast({
+              title: "Stats Unlocked",
+              description: "You now have access to the last 10 games statistics"
+            });
+          }}
+        >
+          Pay Fee
+        </button>
+      ),
+    });
+  };
+  
   if (!pool) return null;
   
   return (
     <AppLayout>
       <div className="flex-1 container max-w-5xl mx-auto px-4 py-4 md:py-6">
-        {/* Header */}
         <div className="border-b border-border/40 pb-4 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -251,7 +269,6 @@ const GameScreen = () => {
           </div>
         </div>
         
-        {/* Game Area with Tabs */}
         <Tabs defaultValue="game" className="w-full" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="game" className="flex items-center gap-1">
@@ -268,43 +285,22 @@ const GameScreen = () => {
             </TabsTrigger>
           </TabsList>
           
-          {/* Game Content Tab */}
           <TabsContent value="game" className="space-y-4">
             <div className="glass-card rounded-xl p-6 mb-6">
-              {/* Game State Display */}
-              <div className="mb-6 text-center">
-                {gameState === "pre-game" ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-2"
-                  >
-                    <h2 className="text-xl font-medium">Table Open</h2>
-                    <p className="text-muted-foreground">
-                      Game starts in <span className="font-bold text-betster-600">{formatTime(preGameCountdown)}</span>
-                    </p>
-                    <div className="w-full mt-2">
-                      <Progress value={(preGameCountdown / 20) * 100} className="h-2" />
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-2"
-                  >
-                    <h2 className="text-xl font-medium">Game In Progress</h2>
-                    <p className="text-muted-foreground">
-                      Time remaining: <span className="font-bold text-betster-600">{formatTime(gameTimer)}</span>
-                    </p>
-                    <div className="w-full mt-2">
-                      <Progress value={(gameTimer / 120) * 100} className="h-2" />
-                    </div>
-                  </motion.div>
-                )}
-              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-2"
+              >
+                <h2 className="text-xl font-medium">Game In Progress</h2>
+                <p className="text-muted-foreground">
+                  Time remaining: <span className="font-bold text-betster-600">{formatTime(gameTimer)}</span>
+                </p>
+                <div className="w-full mt-2">
+                  <Progress value={(gameTimer / 120) * 100} className="h-2" />
+                </div>
+              </motion.div>
               
-              {/* Game Instructions */}
               <div className="bg-muted/50 rounded-lg p-4 mb-6">
                 <div className="flex items-start">
                   <HelpCircle className="h-5 w-5 text-muted-foreground mr-2 mt-0.5 flex-shrink-0" />
@@ -331,14 +327,12 @@ const GameScreen = () => {
                 </div>
               </div>
               
-              {/* Number Selection Area */}
               <div className="space-y-6">
                 <h3 className="font-medium">Choose your number:</h3>
                 <div className="flex justify-center">
                   {renderNumberButtons()}
                 </div>
                 
-                {/* Lock button */}
                 <div className="flex justify-center mt-8">
                   <button
                     onClick={handleLockNumber}
@@ -359,7 +353,6 @@ const GameScreen = () => {
               </div>
             </div>
             
-            {/* Player List */}
             <div className="glass-card rounded-xl overflow-hidden">
               <div className="p-4 border-b border-border/40">
                 <div className="flex items-center justify-between">
@@ -372,7 +365,6 @@ const GameScreen = () => {
               
               <div className="p-4 max-h-64 overflow-y-auto">
                 <div className="space-y-2">
-                  {/* Generate random players for the pool */}
                   {Array.from({ length: Math.min(pool.currentPlayers, 20) }, (_, i) => (
                     <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
                       <div className="flex items-center">
@@ -393,7 +385,6 @@ const GameScreen = () => {
             </div>
           </TabsContent>
 
-          {/* Chat Tab */}
           <TabsContent value="chat" className="space-y-4">
             <div className="glass-card rounded-xl p-4 flex flex-col h-[600px]">
               <div className="flex-1 overflow-y-auto mb-4 space-y-3">
@@ -435,12 +426,11 @@ const GameScreen = () => {
             </div>
           </TabsContent>
 
-          {/* Hints Tab */}
           <TabsContent value="hints" className="space-y-4">
             <div className="glass-card rounded-xl p-6">
               <h2 className="text-xl font-medium mb-4">Game Tips & Strategies</h2>
               
-              {pool.gameType === 'bluff' && (
+              {pool?.gameType === 'bluff' && (
                 <div className="space-y-4">
                   <div className="bg-muted/50 rounded-lg p-4">
                     <h3 className="font-medium mb-2 text-betster-300">Bluff The Tough Strategy</h3>
@@ -466,7 +456,7 @@ const GameScreen = () => {
                 </div>
               )}
               
-              {pool.gameType === 'topspot' && (
+              {pool?.gameType === 'topspot' && (
                 <div className="space-y-4">
                   <div className="bg-muted/50 rounded-lg p-4">
                     <h3 className="font-medium mb-2 text-betster-300">Top Spot Strategy</h3>
@@ -492,7 +482,7 @@ const GameScreen = () => {
                 </div>
               )}
               
-              {pool.gameType === 'jackpot' && (
+              {pool?.gameType === 'jackpot' && (
                 <div className="space-y-4">
                   <div className="bg-muted/50 rounded-lg p-4">
                     <h3 className="font-medium mb-2 text-betster-300">Jackpot Horse Strategy</h3>
@@ -528,12 +518,94 @@ const GameScreen = () => {
                   However, player psychology tends to follow patterns, which you can use to your advantage!
                 </p>
               </div>
+              
+              <div className="mt-6">
+                <div className="border border-betster-600 rounded-lg p-4 bg-gradient-to-br from-betster-900/60 to-black">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-semibold text-betster-300 flex items-center">
+                      <BarChart className="h-4 w-4 mr-2" />
+                      Premium Game Statistics
+                    </h3>
+                    <div className="betster-chip bg-amber-500/60 text-white">
+                      Premium
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm mb-4">
+                    Get detailed statistics from the last 10 games on this table for a small fee of {pool ? formatCurrency(pool.entryFee * 0.02) : '—'} ({pool ? '2%' : '—'} of entry fee).
+                  </p>
+                  
+                  {!showStats ? (
+                    <button 
+                      className="betster-button w-full"
+                      onClick={handleViewStats}
+                    >
+                      Unlock Premium Stats
+                    </button>
+                  ) : (
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-center text-betster-300 border-b border-border pb-2">Last 10 Games Analysis</h4>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex justify-between mb-1 text-sm">
+                            <span>Most Picked Numbers</span>
+                            <span className="text-betster-300">Avoid these!</span>
+                          </div>
+                          <div className="flex gap-2 flex-wrap">
+                            <div className="betster-chip bg-red-900/30 border border-red-700/40">7 (23%)</div>
+                            <div className="betster-chip bg-red-900/30 border border-red-700/40">10 (19%)</div>
+                            <div className="betster-chip bg-red-900/30 border border-red-700/40">4 (16%)</div>
+                            <div className="betster-chip bg-red-900/30 border border-red-700/40">12 (15%)</div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between mb-1 text-sm">
+                            <span>Least Picked Numbers</span>
+                            <span className="text-betster-300">Best choices!</span>
+                          </div>
+                          <div className="flex gap-2 flex-wrap">
+                            <div className="betster-chip bg-green-900/30 border border-green-700/40">3 (2%)</div>
+                            <div className="betster-chip bg-green-900/30 border border-green-700/40">15 (3%)</div>
+                            <div className="betster-chip bg-green-900/30 border border-green-700/40">1 (4%)</div>
+                            <div className="betster-chip bg-green-900/30 border border-green-700/40">11 (5%)</div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between mb-1 text-sm">
+                            <span>Winning Numbers</span>
+                            <span className="text-amber-400">Past winners</span>
+                          </div>
+                          <div className="bg-gradient-to-r from-betster-900 to-betster-800 rounded-md p-2 flex flex-wrap gap-2">
+                            <div className="betster-chip bg-amber-500/20 border border-amber-500/40">3</div>
+                            <div className="betster-chip bg-amber-500/20 border border-amber-500/40">15</div>
+                            <div className="betster-chip bg-amber-500/20 border border-amber-500/40">11</div>
+                            <div className="betster-chip bg-amber-500/20 border border-amber-500/40">1</div>
+                            <div className="betster-chip bg-amber-500/20 border border-amber-500/40">8</div>
+                          </div>
+                        </div>
+                        
+                        <div className="pt-2">
+                          <div className="text-sm mb-2">Player Behavior Patterns</div>
+                          <ul className="text-xs space-y-1 pl-4 list-disc">
+                            <li>70% of players change their number selection every game</li>
+                            <li>Numbers 7 and 10 are consistently overselected</li>
+                            <li>Most winners picked numbers in the first 30 seconds</li>
+                            <li>91% of winners avoided the most popular number from the previous game</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
       </div>
       
-      {/* Exit Confirmation Dialog */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -553,7 +625,6 @@ const GameScreen = () => {
         </AlertDialogContent>
       </AlertDialog>
       
-      {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-10 bg-background/80 backdrop-blur-sm border-t border-border">
         <div className="container mx-auto px-4">
           <div className="flex justify-around py-3">
