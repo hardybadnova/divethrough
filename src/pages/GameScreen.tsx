@@ -28,7 +28,6 @@ const GameScreen = () => {
   const [isLocked, setIsLocked] = useState(false);
   const [gameState, setGameState] = useState<"pre-game" | "in-progress" | "completed">("pre-game");
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const [remainingTime, setRemainingTime] = useState(0);
   const [preGameCountdown, setPreGameCountdown] = useState(20); // 20 seconds to change table
   const [gameTimer, setGameTimer] = useState(120); // 2 minutes game duration
 
@@ -78,8 +77,12 @@ const GameScreen = () => {
           clearInterval(gameInterval);
           setGameState("completed");
           
-          // Navigate to results screen when timer ends
-          navigate(`/result/${poolId}`);
+          // Add a slight delay before navigating to ensure state updates
+          setTimeout(() => {
+            console.log("Game timer ended, navigating to results");
+            navigate(`/result/${poolId}`);
+          }, 500);
+          
           return 0;
         }
         return prev - 1;
@@ -88,6 +91,15 @@ const GameScreen = () => {
     
     // Clean up interval on unmount
     return () => clearInterval(gameInterval);
+  }, [gameState, navigate, poolId]);
+  
+  // Add another effect to handle navigation when game is completed
+  // This ensures navigation happens even if the timer state update doesn't trigger properly
+  useEffect(() => {
+    if (gameState === "completed") {
+      console.log("Game state is completed, navigating to results");
+      navigate(`/result/${poolId}`);
+    }
   }, [gameState, navigate, poolId]);
   
   const formatTime = (seconds: number) => {
