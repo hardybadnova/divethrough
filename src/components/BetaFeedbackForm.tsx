@@ -1,4 +1,5 @@
 
+'use client';
 import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -51,7 +52,10 @@ export const BetaFeedbackForm = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md">
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-xl font-bold">Beta Testing Feedback</h2>
-          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+          <Button 
+            className="h-8 w-8 p-0" 
+            onClick={() => setIsOpen(false)}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -105,7 +109,11 @@ export const BetaFeedbackForm = () => {
           </div>
           
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+            <Button 
+              type="button" 
+              className="bg-transparent border border-gray-300 hover:bg-gray-100 text-gray-700 dark:border-gray-600 dark:hover:bg-gray-700 dark:text-gray-200"
+              onClick={() => setIsOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit">
