@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -24,6 +25,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isBetaVersion: boolean;
   login: (username: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   signUp: (username: string, email: string, password: string) => Promise<void>;
@@ -35,6 +37,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isBetaVersion] = useState<boolean>(true); // Mark this as beta version
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -202,6 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isAuthenticated: !!user,
         isLoading,
+        isBetaVersion,
         login,
         loginWithGoogle,
         signUp,
