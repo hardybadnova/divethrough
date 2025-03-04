@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -9,7 +8,7 @@ import {
   onAuthStateChanged, 
   UserCredential,
   GoogleAuthProvider,
-  FirebaseError
+  type FirebaseError
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 
@@ -27,6 +26,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  signUp: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -38,22 +38,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is stored in localStorage or authenticated with Firebase
     const storedUser = localStorage.getItem('betster-user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
     
-    // Listen for Firebase auth state changes
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser && !user) {
-        // If Firebase user exists but local user doesn't, create one
         const newUser = {
           id: firebaseUser.uid,
           username: firebaseUser.displayName || 'Player',
           email: firebaseUser.email || undefined,
           photoURL: firebaseUser.photoURL || undefined,
-          wallet: 10000, // Initial 10,000 INR
+          wallet: 10000,
         };
         
         setUser(newUser);
@@ -68,16 +65,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (username: string, password: string): Promise<void> => {
     setIsLoading(true);
     
-    // Simulate API call
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Hard-coded authentication for demo
       if (password === 'asdfghjkl') {
         const newUser = {
           id: '1',
           username: username || 'Player',
-          wallet: 10000, // Initial 10,000 INR
+          wallet: 10000,
         };
         
         setUser(newUser);
@@ -117,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         username: firebaseUser.displayName || 'Player',
         email: firebaseUser.email || undefined,
         photoURL: firebaseUser.photoURL || undefined,
-        wallet: 10000, // Initial 10,000 INR
+        wallet: 10000,
       };
       
       setUser(newUser);
@@ -131,9 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       
-      // Handle unauthorized domain error specifically
       if (error instanceof FirebaseError && error.code === 'auth/unauthorized-domain') {
-        // Create a mock user for demo purposes when Firebase domain error occurs
         const mockGoogleUser = {
           id: 'google-' + Math.random().toString(36).substring(2, 9),
           username: 'Google User',
@@ -162,11 +155,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signUp = async (username: string, email: string, password: string): Promise<void> => {
+    setIsLoading(true);
+    try {
+      const newUser = {
+        id: 'user-' + Math.random().toString(36).substring(2, 9),
+        username,
+        email,
+        wallet: 10000,
+      };
+      
+      setUser(newUser);
+      localStorage.setItem('betster-user', JSON.stringify(newUser));
+      navigate('/dashboard');
+      
+      toast({
+        title: "Welcome to Betster!",
+        description: "Your account has been created successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Sign Up Failed",
+        description: error.message || "Something went wrong during sign up.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
-    // Sign out from Firebase if authenticated
     signOut(auth).catch(error => console.error("Firebase sign out error:", error));
     
-    // Clear local user state
     setUser(null);
     localStorage.removeItem('betster-user');
     navigate('/login');
@@ -184,6 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         loginWithGoogle,
+        signUp,
         logout,
       }}
     >

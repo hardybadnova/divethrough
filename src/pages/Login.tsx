@@ -3,15 +3,24 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import BetsterLogo from "@/components/BetsterLogo";
 import { motion } from "framer-motion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("asdfghjkl");
-  const { login, loginWithGoogle, isLoading } = useAuth();
+  const [signUpUsername, setSignUpUsername] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const { login, loginWithGoogle, signUp, isLoading } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     await login(username, password);
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await signUp(signUpUsername, signUpEmail, signUpPassword);
   };
 
   const handleGoogleLogin = async () => {
@@ -32,54 +41,121 @@ const Login = () => {
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-gradient">Welcome to Betster</h1>
           <p className="text-betster-300 text-sm text-center">
-            Sign in to access your account and start betting
+            Sign in or create an account to start betting
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium text-betster-200">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
-            />
-          </div>
+        <Tabs defaultValue="login" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="login">Login</TabsTrigger>
+            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="login">
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-2">
+                <label htmlFor="username" className="text-sm font-medium text-betster-200">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
+                />
+              </div>
 
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium text-betster-200">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
-            />
-            <p className="text-xs text-betster-400">
-              For demo: password is 'asdfghjkl'
-            </p>
-          </div>
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium text-betster-200">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
+                />
+                <p className="text-xs text-betster-400">
+                  For demo: password is 'asdfghjkl'
+                </p>
+              </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="betster-button w-full py-3"
-          >
-            {isLoading ? (
-              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
-            ) : (
-              "Sign In"
-            )}
-          </button>
-        </form>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="betster-button w-full py-3"
+              >
+                {isLoading ? (
+                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                ) : (
+                  "Sign In"
+                )}
+              </button>
+            </form>
+          </TabsContent>
+          
+          <TabsContent value="signup">
+            <form onSubmit={handleSignUp} className="space-y-6">
+              <div className="space-y-2">
+                <label htmlFor="signUpUsername" className="text-sm font-medium text-betster-200">
+                  Username
+                </label>
+                <input
+                  id="signUpUsername"
+                  type="text"
+                  placeholder="Choose a username"
+                  value={signUpUsername}
+                  onChange={(e) => setSignUpUsername(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="signUpEmail" className="text-sm font-medium text-betster-200">
+                  Email
+                </label>
+                <input
+                  id="signUpEmail"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={signUpEmail}
+                  onChange={(e) => setSignUpEmail(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="signUpPassword" className="text-sm font-medium text-betster-200">
+                  Password
+                </label>
+                <input
+                  id="signUpPassword"
+                  type="password"
+                  placeholder="Choose a password"
+                  value={signUpPassword}
+                  onChange={(e) => setSignUpPassword(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="betster-button w-full py-3"
+              >
+                {isLoading ? (
+                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                ) : (
+                  "Create Account"
+                )}
+              </button>
+            </form>
+          </TabsContent>
+        </Tabs>
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
