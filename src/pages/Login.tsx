@@ -128,6 +128,10 @@ const Login = () => {
             </>
           )}
         </button>
+        
+        <div className="text-xs text-betster-300 mt-4 text-center">
+          <p>Note: For Google sign-in to work in production, you need to add your domain to the Firebase authorized domains list in the Firebase console.</p>
+        </div>
       </motion.div>
     </div>
   );
