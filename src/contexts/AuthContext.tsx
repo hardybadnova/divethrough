@@ -2,11 +2,21 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged, 
+  UserCredential 
+} from 'firebase/auth';
+import { auth, googleProvider } from '@/lib/firebase';
 
 interface User {
   id: string;
   username: string;
   wallet: number;
+  email?: string;
+  photoURL?: string;
 }
 
 interface AuthContextType {
@@ -14,6 +24,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => void;
 }
 
@@ -25,12 +36,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is stored in localStorage
+    // Check if user is stored in localStorage or authenticated with Firebase
     const storedUser = localStorage.getItem('betster-user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
-    setIsLoading(false);
+    
+    // Listen for Firebase auth state changes
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser && !user) {
+        // If Firebase user exists but local user doesn't, create one
+        const newUser = {
+          id: firebaseUser.uid,
+          username: firebaseUser.displayName || 'Player',
+          email: firebaseUser.email || undefined,
+          photoURL: firebaseUser.photoURL || undefined,
+          wallet: 10000, // Initial 10,000 INR
+        };
+        
+        setUser(newUser);
+        localStorage.setItem('betster-user', JSON.stringify(newUser));
+      }
+      setIsLoading(false);
+    });
+    
+    return () => unsubscribe();
   }, []);
 
   const login = async (username: string, password: string): Promise<void> => {
@@ -72,8 +102,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     }
   };
+  
+  const loginWithGoogle = async (): Promise<void> => {
+    setIsLoading(true);
+    
+    try {
+      const result: UserCredential = await signInWithPopup(auth, googleProvider);
+      const { user: firebaseUser } = result;
+      
+      const newUser = {
+        id: firebaseUser.uid,
+        username: firebaseUser.displayName || 'Player',
+        email: firebaseUser.email || undefined,
+        photoURL: firebaseUser.photoURL || undefined,
+        wallet: 10000, // Initial 10,000 INR
+      };
+      
+      setUser(newUser);
+      localStorage.setItem('betster-user', JSON.stringify(newUser));
+      navigate('/dashboard');
+      
+      toast({
+        title: "Welcome to Betster!",
+        description: "You've successfully logged in with Google.",
+      });
+    } catch (error: any) {
+      console.error("Google sign-in error:", error);
+      toast({
+        title: "Google Sign-in Failed",
+        description: error.message || "Something went wrong with Google authentication.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const logout = () => {
+    // Sign out from Firebase if authenticated
+    signOut(auth).catch(error => console.error("Firebase sign out error:", error));
+    
+    // Clear local user state
     setUser(null);
     localStorage.removeItem('betster-user');
     navigate('/login');
@@ -90,6 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         login,
+        loginWithGoogle,
         logout,
       }}
     >

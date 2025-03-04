@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -259,15 +260,34 @@ const GameScreen = () => {
             
             <div className="flex items-center">
               <div className="betster-chip bg-betster-600 text-white">
-                {pool.gameType === 'bluff' ? 'Bluff The Tough' : 
-                 pool.gameType === 'topspot' ? 'Top Spot' : 'Jackpot Horse'}
+                {pool?.gameType === 'bluff' ? 'Bluff The Tough' : 
+                 pool?.gameType === 'topspot' ? 'Top Spot' : 'Jackpot Horse'}
               </div>
               <div className="betster-chip ml-2">
-                {formatCurrency(pool.entryFee)}
+                {pool && formatCurrency(pool.entryFee)}
               </div>
             </div>
           </div>
         </div>
+        
+        {/* Pre-game timer display - Show only when in pre-game state */}
+        {gameState === "pre-game" && (
+          <div className="glass-card rounded-xl p-4 mb-4 bg-betster-900/70">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-betster-300">Waiting for game to start</h3>
+                <p className="text-sm text-muted-foreground">
+                  You can exit or change table during this time
+                </p>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-2xl font-bold text-betster-400">{preGameCountdown}</span>
+                <span className="text-xs text-muted-foreground">seconds</span>
+              </div>
+            </div>
+            <Progress value={(preGameCountdown / 20) * 100} className="h-2 mt-2" />
+          </div>
+        )}
         
         <Tabs defaultValue="game" className="w-full" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-3 mb-4">
