@@ -10,7 +10,7 @@ import { Info, Shield, User, FileCheck, Lock } from 'lucide-react';
 
 const KYCVerificationScreen = () => {
   const { user } = useAuth();
-  const { verification, getVerificationStatus } = useKYC();
+  const { verification, getVerificationStatus, kycStatus } = useKYC();
   
   const verificationStatus = getVerificationStatus();
 
@@ -84,34 +84,34 @@ const KYCVerificationScreen = () => {
                 </div>
               </div>
               
-              {verificationStatus === 'verified' && (
+              {verificationStatus === 'verified' && verification && (
                 <div className="premium-glass rounded-xl p-4 space-y-4">
                   <h3 className="font-medium">Transaction Limits</h3>
                   <div className="space-y-3 text-sm">
                     <div className="grid grid-cols-2 gap-2">
                       <div>Daily Deposit:</div>
-                      <div className="font-medium text-right">₹{verification?.depositLimits.daily.toLocaleString()}</div>
+                      <div className="font-medium text-right">₹{verification.depositLimits.daily.toLocaleString()}</div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>Weekly Deposit:</div>
-                      <div className="font-medium text-right">₹{verification?.depositLimits.weekly.toLocaleString()}</div>
+                      <div className="font-medium text-right">₹{verification.depositLimits.weekly.toLocaleString()}</div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>Monthly Deposit:</div>
-                      <div className="font-medium text-right">₹{verification?.depositLimits.monthly.toLocaleString()}</div>
+                      <div className="font-medium text-right">₹{verification.depositLimits.monthly.toLocaleString()}</div>
                     </div>
                     <div className="border-t border-betster-700/40 my-2"></div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>Daily Withdrawal:</div>
-                      <div className="font-medium text-right">₹{verification?.withdrawalLimits.daily.toLocaleString()}</div>
+                      <div className="font-medium text-right">₹{verification.withdrawalLimits.daily.toLocaleString()}</div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>Weekly Withdrawal:</div>
-                      <div className="font-medium text-right">₹{verification?.withdrawalLimits.weekly.toLocaleString()}</div>
+                      <div className="font-medium text-right">₹{verification.withdrawalLimits.weekly.toLocaleString()}</div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>Monthly Withdrawal:</div>
-                      <div className="font-medium text-right">₹{verification?.withdrawalLimits.monthly.toLocaleString()}</div>
+                      <div className="font-medium text-right">₹{verification.withdrawalLimits.monthly.toLocaleString()}</div>
                     </div>
                   </div>
                   

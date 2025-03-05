@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useKYC } from '@/contexts/KYCContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,15 @@ import { CalendarIcon, Upload, Info } from 'lucide-react';
 
 const KYCVerificationForm = () => {
   const { user } = useAuth();
-  const { verification, isLoading, submitKYCVerification, getVerificationStatus } = useKYC();
+  const { 
+    kycSubmission, 
+    kycStatus, 
+    documents: existingDocuments, 
+    isLoading, 
+    submitKYCVerification, 
+    verification, 
+    getVerificationStatus 
+  } = useKYC();
   
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
@@ -127,8 +135,8 @@ const KYCVerificationForm = () => {
         </Alert>
         
         <div className="text-sm text-betster-300">
-          <p>Submitted on: {verification?.submissionDate ? format(new Date(verification.submissionDate), 'PPP') : 'N/A'}</p>
-          <p>Documents: {verification?.documents.length || 0} uploaded</p>
+          <p>Submitted on: {kycSubmission?.submissionDate ? format(new Date(kycSubmission.submissionDate), 'PPP') : 'N/A'}</p>
+          <p>Documents: {existingDocuments?.length || 0} uploaded</p>
         </div>
       </div>
     );
@@ -146,7 +154,7 @@ const KYCVerificationForm = () => {
         </Alert>
         
         <div className="text-sm text-betster-300">
-          <p>Verified on: {verification?.verificationDate ? format(new Date(verification.verificationDate), 'PPP') : 'N/A'}</p>
+          <p>Verified on: {kycSubmission?.verificationDate ? format(new Date(kycSubmission.verificationDate), 'PPP') : 'N/A'}</p>
           <p>Verification level: {verification?.level || 1}</p>
         </div>
       </div>
@@ -173,9 +181,9 @@ const KYCVerificationForm = () => {
           className="w-full mt-4"
           onClick={() => {
             // Reset verification status to allow resubmission
-            if (verification) {
-              const updatedVerification = { ...verification, status: 'unverified' };
-              localStorage.setItem(`betster-kyc-${user?.id}`, JSON.stringify(updatedVerification));
+            if (kycSubmission) {
+              const updatedVerification = { ...kycSubmission, status: 'not_submitted' as const };
+              localStorage.setItem(`kyc-${user?.id}`, JSON.stringify(updatedVerification));
               window.location.reload();
             }
           }}

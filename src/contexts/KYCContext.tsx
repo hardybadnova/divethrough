@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
@@ -26,6 +25,24 @@ interface KYCSubmission {
   verificationDate?: Date;
 }
 
+interface KYCVerification {
+  level: number;
+  submissionDate: Date;
+  verificationDate?: Date;
+  documents: KYCDocument[];
+  status: KYCStatus;
+  depositLimits: {
+    daily: number;
+    weekly: number;
+    monthly: number;
+  };
+  withdrawalLimits: {
+    daily: number;
+    weekly: number;
+    monthly: number;
+  };
+}
+
 interface KYCContextType {
   kycStatus: KYCStatus;
   kycSubmission: KYCSubmission | null;
@@ -34,6 +51,10 @@ interface KYCContextType {
   uploadDocument: (documentType: KYCDocumentType, file: File) => Promise<void>;
   deleteDocument: (documentType: KYCDocumentType) => void;
   isUploading: boolean;
+  isLoading: boolean;
+  verification: KYCVerification | null;
+  getVerificationStatus: () => KYCStatus;
+  submitKYCVerification: (data: any, files: File[]) => Promise<void>;
 }
 
 const KYCContext = createContext<KYCContextType | undefined>(undefined);
@@ -44,8 +65,9 @@ export const KYCProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [kycSubmission, setKYCSubmission] = useState<KYCSubmission | null>(null);
   const [documents, setDocuments] = useState<KYCDocument[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [verification, setVerification] = useState<KYCVerification | null>(null);
 
-  // Load KYC status from localStorage when user logs in
   useEffect(() => {
     if (user) {
       const savedKYC = localStorage.getItem(`kyc-${user.id}`);
@@ -54,9 +76,33 @@ export const KYCProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setKYCSubmission(parsedKYC);
         setKYCStatus(parsedKYC.status);
         setDocuments(parsedKYC.documents || []);
+        
+        if (parsedKYC.status === 'verified') {
+          setVerification({
+            level: 1,
+            submissionDate: new Date(parsedKYC.submissionDate),
+            verificationDate: parsedKYC.verificationDate ? new Date(parsedKYC.verificationDate) : undefined,
+            documents: parsedKYC.documents || [],
+            status: parsedKYC.status,
+            depositLimits: {
+              daily: 50000,
+              weekly: 200000,
+              monthly: 500000
+            },
+            withdrawalLimits: {
+              daily: 25000,
+              weekly: 100000,
+              monthly: 300000
+            }
+          });
+        }
       }
     }
   }, [user]);
+
+  const getVerificationStatus = (): KYCStatus => {
+    return kycStatus;
+  };
 
   const submitKYC = (submission: Omit<KYCSubmission, 'userId' | 'status' | 'submissionDate' | 'verificationDate'>) => {
     if (!user) {
@@ -68,7 +114,6 @@ export const KYCProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    // Create full submission with metadata
     const fullSubmission: KYCSubmission = {
       ...submission,
       userId: user.id,
@@ -77,12 +122,9 @@ export const KYCProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       documents: documents
     };
 
-    // In a real app, we would send this to an API
-    // For now, we'll simulate storing it locally
     setKYCSubmission(fullSubmission);
     setKYCStatus('pending');
     
-    // Store in localStorage for persistence
     localStorage.setItem(`kyc-${user.id}`, JSON.stringify(fullSubmission));
 
     toast({
@@ -90,22 +132,39 @@ export const KYCProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: "Your verification documents have been submitted for review"
     });
 
-    // Simulate verification process (would be done on the backend in a real app)
     setTimeout(() => {
       const updatedSubmission = { 
         ...fullSubmission, 
-        status: 'verified',
+        status: 'verified' as KYCStatus,
         verificationDate: new Date()
       };
       setKYCSubmission(updatedSubmission);
       setKYCStatus('verified');
       localStorage.setItem(`kyc-${user.id}`, JSON.stringify(updatedSubmission));
       
+      setVerification({
+        level: 1,
+        submissionDate: updatedSubmission.submissionDate,
+        verificationDate: updatedSubmission.verificationDate,
+        documents: updatedSubmission.documents,
+        status: updatedSubmission.status,
+        depositLimits: {
+          daily: 50000,
+          weekly: 200000,
+          monthly: 500000
+        },
+        withdrawalLimits: {
+          daily: 25000,
+          weekly: 100000,
+          monthly: 300000
+        }
+      });
+      
       toast({
         title: "KYC Verified",
         description: "Your identity has been successfully verified"
       });
-    }, 30000); // 30 seconds for demo purposes
+    }, 30000);
   };
 
   const uploadDocument = async (documentType: KYCDocumentType, file: File): Promise<void> => {
@@ -121,14 +180,10 @@ export const KYCProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsUploading(true);
 
     try {
-      // In a real app, we would upload to a storage service like Firebase Storage
-      // For now, we'll simulate the upload
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Remove any existing document of the same type
       const updatedDocuments = documents.filter(doc => doc.type !== documentType);
       
-      // Add the new document
       const newDocument: KYCDocument = {
         type: documentType,
         fileName: file.name,
@@ -139,7 +194,6 @@ export const KYCProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const newDocuments = [...updatedDocuments, newDocument];
       setDocuments(newDocuments);
       
-      // If we have an existing submission, update it
       if (kycSubmission) {
         const updatedSubmission = {
           ...kycSubmission,
@@ -170,7 +224,6 @@ export const KYCProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedDocuments = documents.filter(doc => doc.type !== documentType);
     setDocuments(updatedDocuments);
     
-    // If we have an existing submission, update it
     if (kycSubmission) {
       const updatedSubmission = {
         ...kycSubmission,
@@ -186,6 +239,100 @@ export const KYCProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const submitKYCVerification = async (data: any, files: File[]): Promise<void> => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to submit verification",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const uploadedDocuments: KYCDocument[] = files.map((file, index) => ({
+        type: index === 0 ? 'idCard' : index === 1 ? 'addressProof' : 'selfie',
+        fileName: file.name,
+        uploadDate: new Date(),
+        status: 'pending'
+      }));
+      
+      const newSubmission: KYCSubmission = {
+        userId: user.id,
+        fullName: data.fullName,
+        dateOfBirth: data.dateOfBirth.toISOString(),
+        address: typeof data.address === 'object' ? 
+          `${data.address.street}, ${data.address.city}, ${data.address.state}, ${data.address.zipCode}` : 
+          data.address,
+        country: typeof data.address === 'object' ? data.address.country : data.country,
+        idNumber: data.idNumber || '',
+        status: 'pending',
+        submissionDate: new Date(),
+        documents: uploadedDocuments
+      };
+      
+      setKYCSubmission(newSubmission);
+      setKYCStatus('pending');
+      setDocuments(uploadedDocuments);
+      
+      localStorage.setItem(`kyc-${user.id}`, JSON.stringify(newSubmission));
+      
+      toast({
+        title: "Verification Submitted",
+        description: "Your documents have been submitted for review"
+      });
+      
+      setTimeout(() => {
+        const verifiedSubmission = {
+          ...newSubmission,
+          status: 'verified' as KYCStatus,
+          verificationDate: new Date()
+        };
+        
+        setKYCSubmission(verifiedSubmission);
+        setKYCStatus('verified');
+        
+        const newVerification: KYCVerification = {
+          level: 1,
+          submissionDate: verifiedSubmission.submissionDate,
+          verificationDate: verifiedSubmission.verificationDate,
+          documents: verifiedSubmission.documents,
+          status: verifiedSubmission.status,
+          depositLimits: {
+            daily: 50000,
+            weekly: 200000,
+            monthly: 500000
+          },
+          withdrawalLimits: {
+            daily: 25000,
+            weekly: 100000,
+            monthly: 300000
+          }
+        };
+        
+        setVerification(newVerification);
+        localStorage.setItem(`kyc-${user.id}`, JSON.stringify(verifiedSubmission));
+        
+        toast({
+          title: "Verification Approved",
+          description: "Your identity has been successfully verified"
+        });
+      }, 30000);
+    } catch (error) {
+      toast({
+        title: "Submission Failed",
+        description: "There was a problem submitting your verification",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <KYCContext.Provider
       value={{
@@ -195,7 +342,11 @@ export const KYCProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         submitKYC,
         uploadDocument,
         deleteDocument,
-        isUploading
+        isUploading,
+        isLoading,
+        verification,
+        getVerificationStatus,
+        submitKYCVerification
       }}
     >
       {children}
