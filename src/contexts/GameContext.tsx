@@ -1,4 +1,7 @@
-import React, { createContext, useState, useContext } from 'react';
+
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { toast } from "@/components/ui/use-toast";
 
 // Define types for our game data
 interface Player {
@@ -27,6 +30,7 @@ interface Pool {
   status: 'waiting' | 'active' | 'completed';
   numberRange: [number, number]; // Range of allowed numbers
   playFrequency?: 'daily'; // For Jackpot Horse
+  players?: Player[]; // Players in this pool
 }
 
 interface Winner {
@@ -40,6 +44,8 @@ interface ReferralInfo {
   referrals: number;
   totalBonus: number;
 }
+
+type KYCDocumentType = "idCard" | "passport" | "driverLicense" | "addressProof" | "selfie";
 
 interface GameContextType {
   pools: Pool[];
@@ -68,9 +74,10 @@ const mockPools: Pool[] = [
     gameType: 'bluff' as const,
     entryFee: fee,
     maxPlayers: 50,
-    currentPlayers: Math.floor(Math.random() * 30) + 5,
+    currentPlayers: Math.floor(Math.random() * 10) + 1, // Fewer players to start
     status: 'waiting' as const,
     numberRange: [0, 15] as [number, number],
+    players: [] // Empty array to be filled with real players
   })),
   
   // Top Spot pools
@@ -79,9 +86,10 @@ const mockPools: Pool[] = [
     gameType: 'topspot' as const,
     entryFee: fee,
     maxPlayers: 50,
-    currentPlayers: Math.floor(Math.random() * 30) + 5,
+    currentPlayers: Math.floor(Math.random() * 10) + 1, // Fewer players to start
     status: 'waiting' as const,
     numberRange: [0, 15] as [number, number],
+    players: [] // Empty array to be filled with real players
   })),
   
   // Jackpot Horse pools
@@ -90,10 +98,11 @@ const mockPools: Pool[] = [
     gameType: 'jackpot' as const,
     entryFee: fee,
     maxPlayers: 10000,
-    currentPlayers: Math.floor(Math.random() * 5000) + 1000,
+    currentPlayers: Math.floor(Math.random() * 50) + 10, // Fewer players to start
     status: 'waiting' as const,
     numberRange: [0, 200] as [number, number],
-    playFrequency: 'daily' as const, // Fix: Use 'daily' as const to match the type
+    playFrequency: 'daily' as const,
+    players: [] // Empty array to be filled with real players
   })),
 ];
 
@@ -106,57 +115,125 @@ const milestones = [
   { threshold: 500000, bonusPercentage: 30 },
 ];
 
-// Generate mock players
-const generateMockPlayers = (count: number): Player[] => {
-  return Array(count)
-    .fill(null)
-    .map((_, index) => {
-      const wins = Math.floor(Math.random() * 100);
-      const totalPlayed = wins + Math.floor(Math.random() * 200);
-      const randomGames = Math.floor(Math.random() * 30000); // Random games played for milestones
-      
-      // Calculate milestone bonus
-      const milestone = milestones.reduce((prev, curr) => {
-        return randomGames >= curr.threshold ? curr : prev;
-      }, { threshold: 0, bonusPercentage: 0 });
-      
-      return {
-        id: `player-${index}`,
-        username: `Player${index + 1}`,
-        stats: {
-          wins,
-          totalPlayed,
-          winRate: totalPlayed > 0 ? Math.round((wins / totalPlayed) * 100) : 0,
-        },
-        milestones: {
-          gamesPlayed: randomGames,
-          bonusPercentage: milestone.bonusPercentage,
-          bonusAmount: Math.floor(Math.random() * 5000 * (milestone.bonusPercentage / 100)),
-        },
-        referrals: Array(Math.floor(Math.random() * 5))
-          .fill(null)
-          .map((_, i) => `referred-player-${index}-${i}`),
-        referralBonus: Math.floor(Math.random() * 2000),
-      };
-    });
-};
-
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [pools, setPools] = useState<Pool[]>(mockPools);
   const [currentPool, setCurrentPool] = useState<Pool | null>(null);
-  const [players] = useState<Player[]>(generateMockPlayers(100));
+  const [players, setPlayers] = useState<Player[]>([]);
+  
+  // When user logs in, add them to the players list if they're not already there
+  useEffect(() => {
+    if (user && user.uid) {
+      const existingPlayer = players.find(p => p.id === user.uid);
+      
+      if (!existingPlayer) {
+        const newPlayer: Player = {
+          id: user.uid,
+          username: user.displayName || `Player-${players.length + 1}`,
+          stats: {
+            wins: 0,
+            totalPlayed: 0,
+            winRate: 0,
+          },
+          milestones: {
+            gamesPlayed: 0,
+            bonusPercentage: 0,
+            bonusAmount: 0,
+          },
+          referrals: [],
+          referralBonus: 0,
+        };
+        
+        setPlayers(prevPlayers => [...prevPlayers, newPlayer]);
+      }
+    }
+  }, [user]);
 
   const joinPool = (poolId: string) => {
-    const pool = pools.find(p => p.id === poolId);
-    if (pool) {
-      setCurrentPool(pool);
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to join a pool",
+        variant: "destructive"
+      });
+      return;
     }
+    
+    const poolToJoin = pools.find(p => p.id === poolId);
+    if (!poolToJoin) {
+      toast({
+        title: "Pool Not Found",
+        description: "The selected pool was not found",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (poolToJoin.currentPlayers >= poolToJoin.maxPlayers) {
+      toast({
+        title: "Pool Full",
+        description: "This pool is already at maximum capacity",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Add player to pool
+    const currentPlayer = players.find(p => p.id === user.uid);
+    if (!currentPlayer) {
+      toast({
+        title: "Player Not Found",
+        description: "Your player profile couldn't be found",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Update pools with the new player
+    setPools(prevPools => 
+      prevPools.map(pool => 
+        pool.id === poolId 
+          ? { 
+              ...pool, 
+              players: [...(pool.players || []), currentPlayer],
+              currentPlayers: pool.currentPlayers + 1 
+            } 
+          : pool
+      )
+    );
+    
+    setCurrentPool(poolToJoin);
+    
+    toast({
+      title: "Pool Joined",
+      description: `You've successfully joined the ${poolToJoin.gameType} pool`
+    });
   };
 
   const leavePool = () => {
+    if (!currentPool || !user) return;
+    
+    // Remove player from pool
+    setPools(prevPools => 
+      prevPools.map(pool => 
+        pool.id === currentPool.id 
+          ? { 
+              ...pool, 
+              players: (pool.players || []).filter(p => p.id !== user.uid),
+              currentPlayers: Math.max(0, pool.currentPlayers - 1)
+            } 
+          : pool
+      )
+    );
+    
     setCurrentPool(null);
+    
+    toast({
+      title: "Pool Left",
+      description: "You've successfully left the pool"
+    });
   };
 
   const getPoolsByGameType = (gameType: string) => {
@@ -165,9 +242,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const getWinners = (poolId: string): Winner[] => {
     const pool = pools.find(p => p.id === poolId);
-    if (!pool) return [];
+    if (!pool || !pool.players || pool.players.length === 0) return [];
     
-    const randomPlayers = () => players.slice(0, Math.floor(Math.random() * 3) + 1);
+    // For demonstration, we'll randomly select winners
+    // In a real implementation, this would be based on game results
+    const shuffledPlayers = [...pool.players].sort(() => 0.5 - Math.random());
     const totalPoolAmount = pool.entryFee * pool.currentPlayers;
     const taxDeduction = totalPoolAmount * 0.28; // 28% GST
     const prizePool = totalPoolAmount - taxDeduction;
@@ -177,23 +256,25 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // First prize winner (all game types)
     winners.push({
       position: 1,
-      players: randomPlayers(),
+      players: shuffledPlayers.slice(0, 1),
       prize: prizePool * (pool.gameType === 'topspot' ? 0.9 : 0.5)
     });
     
     // Second and third prize for bluff and jackpot
-    if (pool.gameType !== 'topspot') {
+    if (pool.gameType !== 'topspot' && shuffledPlayers.length > 1) {
       winners.push({
         position: 2,
-        players: randomPlayers(),
+        players: shuffledPlayers.slice(1, 2),
         prize: prizePool * 0.25
       });
       
-      winners.push({
-        position: 3,
-        players: randomPlayers(),
-        prize: prizePool * 0.15
-      });
+      if (shuffledPlayers.length > 2) {
+        winners.push({
+          position: 3,
+          players: shuffledPlayers.slice(2, 3),
+          prize: prizePool * 0.15
+        });
+      }
     }
     
     return winners;
@@ -211,7 +292,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const getMilestoneProgress = (userId: string) => {
     const player = players.find(p => p.id === userId) || players[0];
-    const gamesPlayed = player.milestones.gamesPlayed;
+    const gamesPlayed = player?.milestones.gamesPlayed || 0;
     
     // Find current and next milestone
     let currentMilestone = 0;
@@ -233,24 +314,74 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   
   const getReferralInfo = (): ReferralInfo => {
-    // Mock referral info for current user
-    const currentUser = players[0];
+    // Get referral info for current user
+    if (!user) {
+      return { code: "", referrals: 0, totalBonus: 0 };
+    }
+    
+    const currentPlayer = players.find(p => p.id === user.uid);
+    if (!currentPlayer) {
+      return { code: "", referrals: 0, totalBonus: 0 };
+    }
+    
     return {
-      code: `${currentUser.username.toLowerCase()}${Math.floor(Math.random() * 1000)}`,
-      referrals: currentUser.referrals.length,
-      totalBonus: currentUser.referralBonus,
+      code: `${currentPlayer.username.toLowerCase().replace(/\s+/g, "")}${user.uid.substring(0, 5)}`,
+      referrals: currentPlayer.referrals.length,
+      totalBonus: currentPlayer.referralBonus,
     };
   };
   
   const addReferral = (referralCode: string): boolean => {
-    // Mock adding a referral - in real app would validate the code
-    // and add the referral to the database
-    return referralCode.length > 0;
+    if (!user || !referralCode) return false;
+    
+    // Find the player with this referral code
+    const referringPlayerUsername = referralCode.replace(/[0-9]+$/, "");
+    const referringPlayer = players.find(p => 
+      p.username.toLowerCase().replace(/\s+/g, "") === referringPlayerUsername
+    );
+    
+    if (!referringPlayer || referringPlayer.id === user.uid) {
+      toast({
+        title: "Invalid Referral Code",
+        description: "This referral code is invalid or you cannot refer yourself",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    // Check if this user is already referred
+    if (referringPlayer.referrals.includes(user.uid)) {
+      toast({
+        title: "Already Referred",
+        description: "You have already been referred by this user",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    // Add the referral
+    setPlayers(prevPlayers => 
+      prevPlayers.map(player => 
+        player.id === referringPlayer.id 
+          ? { 
+              ...player, 
+              referrals: [...player.referrals, user.uid],
+              referralBonus: player.referralBonus + 50 // Add 50 bonus for referring
+            } 
+          : player
+      )
+    );
+    
+    toast({
+      title: "Referral Applied",
+      description: `You've been successfully referred by ${referringPlayer.username}`
+    });
+    
+    return true;
   };
   
   const resetGame = () => {
-    // Reset game state for starting a new game
-    // In a real app, this would reset more state, but for now it's simple
+    setCurrentPool(null);
   };
 
   return (
