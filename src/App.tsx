@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { GameProvider } from "./contexts/GameContext";
+import { KYCProvider } from './contexts/KYCContext';
+import KYCVerificationScreen from './pages/KYCVerificationScreen';
 import SplashScreen from "./pages/SplashScreen";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -23,65 +24,30 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <AuthProvider>
-        <GameProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/" element={<SplashScreen />} />
-              <Route path="/login" element={<Login />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/pools/:gameType" 
-                element={
-                  <ProtectedRoute>
-                    <PoolsScreen />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/game/:poolId" 
-                element={
-                  <ProtectedRoute>
-                    <GameScreen />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/result/:poolId" 
-                element={
-                  <ProtectedRoute>
-                    <GameResultScreen />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/milestones" 
-                element={
-                  <ProtectedRoute>
-                    <MilestonesScreen />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/referral" 
-                element={
-                  <ProtectedRoute>
-                    <ReferralScreen />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TooltipProvider>
-        </GameProvider>
+        <KYCProvider>
+          <GameProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
+                <Route path="/" element={<SplashScreen />} />
+                <Route path="/login" element={<Login />} />
+                
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/pools/:gameType" element={<PoolsScreen />} />
+                  <Route path="/game/:poolId" element={<GameScreen />} />
+                  <Route path="/result/:poolId" element={<GameResultScreen />} />
+                  <Route path="/milestones" element={<MilestonesScreen />} />
+                  <Route path="/referral" element={<ReferralScreen />} />
+                  <Route path="/kyc" element={<KYCVerificationScreen />} />
+                </Route>
+                
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </TooltipProvider>
+          </GameProvider>
+        </KYCProvider>
       </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>

@@ -1,10 +1,10 @@
-
 import React, { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, Wallet, Home, Trophy, MessageSquare, LogOut, User, Award, Percent } from "lucide-react";
+import { Menu, Wallet, Home, Trophy, MessageSquare, LogOut, User, Award, Percent, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useKYC } from "@/contexts/KYCContext";
 import { formatCurrency } from "@/lib/formatters";
 import BetsterLogo from "./BetsterLogo";
 
@@ -14,12 +14,24 @@ interface AppLayoutProps {
 
 const AppLayout = ({ children }: AppLayoutProps) => {
   const { user, logout } = useAuth();
+  const { getVerificationStatus } = useKYC();
   const location = useLocation();
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
 
+  const verificationStatus = getVerificationStatus();
+
   const menuItems = [
     { label: "Profile", icon: User, path: "/profile" },
+    { 
+      label: "KYC Verification", 
+      icon: Shield, 
+      path: "/kyc",
+      badge: verificationStatus === 'verified' ? 'Verified' : 
+             verificationStatus === 'pending' ? 'Pending' : 'Required',
+      badgeColor: verificationStatus === 'verified' ? 'bg-green-500/80' : 
+                 verificationStatus === 'pending' ? 'bg-amber-500/80' : 'bg-red-500/80'
+    },
     { label: "Transaction History", icon: Wallet, path: "/transactions" },
     { label: "Leaderboard", icon: Trophy, path: "/leaderboard" },
     { label: "Milestones & Bonuses", icon: Award, path: "/milestones" },
@@ -32,12 +44,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     logout();
   };
 
-  // Check if we're on a game screen to adjust layout
   const isGameScreen = location.pathname.includes("/game/");
 
   return (
     <div className="flex flex-col min-h-screen overflow-hidden bg-gradient-to-br from-[#1a0033] to-[#4a0080]">
-      {/* Top Bar */}
       <header className="sticky top-0 z-30 w-full border-b backdrop-blur-lg bg-black/30 border-betster-600/40">
         <div className="flex h-16 items-center justify-between px-4">
           <div className="flex items-center">
@@ -161,12 +171,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className={cn("flex-1 flex flex-col", isGameScreen ? "pb-0" : "pb-16")}>
         {children}
       </main>
 
-      {/* Bottom Bar */}
       {!isGameScreen && (
         <footer className="fixed bottom-0 left-0 right-0 z-30 bg-black/30 backdrop-blur-lg border-t border-betster-700/40">
           <div className="flex h-16 items-center justify-between px-4">
@@ -176,6 +184,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             >
               <Home className="h-5 w-5 text-betster-300" />
               <span className="text-xs text-betster-300 mt-1">Home</span>
+            </Link>
+            <Link
+              to="/kyc"
+              className="flex flex-1 flex-col items-center justify-center py-1"
+            >
+              <Shield className="h-5 w-5 text-betster-300" />
+              <span className="text-xs text-betster-300 mt-1">Verify</span>
             </Link>
             <Link
               to="/milestones"
