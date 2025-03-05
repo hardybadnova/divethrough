@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Login = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("asdfghjkl");
   const [signUpUsername, setSignUpUsername] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
@@ -15,7 +15,7 @@ const Login = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(username, password);
+    await login(email, password);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -54,15 +54,15 @@ const Login = () => {
           <TabsContent value="login">
             <form onSubmit={handleLogin} className="space-y-6">
               <div className="space-y-2">
-                <label htmlFor="username" className="text-sm font-medium text-betster-200">
-                  Username
+                <label htmlFor="email" className="text-sm font-medium text-betster-200">
+                  Email
                 </label>
                 <input
-                  id="username"
-                  type="text"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
                 />
               </div>

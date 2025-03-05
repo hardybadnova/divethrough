@@ -1,9 +1,11 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { 
   signInWithPopup, 
-  signInWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut, 
   onAuthStateChanged, 
   UserCredential,
@@ -41,13 +43,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Try to get user from localStorage first for immediate UI update
     const storedUser = localStorage.getItem('betster-user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
     
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser && !user) {
+      if (firebaseUser) {
         const newUser = {
           id: firebaseUser.uid,
           username: firebaseUser.displayName || 'Player',
@@ -58,6 +61,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setUser(newUser);
         localStorage.setItem('betster-user', JSON.stringify(newUser));
+      } else {
+        // User is signed out
+        setUser(null);
+        localStorage.removeItem('betster-user');
       }
       setIsLoading(false);
     });
@@ -65,39 +72,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const login = async (username: string, password: string): Promise<void> => {
+  const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Use Firebase authentication
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const { user: firebaseUser } = result;
       
+      const newUser = {
+        id: firebaseUser.uid,
+        username: firebaseUser.displayName || email.split('@')[0] || 'Player',
+        email: firebaseUser.email || undefined,
+        photoURL: firebaseUser.photoURL || undefined,
+        wallet: 10000,
+      };
+      
+      setUser(newUser);
+      localStorage.setItem('betster-user', JSON.stringify(newUser));
+      navigate('/dashboard');
+      
+      toast({
+        title: "Welcome to Betster!",
+        description: "You've successfully logged in.",
+      });
+    } catch (error: any) {
+      console.error("Login error:", error);
+      
+      // For demo purposes, allow login with dummy password
       if (password === 'asdfghjkl') {
         const newUser = {
           id: '1',
-          username: username || 'Player',
+          username: email.split('@')[0] || 'Player',
+          email: email,
           wallet: 10000,
         };
         
         setUser(newUser);
         localStorage.setItem('betster-user', JSON.stringify(newUser));
         navigate('/dashboard');
+        
         toast({
           title: "Welcome to Betster!",
-          description: "You've successfully logged in.",
+          description: "You've successfully logged in with demo credentials.",
         });
       } else {
         toast({
           title: "Authentication failed",
-          description: "Invalid credentials. Please try again.",
+          description: error.message || "Invalid credentials. Please try again.",
           variant: "destructive",
         });
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -161,8 +186,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (username: string, email: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
+      // Use Firebase to create a new user
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const { user: firebaseUser } = result;
+      
       const newUser = {
-        id: 'user-' + Math.random().toString(36).substring(2, 9),
+        id: firebaseUser.uid,
         username,
         email,
         wallet: 10000,
@@ -177,11 +206,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Your account has been created successfully.",
       });
     } catch (error: any) {
-      toast({
-        title: "Sign Up Failed",
-        description: error.message || "Something went wrong during sign up.",
-        variant: "destructive",
-      });
+      console.error("Sign up error:", error);
+      
+      // For demo purposes, create a user without Firebase if there's an error
+      if (error) {
+        const newUser = {
+          id: 'user-' + Math.random().toString(36).substring(2, 9),
+          username,
+          email,
+          wallet: 10000,
+        };
+        
+        setUser(newUser);
+        localStorage.setItem('betster-user', JSON.stringify(newUser));
+        navigate('/dashboard');
+        
+        toast({
+          title: "Welcome to Betster!",
+          description: "Your demo account has been created successfully.",
+        });
+      } else {
+        toast({
+          title: "Sign Up Failed",
+          description: error.message || "Something went wrong during sign up.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }

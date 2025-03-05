@@ -1,275 +1,201 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useAuth } from './AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/components/ui/use-toast';
 
-export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'rejected';
+type KYCStatus = 'pending' | 'verified' | 'rejected' | 'not_submitted';
+type KYCDocumentType = "idCard" | "passport" | "driverLicense" | "addressProof" | "selfie";
 
-export interface KYCDocument {
-  type: 'idCard' | 'passport' | 'driverLicense' | 'addressProof' | 'selfie';
+interface KYCDocument {
+  type: KYCDocumentType;
   fileName: string;
   uploadDate: Date;
-  status: 'pending' | 'approved' | 'rejected';
-  rejectionReason?: string;
+  status: string;
 }
 
-export interface UserVerification {
+interface KYCSubmission {
   userId: string;
-  status: VerificationStatus;
-  level: 1 | 2 | 3; // Different levels of verification with different limits
-  fullName?: string;
-  dateOfBirth?: Date;
-  nationality?: string;
-  address?: {
-    street: string;
-    city: string;
-    state: string;
-    country: string;
-    zipCode: string;
-  };
+  fullName: string;
+  dateOfBirth: string;
+  address: string;
+  country: string;
+  idNumber: string;
   documents: KYCDocument[];
-  submissionDate?: Date;
+  status: KYCStatus;
+  submissionDate: Date;
   verificationDate?: Date;
-  depositLimits: {
-    daily: number;
-    weekly: number;
-    monthly: number;
-  };
-  withdrawalLimits: {
-    daily: number;
-    weekly: number;
-    monthly: number;
-  };
 }
 
 interface KYCContextType {
-  verification: UserVerification | null;
-  isLoading: boolean;
-  submitKYCVerification: (data: Partial<UserVerification>, documents: File[]) => Promise<void>;
-  cancelVerification: () => Promise<void>;
-  getVerificationStatus: () => VerificationStatus;
-  uploadDocument: (type: KYCDocument['type'], file: File) => Promise<void>;
-  removeDocument: (documentId: string) => Promise<void>;
+  kycStatus: KYCStatus;
+  kycSubmission: KYCSubmission | null;
+  documents: KYCDocument[];
+  submitKYC: (submission: Omit<KYCSubmission, 'userId' | 'status' | 'submissionDate' | 'verificationDate'>) => void;
+  uploadDocument: (documentType: KYCDocumentType, file: File) => Promise<void>;
+  deleteDocument: (documentType: KYCDocumentType) => void;
+  isUploading: boolean;
 }
 
 const KYCContext = createContext<KYCContextType | undefined>(undefined);
 
 export const KYCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const [verification, setVerification] = useState<UserVerification | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [kycStatus, setKYCStatus] = useState<KYCStatus>('not_submitted');
+  const [kycSubmission, setKYCSubmission] = useState<KYCSubmission | null>(null);
+  const [documents, setDocuments] = useState<KYCDocument[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
-  // Load verification data from local storage or server
+  // Load KYC status from localStorage when user logs in
   useEffect(() => {
     if (user) {
-      // In a real implementation, this would be a server call
-      const savedVerification = localStorage.getItem(`betster-kyc-${user.id}`);
-      
-      if (savedVerification) {
-        setVerification(JSON.parse(savedVerification));
-      } else {
-        // Initialize with default verification state
-        const defaultVerification: UserVerification = {
-          userId: user.id,
-          status: 'unverified',
-          level: 1,
-          documents: [],
-          depositLimits: {
-            daily: 1000,
-            weekly: 5000,
-            monthly: 20000
-          },
-          withdrawalLimits: {
-            daily: 1000,
-            weekly: 5000,
-            monthly: 20000
-          }
-        };
-        setVerification(defaultVerification);
-        localStorage.setItem(`betster-kyc-${user.id}`, JSON.stringify(defaultVerification));
+      const savedKYC = localStorage.getItem(`kyc-${user.id}`);
+      if (savedKYC) {
+        const parsedKYC = JSON.parse(savedKYC);
+        setKYCSubmission(parsedKYC);
+        setKYCStatus(parsedKYC.status);
+        setDocuments(parsedKYC.documents || []);
       }
-    } else {
-      setVerification(null);
     }
   }, [user]);
 
-  const submitKYCVerification = async (data: Partial<UserVerification>, documents: File[]) => {
-    if (!user || !verification) return;
-    setIsLoading(true);
+  const submitKYC = (submission: Omit<KYCSubmission, 'userId' | 'status' | 'submissionDate' | 'verificationDate'>) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to submit KYC",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Create full submission with metadata
+    const fullSubmission: KYCSubmission = {
+      ...submission,
+      userId: user.id,
+      status: 'pending',
+      submissionDate: new Date(),
+      documents: documents
+    };
+
+    // In a real app, we would send this to an API
+    // For now, we'll simulate storing it locally
+    setKYCSubmission(fullSubmission);
+    setKYCStatus('pending');
     
+    // Store in localStorage for persistence
+    localStorage.setItem(`kyc-${user.id}`, JSON.stringify(fullSubmission));
+
+    toast({
+      title: "KYC Submitted",
+      description: "Your verification documents have been submitted for review"
+    });
+
+    // Simulate verification process (would be done on the backend in a real app)
+    setTimeout(() => {
+      const updatedSubmission = { 
+        ...fullSubmission, 
+        status: 'verified',
+        verificationDate: new Date()
+      };
+      setKYCSubmission(updatedSubmission);
+      setKYCStatus('verified');
+      localStorage.setItem(`kyc-${user.id}`, JSON.stringify(updatedSubmission));
+      
+      toast({
+        title: "KYC Verified",
+        description: "Your identity has been successfully verified"
+      });
+    }, 30000); // 30 seconds for demo purposes
+  };
+
+  const uploadDocument = async (documentType: KYCDocumentType, file: File): Promise<void> => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to upload documents",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
     try {
-      // Simulate API call
+      // In a real app, we would upload to a storage service like Firebase Storage
+      // For now, we'll simulate the upload
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Validate the data
-      if (!data.fullName || !data.dateOfBirth || !data.nationality || !data.address) {
-        throw new Error("Missing required verification information");
-      }
-      
-      if (documents.length < 2) {
-        throw new Error("At least 2 verification documents are required");
-      }
-      
-      // In a real implementation, you would upload the documents to your server
-      // and update the verification status based on the server response
-      
-      const updatedVerification: UserVerification = {
-        ...verification,
-        ...data,
-        status: 'pending',
-        submissionDate: new Date(),
-        documents: [
-          ...verification.documents,
-          ...documents.map((file, index) => ({
-            type: index === 0 ? 'idCard' : index === 1 ? 'addressProof' : 'selfie',
-            fileName: file.name,
-            uploadDate: new Date(),
-            status: 'pending'
-          }))
-        ]
-      };
-      
-      setVerification(updatedVerification);
-      localStorage.setItem(`betster-kyc-${user.id}`, JSON.stringify(updatedVerification));
-      
-      toast({
-        title: "Verification Submitted",
-        description: "Your KYC verification has been submitted and is pending review.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Verification Failed",
-        description: error.message || "Something went wrong with your verification.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const cancelVerification = async () => {
-    if (!user || !verification) return;
-    setIsLoading(true);
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Remove any existing document of the same type
+      const updatedDocuments = documents.filter(doc => doc.type !== documentType);
       
-      if (verification.status !== 'pending') {
-        throw new Error("You can only cancel pending verifications");
-      }
-      
-      const updatedVerification: UserVerification = {
-        ...verification,
-        status: 'unverified',
-      };
-      
-      setVerification(updatedVerification);
-      localStorage.setItem(`betster-kyc-${user.id}`, JSON.stringify(updatedVerification));
-      
-      toast({
-        title: "Verification Cancelled",
-        description: "Your KYC verification request has been cancelled.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Cancellation Failed",
-        description: error.message || "Something went wrong with cancelling your verification.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getVerificationStatus = (): VerificationStatus => {
-    return verification?.status || 'unverified';
-  };
-
-  const uploadDocument = async (type: KYCDocument['type'], file: File) => {
-    if (!user || !verification) return;
-    setIsLoading(true);
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In a real implementation, you would upload the file to your server
-      // and update the document status based on the server response
-      
+      // Add the new document
       const newDocument: KYCDocument = {
-        type,
+        type: documentType,
         fileName: file.name,
         uploadDate: new Date(),
         status: 'pending'
       };
       
-      const updatedVerification: UserVerification = {
-        ...verification,
-        documents: [...verification.documents, newDocument]
-      };
+      const newDocuments = [...updatedDocuments, newDocument];
+      setDocuments(newDocuments);
       
-      setVerification(updatedVerification);
-      localStorage.setItem(`betster-kyc-${user.id}`, JSON.stringify(updatedVerification));
-      
+      // If we have an existing submission, update it
+      if (kycSubmission) {
+        const updatedSubmission = {
+          ...kycSubmission,
+          documents: newDocuments
+        };
+        setKYCSubmission(updatedSubmission);
+        localStorage.setItem(`kyc-${user.id}`, JSON.stringify(updatedSubmission));
+      }
+
       toast({
         title: "Document Uploaded",
-        description: `Your ${type} document has been uploaded and is pending review.`,
+        description: `${file.name} has been successfully uploaded`
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Upload Failed",
-        description: error.message || "Something went wrong with your document upload.",
-        variant: "destructive",
+        description: "There was a problem uploading your document",
+        variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setIsUploading(false);
     }
   };
 
-  const removeDocument = async (documentId: string) => {
-    if (!user || !verification) return;
-    setIsLoading(true);
+  const deleteDocument = (documentType: KYCDocumentType) => {
+    if (!user) return;
     
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real implementation, you would delete the document from your server
-      
-      const updatedVerification: UserVerification = {
-        ...verification,
-        documents: verification.documents.filter((doc, index) => index.toString() !== documentId)
+    const updatedDocuments = documents.filter(doc => doc.type !== documentType);
+    setDocuments(updatedDocuments);
+    
+    // If we have an existing submission, update it
+    if (kycSubmission) {
+      const updatedSubmission = {
+        ...kycSubmission,
+        documents: updatedDocuments
       };
-      
-      setVerification(updatedVerification);
-      localStorage.setItem(`betster-kyc-${user.id}`, JSON.stringify(updatedVerification));
-      
-      toast({
-        title: "Document Removed",
-        description: "Your document has been removed.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Removal Failed",
-        description: error.message || "Something went wrong with removing your document.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      setKYCSubmission(updatedSubmission);
+      localStorage.setItem(`kyc-${user.id}`, JSON.stringify(updatedSubmission));
     }
+
+    toast({
+      title: "Document Deleted",
+      description: "The document has been removed"
+    });
   };
 
   return (
     <KYCContext.Provider
       value={{
-        verification,
-        isLoading,
-        submitKYCVerification,
-        cancelVerification,
-        getVerificationStatus,
+        kycStatus,
+        kycSubmission,
+        documents,
+        submitKYC,
         uploadDocument,
-        removeDocument,
+        deleteDocument,
+        isUploading
       }}
     >
       {children}

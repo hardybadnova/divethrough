@@ -125,13 +125,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   // When user logs in, add them to the players list if they're not already there
   useEffect(() => {
-    if (user && user.uid) {
-      const existingPlayer = players.find(p => p.id === user.uid);
+    if (user && user.id) {
+      const existingPlayer = players.find(p => p.id === user.id);
       
       if (!existingPlayer) {
         const newPlayer: Player = {
-          id: user.uid,
-          username: user.displayName || `Player-${players.length + 1}`,
+          id: user.id,
+          username: user.username || `Player-${players.length + 1}`,
           stats: {
             wins: 0,
             totalPlayed: 0,
@@ -181,7 +181,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     // Add player to pool
-    const currentPlayer = players.find(p => p.id === user.uid);
+    const currentPlayer = players.find(p => p.id === user.id);
     if (!currentPlayer) {
       toast({
         title: "Player Not Found",
@@ -221,7 +221,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         pool.id === currentPool.id 
           ? { 
               ...pool, 
-              players: (pool.players || []).filter(p => p.id !== user.uid),
+              players: (pool.players || []).filter(p => p.id !== user.id),
               currentPlayers: Math.max(0, pool.currentPlayers - 1)
             } 
           : pool
@@ -319,13 +319,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { code: "", referrals: 0, totalBonus: 0 };
     }
     
-    const currentPlayer = players.find(p => p.id === user.uid);
+    const currentPlayer = players.find(p => p.id === user.id);
     if (!currentPlayer) {
       return { code: "", referrals: 0, totalBonus: 0 };
     }
     
     return {
-      code: `${currentPlayer.username.toLowerCase().replace(/\s+/g, "")}${user.uid.substring(0, 5)}`,
+      code: `${currentPlayer.username.toLowerCase().replace(/\s+/g, "")}${user.id.substring(0, 5)}`,
       referrals: currentPlayer.referrals.length,
       totalBonus: currentPlayer.referralBonus,
     };
@@ -340,7 +340,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       p.username.toLowerCase().replace(/\s+/g, "") === referringPlayerUsername
     );
     
-    if (!referringPlayer || referringPlayer.id === user.uid) {
+    if (!referringPlayer || referringPlayer.id === user.id) {
       toast({
         title: "Invalid Referral Code",
         description: "This referral code is invalid or you cannot refer yourself",
@@ -350,7 +350,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     // Check if this user is already referred
-    if (referringPlayer.referrals.includes(user.uid)) {
+    if (referringPlayer.referrals.includes(user.id)) {
       toast({
         title: "Already Referred",
         description: "You have already been referred by this user",
@@ -365,7 +365,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         player.id === referringPlayer.id 
           ? { 
               ...player, 
-              referrals: [...player.referrals, user.uid],
+              referrals: [...player.referrals, user.id],
               referralBonus: player.referralBonus + 50 // Add 50 bonus for referring
             } 
           : player
