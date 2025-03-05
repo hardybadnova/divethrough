@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useGame } from "@/contexts/GameContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/formatters";
-import { ArrowLeft, HelpCircle, Table, MessageCircle, Info, BarChart } from "lucide-react";
+import { ArrowLeft, HelpCircle, Table, MessageCircle, Info, BarChart, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -19,10 +19,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 const GameScreen = () => {
   const { poolId } = useParams<{ poolId: string }>();
-  const { pools, joinPool, leavePool } = useGame();
+  const { 
+    pools, 
+    joinPool, 
+    leavePool, 
+    currentPool, 
+    chatMessages, 
+    lockInNumber, 
+    sendMessage,
+    initializeData
+  } = useGame();
+  const { user } = useAuth();
   const navigate = useNavigate();
   
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
@@ -33,15 +44,16 @@ const GameScreen = () => {
   const [gameTimer, setGameTimer] = useState(120); // 2 minutes game duration
   const [activeTab, setActiveTab] = useState("game");
   const [chatMessage, setChatMessage] = useState("");
-  const [chatMessages, setChatMessages] = useState<{sender: string; message: string; timestamp: string}[]>([
-    {sender: "System", message: "Welcome to the game! Good luck!", timestamp: new Date().toLocaleTimeString()},
-    {sender: "Player B", message: "Hello everyone!", timestamp: new Date().toLocaleTimeString()},
-    {sender: "Player D", message: "Good luck!", timestamp: new Date().toLocaleTimeString()},
-  ]);
   const [showStats, setShowStats] = useState(false);
   const [statsCharged, setStatsCharged] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [gameUrl, setGameUrl] = useState("");
 
-  const pool = pools.find(p => p.id === poolId);
+  const pool = currentPool || pools.find(p => p.id === poolId);
+  
+  useEffect(() => {
+    initializeData().catch(console.error);
+  }, []);
   
   useEffect(() => {
     if (!pool) {
@@ -50,6 +62,9 @@ const GameScreen = () => {
     }
     
     joinPool(poolId || "");
+    
+    const baseUrl = window.location.origin;
+    setGameUrl(`${baseUrl}/game/${poolId}`);
     
     const preGameInterval = setInterval(() => {
       setPreGameCountdown(prev => {
@@ -101,6 +116,16 @@ const GameScreen = () => {
       navigate(`/result/${poolId}`);
     }
   }, [gameState, navigate, poolId]);
+
+  useEffect(() => {
+    if (currentPool && user) {
+      const currentPlayer = currentPool.players?.find(p => p.id === user.id);
+      if (currentPlayer && currentPlayer.locked && currentPlayer.selectedNumber !== undefined) {
+        setSelectedNumber(currentPlayer.selectedNumber);
+        setIsLocked(true);
+      }
+    }
+  }, [currentPool, user]);
   
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -118,14 +143,11 @@ const GameScreen = () => {
     });
   };
   
-  const handleLockNumber = () => {
+  const handleLockNumber = async () => {
     if (!selectedNumber || gameState !== "in-progress" || isLocked) return;
     
+    await lockInNumber(selectedNumber);
     setIsLocked(true);
-    toast({
-      title: "Number Locked!",
-      description: `You've locked in number ${selectedNumber}. Good luck!`,
-    });
   };
   
   const handleExitGame = () => {
@@ -141,37 +163,21 @@ const GameScreen = () => {
     navigate(`/pools/${pool?.gameType}`);
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
     
-    const newMessage = {
-      sender: "You",
-      message: chatMessage,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    
-    setChatMessages(prev => [...prev, newMessage]);
+    await sendMessage(chatMessage);
     setChatMessage("");
-    
-    setTimeout(() => {
-      const responses = [
-        "Good luck!",
-        "Interesting strategy...",
-        "What number are you picking?",
-        "I think I know the winning number!",
-        "Is this your first time playing?",
-        "Let's see who wins this round!"
-      ];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      const randomPlayer = String.fromCharCode(65 + Math.floor(Math.random() * 5));
-      
-      setChatMessages(prev => [...prev, {
-        sender: `Player ${randomPlayer}`,
-        message: randomResponse,
-        timestamp: new Date().toLocaleTimeString()
-      }]);
-    }, Math.random() * 3000 + 1000);
+  };
+  
+  const copyGameLink = () => {
+    navigator.clipboard.writeText(gameUrl);
+    toast({
+      title: "Link Copied!",
+      description: "Share this link with your friends to play together"
+    });
+    setShowShareDialog(false);
   };
   
   const renderNumberButtons = () => {
@@ -256,6 +262,15 @@ const GameScreen = () => {
                 <Table className="h-5 w-5 mr-1" />
                 <span>Change Table</span>
               </button>
+              
+              <button 
+                onClick={() => setShowShareDialog(true)}
+                className="flex items-center text-muted-foreground hover:text-foreground"
+                aria-label="Share game link"
+              >
+                <Share2 className="h-5 w-5 mr-1" />
+                <span>Invite Friends</span>
+              </button>
             </div>
             
             <div className="flex items-center">
@@ -270,7 +285,15 @@ const GameScreen = () => {
           </div>
         </div>
         
-        {/* Pre-game timer display - Show only when in pre-game state */}
+        <div className="mb-4 glass-card inline-flex items-center rounded-full px-4 py-1">
+          <span className="text-sm font-medium">Players Online: </span>
+          <span className="ml-2 text-sm font-bold text-betster-500">{pool.currentPlayers}</span>
+          <span className="ml-1 relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+        </div>
+        
         {gameState === "pre-game" && (
           <div className="glass-card rounded-xl p-4 mb-4 bg-betster-900/70">
             <div className="flex items-center justify-between">
@@ -385,21 +408,30 @@ const GameScreen = () => {
               
               <div className="p-4 max-h-64 overflow-y-auto">
                 <div className="space-y-2">
-                  {Array.from({ length: Math.min(pool.currentPlayers, 20) }, (_, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-medium">
-                          {String.fromCharCode(65 + i)}
+                  {pool.players && pool.players.length > 0 ? (
+                    pool.players.map((player, i) => (
+                      <div key={player.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-medium">
+                            {player.username.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="ml-2 font-medium">
+                            {player.username}
+                            {player.id === user?.id && " (You)"}
+                          </span>
                         </div>
-                        <span className="ml-2 font-medium">Player {String.fromCharCode(65 + i)}</span>
+                        {player.locked && (
+                          <span className="text-xs bg-green-500/20 text-green-700 px-2 py-1 rounded-full">
+                            Locked In
+                          </span>
+                        )}
                       </div>
-                      {isLocked && i === 0 && (
-                        <span className="text-xs bg-green-500/20 text-green-700 px-2 py-1 rounded-full">
-                          Locked In
-                        </span>
-                      )}
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      No players have joined yet. Share the game link with your friends!
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -408,23 +440,29 @@ const GameScreen = () => {
           <TabsContent value="chat" className="space-y-4">
             <div className="glass-card rounded-xl p-4 flex flex-col h-[600px]">
               <div className="flex-1 overflow-y-auto mb-4 space-y-3">
-                {chatMessages.map((msg, idx) => (
-                  <div key={idx} className={`flex ${msg.sender === "You" ? "justify-end" : "justify-start"}`}>
-                    <div className={`rounded-xl px-4 py-2 max-w-[80%] ${
-                      msg.sender === "You" 
-                        ? "bg-betster-600 text-white" 
-                        : msg.sender === "System" 
-                          ? "bg-muted/70 italic text-sm" 
-                          : "bg-muted/50"
-                    }`}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-medium text-sm">{msg.sender}</span>
-                        <span className="text-xs opacity-70">{msg.timestamp}</span>
+                {chatMessages && chatMessages.length > 0 ? (
+                  chatMessages.map((msg, idx) => (
+                    <div key={idx} className={`flex ${msg.sender === user?.username ? "justify-end" : "justify-start"}`}>
+                      <div className={`rounded-xl px-4 py-2 max-w-[80%] ${
+                        msg.sender === user?.username 
+                          ? "bg-betster-600 text-white" 
+                          : msg.sender === "System" 
+                            ? "bg-muted/70 italic text-sm" 
+                            : "bg-muted/50"
+                      }`}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-medium text-sm">{msg.sender}</span>
+                          <span className="text-xs opacity-70">{msg.timestamp}</span>
+                        </div>
+                        <p>{msg.message}</p>
                       </div>
-                      <p>{msg.message}</p>
                     </div>
+                  ))
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground italic">No messages yet. Start the conversation!</p>
                   </div>
-                ))}
+                )}
               </div>
               
               <form onSubmit={handleSendMessage} className="flex gap-2">
@@ -540,7 +578,7 @@ const GameScreen = () => {
               </div>
               
               <div className="mt-6">
-                <div className="border border-betster-600 rounded-lg p-4 bg-gradient-to-br from-betster-900/60 to-black">
+                <div className="border border-betster-600 rounded-lg p-4 bg-gradient-to-br from-betster-900 to-black">
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="font-semibold text-betster-300 flex items-center">
                       <BarChart className="h-4 w-4 mr-2" />
@@ -641,6 +679,35 @@ const GameScreen = () => {
             <AlertDialogAction onClick={confirmExit}>
               Exit Game
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      <AlertDialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Invite Friends to Play</AlertDialogTitle>
+            <AlertDialogDescription>
+              Share this link with your friends so they can join the same game table. You'll be able to play together in real-time!
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="flex items-center space-x-2 mt-2 mb-4">
+            <input
+              readOnly
+              value={gameUrl}
+              className="flex-1 px-3 py-2 border rounded-md bg-muted/30"
+            />
+            <Button onClick={copyGameLink} variant="outline">Copy</Button>
+          </div>
+          
+          <div className="bg-muted/30 p-3 rounded-md mb-4">
+            <p className="text-sm font-medium mb-1">Current players: {pool.currentPlayers}</p>
+            <p className="text-xs text-muted-foreground">Maximum players: {pool.maxPlayers}</p>
+          </div>
+          
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { GameProvider } from "./contexts/GameContext";
 import { KYCProvider } from './contexts/KYCContext';
+import { useEffect } from "react";
 import KYCVerificationScreen from './pages/KYCVerificationScreen';
 import SplashScreen from "./pages/SplashScreen";
 import Login from "./pages/Login";
@@ -21,37 +22,44 @@ import ReferralScreen from "./pages/ReferralScreen";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <AuthProvider>
-        <KYCProvider>
-          <GameProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <Routes>
-                <Route path="/" element={<SplashScreen />} />
-                <Route path="/login" element={<Login />} />
-                
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/pools/:gameType" element={<PoolsScreen />} />
-                  <Route path="/game/:poolId" element={<GameScreen />} />
-                  <Route path="/result/:poolId" element={<GameResultScreen />} />
-                  <Route path="/milestones" element={<MilestonesScreen />} />
-                  <Route path="/referral" element={<ReferralScreen />} />
-                  <Route path="/kyc" element={<KYCVerificationScreen />} />
-                </Route>
-                
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </TooltipProvider>
-          </GameProvider>
-        </KYCProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  </QueryClientProvider>
-);
+const App = () => {
+  // For DEBUG: Log Firebase console output to browser console
+  useEffect(() => {
+    console.log("App initialized. Firebase configured with Firebase Realtime Database.");
+  }, []);
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <KYCProvider>
+            <GameProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/" element={<SplashScreen />} />
+                  <Route path="/login" element={<Login />} />
+                  
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/pools/:gameType" element={<PoolsScreen />} />
+                    <Route path="/game/:poolId" element={<GameScreen />} />
+                    <Route path="/result/:poolId" element={<GameResultScreen />} />
+                    <Route path="/milestones" element={<MilestonesScreen />} />
+                    <Route path="/referral" element={<ReferralScreen />} />
+                    <Route path="/kyc" element={<KYCVerificationScreen />} />
+                  </Route>
+                  
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </TooltipProvider>
+            </GameProvider>
+          </KYCProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

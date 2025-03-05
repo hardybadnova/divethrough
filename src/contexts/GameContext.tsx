@@ -1,72 +1,20 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
+import { 
+  subscribeToAllPools, 
+  subscribeToPool, 
+  joinGamePool, 
+  leaveGamePool, 
+  lockNumber,
+  sendChatMessage,
+  subscribeToChatMessages,
+  initializeGameData
+} from '@/services/gameService';
+import { Player, Pool, Winner, ReferralInfo, ChatMessage } from '@/types/game';
 
-// Define types for our game data
-interface Player {
-  id: string;
-  username: string;
-  stats: {
-    wins: number;
-    totalPlayed: number;
-    winRate: number;
-  };
-  milestones: {
-    gamesPlayed: number;
-    bonusPercentage: number;
-    bonusAmount: number;
-  };
-  referrals: string[]; // IDs of users referred
-  referralBonus: number;
-}
-
-interface Pool {
-  id: string;
-  gameType: 'bluff' | 'topspot' | 'jackpot';
-  entryFee: number;
-  maxPlayers: number;
-  currentPlayers: number;
-  status: 'waiting' | 'active' | 'completed';
-  numberRange: [number, number]; // Range of allowed numbers
-  playFrequency?: 'daily'; // For Jackpot Horse
-  players?: Player[]; // Players in this pool
-}
-
-interface Winner {
-  position: number;
-  players: Player[];
-  prize: number;
-}
-
-interface ReferralInfo {
-  code: string;
-  referrals: number;
-  totalBonus: number;
-}
-
-type KYCDocumentType = "idCard" | "passport" | "driverLicense" | "addressProof" | "selfie";
-
-interface GameContextType {
-  pools: Pool[];
-  currentPool: Pool | null;
-  players: Player[];
-  joinPool: (poolId: string) => void;
-  leavePool: () => void;
-  getPoolsByGameType: (gameType: string) => Pool[];
-  getWinners: (poolId: string) => Winner[];
-  resetGame: () => void;
-  getMilestoneBonus: (gamesPlayed: number) => number;
-  getReferralInfo: () => ReferralInfo;
-  addReferral: (referralCode: string) => boolean;
-  getMilestoneProgress: (userId: string) => { 
-    currentMilestone: number;
-    nextMilestone: number;
-    progress: number;
-  };
-}
-
-// Mock data for pools
+// Mock data for pools - will be used to initialize Firebase if needed
 const mockPools: Pool[] = [
   // Bluff The Tough pools
   ...([20, 50, 100, 500, 1000, 1500, 2000] as const).map((fee, index) => ({
@@ -115,6 +63,29 @@ const milestones = [
   { threshold: 500000, bonusPercentage: 30 },
 ];
 
+interface GameContextType {
+  pools: Pool[];
+  currentPool: Pool | null;
+  players: Player[];
+  chatMessages: ChatMessage[];
+  joinPool: (poolId: string) => Promise<void>;
+  leavePool: () => Promise<void>;
+  getPoolsByGameType: (gameType: string) => Pool[];
+  getWinners: (poolId: string) => Winner[];
+  resetGame: () => void;
+  getMilestoneBonus: (gamesPlayed: number) => number;
+  getReferralInfo: () => ReferralInfo;
+  addReferral: (referralCode: string) => boolean;
+  getMilestoneProgress: (userId: string) => { 
+    currentMilestone: number;
+    nextMilestone: number;
+    progress: number;
+  };
+  lockInNumber: (number: number) => Promise<void>;
+  sendMessage: (message: string) => Promise<void>;
+  initializeData: () => Promise<void>;
+}
+
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -122,6 +93,38 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [pools, setPools] = useState<Pool[]>(mockPools);
   const [currentPool, setCurrentPool] = useState<Pool | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Initialize Firebase data once if needed
+  const initializeData = async () => {
+    if (isInitialized) return;
+    
+    try {
+      await initializeGameData(mockPools);
+      setIsInitialized(true);
+      toast({
+        title: "Game Data Initialized",
+        description: "The game data has been set up for multiplayer."
+      });
+    } catch (error) {
+      console.error("Error initializing game data:", error);
+      toast({
+        title: "Initialization Error",
+        description: "Failed to set up game data. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Subscribe to all pools when component mounts
+  useEffect(() => {
+    const unsubscribe = subscribeToAllPools((updatedPools) => {
+      setPools(updatedPools);
+    });
+    
+    return () => unsubscribe();
+  }, []);
   
   // When user logs in, add them to the players list if they're not already there
   useEffect(() => {
@@ -144,14 +147,34 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
           referrals: [],
           referralBonus: 0,
+          status: 'waiting',
         };
         
         setPlayers(prevPlayers => [...prevPlayers, newPlayer]);
       }
     }
-  }, [user]);
+  }, [user, players]);
 
-  const joinPool = (poolId: string) => {
+  // Subscribe to the current pool when it changes
+  useEffect(() => {
+    if (!currentPool) return;
+    
+    const unsubscribe = subscribeToPool(currentPool.id, (updatedPool) => {
+      setCurrentPool(updatedPool);
+    });
+    
+    // Subscribe to chat messages for the current pool
+    const unsubscribeChat = subscribeToChatMessages(currentPool.id, (messages) => {
+      setChatMessages(messages);
+    });
+    
+    return () => {
+      unsubscribe();
+      unsubscribeChat();
+    };
+  }, [currentPool?.id]);
+
+  const joinPool = async (poolId: string) => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -180,60 +203,89 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
-    // Add player to pool
-    const currentPlayer = players.find(p => p.id === user.id);
+    // Find current player or create a new one
+    let currentPlayer = players.find(p => p.id === user.id);
     if (!currentPlayer) {
-      toast({
-        title: "Player Not Found",
-        description: "Your player profile couldn't be found",
-        variant: "destructive"
-      });
-      return;
+      currentPlayer = {
+        id: user.id,
+        username: user.username || `Player-${Math.floor(Math.random() * 1000)}`,
+        stats: {
+          wins: 0,
+          totalPlayed: 0,
+          winRate: 0,
+        },
+        milestones: {
+          gamesPlayed: 0,
+          bonusPercentage: 0,
+          bonusAmount: 0,
+        },
+        referrals: [],
+        referralBonus: 0,
+        status: 'waiting',
+      };
+      setPlayers(prev => [...prev, currentPlayer!]);
     }
     
-    // Update pools with the new player
-    setPools(prevPools => 
-      prevPools.map(pool => 
-        pool.id === poolId 
-          ? { 
-              ...pool, 
-              players: [...(pool.players || []), currentPlayer],
-              currentPlayers: pool.currentPlayers + 1 
-            } 
-          : pool
-      )
-    );
-    
-    setCurrentPool(poolToJoin);
-    
-    toast({
-      title: "Pool Joined",
-      description: `You've successfully joined the ${poolToJoin.gameType} pool`
-    });
+    try {
+      // Join the pool in Firebase
+      await joinGamePool(poolId, currentPlayer);
+      
+      // Set as current pool locally
+      setCurrentPool(poolToJoin);
+      
+      // Send a system message to the chat
+      await sendChatMessage(poolId, {
+        sender: "System",
+        message: `${currentPlayer.username} has joined the pool`,
+        timestamp: new Date().toLocaleTimeString()
+      });
+      
+      toast({
+        title: "Pool Joined",
+        description: `You've successfully joined the ${poolToJoin.gameType} pool`
+      });
+    } catch (error) {
+      console.error("Error joining pool:", error);
+      toast({
+        title: "Error",
+        description: "Failed to join the pool. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const leavePool = () => {
+  const leavePool = async () => {
     if (!currentPool || !user) return;
     
-    // Remove player from pool
-    setPools(prevPools => 
-      prevPools.map(pool => 
-        pool.id === currentPool.id 
-          ? { 
-              ...pool, 
-              players: (pool.players || []).filter(p => p.id !== user.id),
-              currentPlayers: Math.max(0, pool.currentPlayers - 1)
-            } 
-          : pool
-      )
-    );
-    
-    setCurrentPool(null);
-    
-    toast({
-      title: "Pool Left",
-      description: "You've successfully left the pool"
-    });
+    try {
+      // Leave the pool in Firebase
+      await leaveGamePool(currentPool.id, user.id);
+      
+      // Send a system message to the chat
+      const currentPlayer = players.find(p => p.id === user.id);
+      if (currentPlayer) {
+        await sendChatMessage(currentPool.id, {
+          sender: "System",
+          message: `${currentPlayer.username} has left the pool`,
+          timestamp: new Date().toLocaleTimeString()
+        });
+      }
+      
+      // Clear current pool locally
+      setCurrentPool(null);
+      
+      toast({
+        title: "Pool Left",
+        description: "You've successfully left the pool"
+      });
+    } catch (error) {
+      console.error("Error leaving pool:", error);
+      toast({
+        title: "Error",
+        description: "Failed to leave the pool. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const getPoolsByGameType = (gameType: string) => {
@@ -380,6 +432,48 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
   
+  const lockInNumber = async (number: number) => {
+    if (!currentPool || !user) return;
+    
+    try {
+      await lockNumber(currentPool.id, user.id, number);
+      
+      toast({
+        title: "Number Locked",
+        description: `You've locked in number ${number}. Good luck!`
+      });
+    } catch (error) {
+      console.error("Error locking number:", error);
+      toast({
+        title: "Error",
+        description: "Failed to lock your number. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const sendMessage = async (message: string) => {
+    if (!currentPool || !user || !message.trim()) return;
+    
+    const currentPlayer = players.find(p => p.id === user.id);
+    if (!currentPlayer) return;
+    
+    try {
+      await sendChatMessage(currentPool.id, {
+        sender: currentPlayer.username,
+        message: message.trim(),
+        timestamp: new Date().toLocaleTimeString()
+      });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send your message. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
   const resetGame = () => {
     setCurrentPool(null);
   };
@@ -390,6 +484,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         pools,
         currentPool,
         players,
+        chatMessages,
         joinPool,
         leavePool,
         getPoolsByGameType,
@@ -399,6 +494,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getReferralInfo,
         addReferral,
         getMilestoneProgress,
+        lockInNumber,
+        sendMessage,
+        initializeData,
       }}
     >
       {children}
