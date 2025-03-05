@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -9,7 +8,8 @@ import {
   onAuthStateChanged, 
   UserCredential,
   GoogleAuthProvider,
-  type FirebaseError
+  type User as FirebaseUser,
+  AuthError
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 
@@ -129,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       
-      if (error instanceof FirebaseError && error.code === 'auth/unauthorized-domain') {
+      if (error.code === 'auth/unauthorized-domain') {
         const mockGoogleUser = {
           id: 'google-' + Math.random().toString(36).substring(2, 9),
           username: 'Google User',
