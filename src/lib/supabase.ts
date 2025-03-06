@@ -20,12 +20,6 @@ export const signUpWithEmail = async (email: string, password: string, username:
   });
   
   if (error) throw error;
-  
-  // If signup successful, create user profile in the database
-  if (data?.user) {
-    await createUserProfile(data.user.id, username, email);
-  }
-  
   return data;
 };
 

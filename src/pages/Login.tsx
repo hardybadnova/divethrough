@@ -1,11 +1,14 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import BetsterLogo from "@/components/BetsterLogo";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -13,15 +16,63 @@ const Login = () => {
   const [signUpUsername, setSignUpUsername] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
-  const { login, loginWithGoogle, signUp, isLoading } = useAuth();
+  const { login, loginWithGoogle, signUp, isLoading, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  // If user is already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     await login(email, password);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate inputs
+    if (!signUpUsername || !signUpEmail || !signUpPassword) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (signUpPassword.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(signUpEmail)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     await signUp(signUpUsername, signUpEmail, signUpPassword);
   };
 
@@ -56,9 +107,9 @@ const Login = () => {
           <TabsContent value="login">
             <form onSubmit={handleLogin} className="space-y-6">
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-betster-200">
+                <Label htmlFor="email" className="text-sm font-medium text-betster-200">
                   Email
-                </label>
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -66,13 +117,14 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
+                  required
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-betster-200">
+                <Label htmlFor="password" className="text-sm font-medium text-betster-200">
                   Password
-                </label>
+                </Label>
                 <Input
                   id="password"
                   type="password"
@@ -80,6 +132,7 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
+                  required
                 />
               </div>
 
@@ -100,9 +153,9 @@ const Login = () => {
           <TabsContent value="signup">
             <form onSubmit={handleSignUp} className="space-y-6">
               <div className="space-y-2">
-                <label htmlFor="signUpUsername" className="text-sm font-medium text-betster-200">
+                <Label htmlFor="signUpUsername" className="text-sm font-medium text-betster-200">
                   Username
-                </label>
+                </Label>
                 <Input
                   id="signUpUsername"
                   type="text"
@@ -110,13 +163,14 @@ const Login = () => {
                   value={signUpUsername}
                   onChange={(e) => setSignUpUsername(e.target.value)}
                   className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
+                  required
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="signUpEmail" className="text-sm font-medium text-betster-200">
+                <Label htmlFor="signUpEmail" className="text-sm font-medium text-betster-200">
                   Email
-                </label>
+                </Label>
                 <Input
                   id="signUpEmail"
                   type="email"
@@ -124,20 +178,23 @@ const Login = () => {
                   value={signUpEmail}
                   onChange={(e) => setSignUpEmail(e.target.value)}
                   className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
+                  required
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="signUpPassword" className="text-sm font-medium text-betster-200">
+                <Label htmlFor="signUpPassword" className="text-sm font-medium text-betster-200">
                   Password
-                </label>
+                </Label>
                 <Input
                   id="signUpPassword"
                   type="password"
-                  placeholder="Choose a password"
+                  placeholder="Choose a password (min 6 characters)"
                   value={signUpPassword}
                   onChange={(e) => setSignUpPassword(e.target.value)}
                   className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
+                  minLength={6}
+                  required
                 />
               </div>
 
