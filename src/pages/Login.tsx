@@ -16,6 +16,7 @@ const Login = () => {
   const [signUpUsername, setSignUpUsername] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, loginWithGoogle, signUp, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -37,7 +38,20 @@ const Login = () => {
       return;
     }
 
-    await login(email, password);
+    setIsSubmitting(true);
+    try {
+      await login(email, password);
+      // Navigation is handled in the useEffect above when isAuthenticated changes
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast({
+        title: "Authentication failed",
+        description: error.message || "Invalid credentials. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -73,11 +87,41 @@ const Login = () => {
       return;
     }
 
-    await signUp(signUpUsername, signUpEmail, signUpPassword);
+    setIsSubmitting(true);
+    try {
+      await signUp(signUpUsername, signUpEmail, signUpPassword);
+      // Navigate to login tab after successful signup
+      document.querySelector('[data-state="inactive"][data-value="login"]')?.click();
+      toast({
+        title: "Account Created!",
+        description: "Please check your email to confirm your account.",
+      });
+    } catch (error: any) {
+      console.error("Sign up error:", error);
+      
+      toast({
+        title: "Sign Up Failed",
+        description: error.message || "Something went wrong during sign up.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleGoogleLogin = async () => {
-    await loginWithGoogle();
+    try {
+      await loginWithGoogle();
+      // Redirect is handled by Supabase OAuth
+    } catch (error: any) {
+      console.error("Google sign-in error:", error);
+      
+      toast({
+        title: "Google Sign-in Failed",
+        description: error.message || "Something went wrong with Google authentication.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -118,6 +162,7 @@ const Login = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
                   required
+                  disabled={isSubmitting || isLoading}
                 />
               </div>
 
@@ -133,15 +178,16 @@ const Login = () => {
                   placeholder="Enter your password"
                   className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
                   required
+                  disabled={isSubmitting || isLoading}
                 />
               </div>
 
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={isSubmitting || isLoading}
                 className="w-full py-3"
               >
-                {isLoading ? (
+                {(isSubmitting || isLoading) ? (
                   <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
                 ) : (
                   "Sign In"
@@ -164,6 +210,7 @@ const Login = () => {
                   onChange={(e) => setSignUpUsername(e.target.value)}
                   className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
                   required
+                  disabled={isSubmitting || isLoading}
                 />
               </div>
 
@@ -179,6 +226,7 @@ const Login = () => {
                   onChange={(e) => setSignUpEmail(e.target.value)}
                   className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
                   required
+                  disabled={isSubmitting || isLoading}
                 />
               </div>
 
@@ -195,15 +243,16 @@ const Login = () => {
                   className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
                   minLength={6}
                   required
+                  disabled={isSubmitting || isLoading}
                 />
               </div>
 
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={isSubmitting || isLoading}
                 className="w-full py-3"
               >
-                {isLoading ? (
+                {(isSubmitting || isLoading) ? (
                   <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
                 ) : (
                   "Create Account"
@@ -227,11 +276,11 @@ const Login = () => {
         <Button
           type="button"
           onClick={handleGoogleLogin}
-          disabled={isLoading}
+          disabled={isSubmitting || isLoading}
           variant="outline"
           className="flex items-center justify-center w-full py-2.5 px-4 bg-black/30 hover:bg-black/40 backdrop-blur border-betster-700/50"
         >
-          {isLoading ? (
+          {(isSubmitting || isLoading) ? (
             <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
           ) : (
             <>

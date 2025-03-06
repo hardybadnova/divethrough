@@ -9,6 +9,22 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Helper functions for auth
 export const signUpWithEmail = async (email: string, password: string, username: string) => {
+  // First check if username is available
+  const { data: existingUsers, error: checkError } = await supabase
+    .from('user_profiles')
+    .select('username')
+    .eq('username', username)
+    .single();
+    
+  if (existingUsers) {
+    throw new Error('Username is already taken. Please choose another one.');
+  }
+  
+  if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "Results contain 0 rows" which is what we want
+    console.error('Error checking username:', checkError);
+    throw new Error('Error checking username availability. Please try again.');
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -50,7 +66,7 @@ export const createUserProfile = async (userId: string, username: string, email:
     .from('user_profiles')
     .insert([
       { 
-        user_id: userId, 
+        id: userId, 
         username, 
         email,
         wallet_balance: 0,
@@ -65,7 +81,7 @@ export const getUserProfile = async (userId: string) => {
   const { data, error } = await supabase
     .from('user_profiles')
     .select('*')
-    .eq('user_id', userId)
+    .eq('id', userId)
     .single();
   
   if (error) throw error;
@@ -77,7 +93,7 @@ export const updateWalletBalance = async (userId: string, amount: number) => {
   const { data: profile, error: fetchError } = await supabase
     .from('user_profiles')
     .select('wallet_balance')
-    .eq('user_id', userId)
+    .eq('id', userId)
     .single();
   
   if (fetchError) throw fetchError;
@@ -87,7 +103,7 @@ export const updateWalletBalance = async (userId: string, amount: number) => {
   const { error } = await supabase
     .from('user_profiles')
     .update({ wallet_balance: newBalance })
-    .eq('user_id', userId);
+    .eq('id', userId);
   
   if (error) throw error;
   

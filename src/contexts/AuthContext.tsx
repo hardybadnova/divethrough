@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -42,18 +43,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const currentUser = await getCurrentUser();
       if (currentUser) {
-        const profile = await getUserProfile(currentUser.id);
-        
-        const newUser = {
-          id: currentUser.id,
-          username: profile.username || currentUser.user_metadata?.username || 'Player',
-          email: currentUser.email || undefined,
-          photoURL: currentUser.user_metadata?.avatar_url,
-          wallet: profile.wallet_balance || 0,
-        };
-        
-        setUser(newUser);
-        localStorage.setItem('betster-user', JSON.stringify(newUser));
+        try {
+          const profile = await getUserProfile(currentUser.id);
+          
+          const newUser = {
+            id: currentUser.id,
+            username: profile.username || currentUser.user_metadata?.username || 'Player',
+            email: currentUser.email || undefined,
+            photoURL: currentUser.user_metadata?.avatar_url,
+            wallet: profile.wallet_balance || 0,
+          };
+          
+          setUser(newUser);
+          localStorage.setItem('betster-user', JSON.stringify(newUser));
+        } catch (error: any) {
+          console.error("Error loading user profile:", error);
+          // We still set a basic user if the profile fetch fails
+          const newUser = {
+            id: currentUser.id,
+            username: currentUser.user_metadata?.username || 'Player',
+            email: currentUser.email || undefined,
+            photoURL: currentUser.user_metadata?.avatar_url,
+            wallet: 0,
+          };
+          
+          setUser(newUser);
+          localStorage.setItem('betster-user', JSON.stringify(newUser));
+        }
       } else {
         setUser(null);
         localStorage.removeItem('betster-user');
@@ -73,19 +89,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const currentUser = await getCurrentUser();
       if (currentUser) {
-        const profile = await getUserProfile(currentUser.id);
-        
-        setUser(prev => {
-          if (!prev) return null;
+        try {
+          const profile = await getUserProfile(currentUser.id);
           
-          const updated = {
-            ...prev,
-            wallet: profile.wallet_balance || 0,
-          };
-          
-          localStorage.setItem('betster-user', JSON.stringify(updated));
-          return updated;
-        });
+          setUser(prev => {
+            if (!prev) return null;
+            
+            const updated = {
+              ...prev,
+              wallet: profile.wallet_balance || 0,
+            };
+            
+            localStorage.setItem('betster-user', JSON.stringify(updated));
+            return updated;
+          });
+        } catch (error) {
+          console.error("Error refreshing user profile:", error);
+        }
       }
     } catch (error) {
       console.error("Error refreshing user data:", error);
@@ -102,6 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state changed:", event, session ? "User session exists" : "No session");
         if (event === 'SIGNED_IN' && session) {
           await loadUserData();
         } else if (event === 'SIGNED_OUT') {
@@ -136,6 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error.message || "Invalid credentials. Please try again.",
         variant: "destructive",
       });
+      throw error; // Rethrow for the component to handle
     } finally {
       setIsLoading(false);
     }
@@ -163,6 +185,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error.message || "Something went wrong with Google authentication.",
         variant: "destructive",
       });
+      throw error; // Rethrow for the component to handle
+    } finally {
       setIsLoading(false);
     }
   };
@@ -177,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Please check your email to confirm your account.",
       });
       
-      navigate('/login');
+      // Don't navigate automatically, let the user see the message first
     } catch (error: any) {
       console.error("Sign up error:", error);
       
@@ -186,6 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error.message || "Something went wrong during sign up.",
         variant: "destructive",
       });
+      throw error; // Rethrow for the component to handle
     } finally {
       setIsLoading(false);
     }
