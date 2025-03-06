@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -7,7 +6,8 @@ import {
   signUpWithEmail, 
   signOut as supabaseSignOut, 
   getCurrentUser,
-  getUserProfile
+  getUserProfile,
+  supabase
 } from '@/lib/supabase';
 
 interface User {
@@ -38,7 +38,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isBetaVersion] = useState<boolean>(true); // Mark this as beta version
   const navigate = useNavigate();
 
-  // Initial load user data from Supabase
   const loadUserData = async () => {
     try {
       const currentUser = await getCurrentUser();
@@ -68,7 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Refresh user data (called after transactions)
   const refreshUserData = async () => {
     if (!user) return;
     
@@ -95,16 +93,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Try to get user from localStorage first for immediate UI update
     const storedUser = localStorage.getItem('betster-user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
     
-    // Then load latest data from Supabase
     loadUserData();
     
-    // Set up Supabase auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' && session) {
