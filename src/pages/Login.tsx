@@ -17,6 +17,7 @@ const Login = () => {
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const { login, loginWithGoogle, signUp, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -91,7 +92,7 @@ const Login = () => {
     try {
       await signUp(signUpUsername, signUpEmail, signUpPassword);
       // Navigate to login tab after successful signup
-      document.querySelector('[data-state="inactive"][data-value="login"]')?.click();
+      setActiveTab("login");
       toast({
         title: "Account Created!",
         description: "Please check your email to confirm your account.",
@@ -142,7 +143,7 @@ const Login = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="login" className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "login" | "signup")} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>

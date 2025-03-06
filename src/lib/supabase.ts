@@ -5,7 +5,15 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://kshozrdkansvgqfxvram.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzaG96cmRrYW5zdmdxZnh2cmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDExOTU3MTIsImV4cCI6MjA1Njc3MTcxMn0.prJivme-LRY4ZCGsfocFnXqXtwcyT9cVak1S9MIgcSQ';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create the Supabase client with the Site URL matching localhost:8080
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+  },
+});
 
 // Helper functions for auth
 export const signUpWithEmail = async (email: string, password: string, username: string) => {
@@ -32,6 +40,7 @@ export const signUpWithEmail = async (email: string, password: string, username:
       data: {
         username,
       },
+      emailRedirectTo: window.location.origin + '/dashboard',
     },
   });
   

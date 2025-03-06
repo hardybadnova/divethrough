@@ -125,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log("Auth state changed:", event, session ? "User session exists" : "No session");
         if (event === 'SIGNED_IN' && session) {
           await loadUserData();
+          navigate('/dashboard');
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           localStorage.removeItem('betster-user');
@@ -135,20 +136,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     
     try {
-      await signInWithEmail(email, password);
-      await loadUserData();
-      navigate('/dashboard');
+      const { user: authUser } = await signInWithEmail(email, password);
+      
+      if (!authUser) {
+        throw new Error("Login failed - no user returned");
+      }
       
       toast({
         title: "Welcome to Betster!",
         description: "You've successfully logged in.",
       });
+      
+      // loadUserData and navigation will be handled by the onAuthStateChange event
     } catch (error: any) {
       console.error("Login error:", error);
       
