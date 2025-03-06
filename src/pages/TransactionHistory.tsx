@@ -1,0 +1,140 @@
+
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import AppLayout from "@/components/AppLayout";
+import { Separator } from "@/components/ui/separator";
+import { format } from "date-fns";
+import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
+import { formatCurrency } from "@/lib/formatters";
+import { supabase } from "@/lib/supabase";
+
+interface Transaction {
+  id: string;
+  user_id: string;
+  amount: number;
+  type: 'deposit' | 'withdrawal';
+  status: 'pending' | 'completed' | 'failed';
+  payment_id: string | null;
+  transaction_id: string | null;
+  created_at: string;
+}
+
+const TransactionHistory = () => {
+  const { user } = useAuth();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!user) return;
+
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        setTransactions(data || []);
+      } catch (error) {
+        console.error("Error fetching transactions:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, [user]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-500';
+      case 'pending':
+        return 'text-amber-500';
+      case 'failed':
+        return 'text-red-500';
+      default:
+        return 'text-gray-500';
+    }
+  };
+
+  return (
+    <AppLayout>
+      <div className="container px-4 py-6 max-w-lg mx-auto">
+        <h1 className="text-2xl font-bold text-white mb-2">Transaction History</h1>
+        <p className="text-betster-300 mb-6">View all your deposits and withdrawals</p>
+        
+        <Separator className="mb-6 bg-betster-700/40" />
+        
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <RefreshCw className="h-8 w-8 text-betster-400 animate-spin" />
+            <p className="text-betster-300 mt-4">Loading transactions...</p>
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="rounded-full bg-betster-800/50 p-4 mb-4">
+              <Wallet className="h-8 w-8 text-betster-400" />
+            </div>
+            <h3 className="text-lg font-medium text-white mb-2">No transactions yet</h3>
+            <p className="text-betster-300">
+              Your transaction history will appear here once you've made deposits or withdrawals.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {transactions.map((transaction) => (
+              <div 
+                key={transaction.id} 
+                className="rounded-xl bg-black/40 backdrop-blur-sm border border-betster-700/40 p-4"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center">
+                    <div className="mr-3 rounded-full p-2 bg-betster-800/50">
+                      {transaction.type === 'deposit' ? (
+                        <ArrowDown className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <ArrowUp className="h-5 w-5 text-amber-500" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-white capitalize">
+                        {transaction.type}
+                      </h3>
+                      <p className="text-xs text-betster-400">
+                        {format(new Date(transaction.created_at), 'PPp')}
+                      </p>
+                      {transaction.payment_id && (
+                        <p className="text-xs text-betster-400 mt-1">
+                          ID: {transaction.payment_id}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="text-right">
+                    <p className={`font-medium ${transaction.type === 'deposit' ? 'text-green-500' : 'text-amber-500'}`}>
+                      {transaction.type === 'deposit' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    </p>
+                    <p className={`text-xs capitalize ${getStatusColor(transaction.status)}`}>
+                      {transaction.status}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </AppLayout>
+  );
+};
+
+export default TransactionHistory;
+
+// Missing dependency import
+import { Wallet } from "lucide-react";

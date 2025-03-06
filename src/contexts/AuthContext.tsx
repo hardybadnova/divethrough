@@ -3,17 +3,12 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { 
-  signInWithPopup, 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut, 
-  onAuthStateChanged, 
-  UserCredential,
-  GoogleAuthProvider,
-  type User as FirebaseUser,
-  AuthError
-} from 'firebase/auth';
-import { auth, googleProvider } from '@/lib/firebase';
+  signInWithEmail, 
+  signUpWithEmail, 
+  signOut as supabaseSignOut, 
+  getCurrentUser,
+  getUserProfile
+} from '@/lib/supabase';
 
 interface User {
   id: string;
@@ -32,6 +27,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   signUp: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +38,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isBetaVersion] = useState<boolean>(true); // Mark this as beta version
   const navigate = useNavigate();
 
+  // Initial load user data from Supabase
+  const loadUserData = async () => {
+    try {
+      const currentUser = await getCurrentUser();
+      if (currentUser) {
+        const profile = await getUserProfile(currentUser.id);
+        
+        const newUser = {
+          id: currentUser.id,
+          username: profile.username || currentUser.user_metadata?.username || 'Player',
+          email: currentUser.email || undefined,
+          photoURL: currentUser.user_metadata?.avatar_url,
+          wallet: profile.wallet_balance || 0,
+        };
+        
+        setUser(newUser);
+        localStorage.setItem('betster-user', JSON.stringify(newUser));
+      } else {
+        setUser(null);
+        localStorage.removeItem('betster-user');
+      }
+    } catch (error) {
+      console.error("Error loading user data:", error);
+      setUser(null);
+      localStorage.removeItem('betster-user');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Refresh user data (called after transactions)
+  const refreshUserData = async () => {
+    if (!user) return;
+    
+    try {
+      const currentUser = await getCurrentUser();
+      if (currentUser) {
+        const profile = await getUserProfile(currentUser.id);
+        
+        setUser(prev => {
+          if (!prev) return null;
+          
+          const updated = {
+            ...prev,
+            wallet: profile.wallet_balance || 0,
+          };
+          
+          localStorage.setItem('betster-user', JSON.stringify(updated));
+          return updated;
+        });
+      }
+    } catch (error) {
+      console.error("Error refreshing user data:", error);
+    }
+  };
+
   useEffect(() => {
     // Try to get user from localStorage first for immediate UI update
     const storedUser = localStorage.getItem('betster-user');
@@ -49,47 +101,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(JSON.parse(storedUser));
     }
     
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        const newUser = {
-          id: firebaseUser.uid,
-          username: firebaseUser.displayName || 'Player',
-          email: firebaseUser.email || undefined,
-          photoURL: firebaseUser.photoURL || undefined,
-          wallet: 10000,
-        };
-        
-        setUser(newUser);
-        localStorage.setItem('betster-user', JSON.stringify(newUser));
-      } else {
-        // User is signed out
-        setUser(null);
-        localStorage.removeItem('betster-user');
-      }
-      setIsLoading(false);
-    });
+    // Then load latest data from Supabase
+    loadUserData();
     
-    return () => unsubscribe();
+    // Set up Supabase auth listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          await loadUserData();
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          localStorage.removeItem('betster-user');
+        }
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     
     try {
-      // Use Firebase authentication
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      const { user: firebaseUser } = result;
-      
-      const newUser = {
-        id: firebaseUser.uid,
-        username: firebaseUser.displayName || email.split('@')[0] || 'Player',
-        email: firebaseUser.email || undefined,
-        photoURL: firebaseUser.photoURL || undefined,
-        wallet: 10000,
-      };
-      
-      setUser(newUser);
-      localStorage.setItem('betster-user', JSON.stringify(newUser));
+      await signInWithEmail(email, password);
+      await loadUserData();
       navigate('/dashboard');
       
       toast({
@@ -99,30 +136,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error("Login error:", error);
       
-      // For demo purposes, allow login with dummy password
-      if (password === 'asdfghjkl') {
-        const newUser = {
-          id: '1',
-          username: email.split('@')[0] || 'Player',
-          email: email,
-          wallet: 10000,
-        };
-        
-        setUser(newUser);
-        localStorage.setItem('betster-user', JSON.stringify(newUser));
-        navigate('/dashboard');
-        
-        toast({
-          title: "Welcome to Betster!",
-          description: "You've successfully logged in with demo credentials.",
-        });
-      } else {
-        toast({
-          title: "Authentication failed",
-          description: error.message || "Invalid credentials. Please try again.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Authentication failed",
+        description: error.message || "Invalid credentials. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -132,53 +150,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      const result: UserCredential = await signInWithPopup(auth, googleProvider);
-      const { user: firebaseUser } = result;
-      
-      const newUser = {
-        id: firebaseUser.uid,
-        username: firebaseUser.displayName || 'Player',
-        email: firebaseUser.email || undefined,
-        photoURL: firebaseUser.photoURL || undefined,
-        wallet: 10000,
-      };
-      
-      setUser(newUser);
-      localStorage.setItem('betster-user', JSON.stringify(newUser));
-      navigate('/dashboard');
-      
-      toast({
-        title: "Welcome to Betster!",
-        description: "You've successfully logged in with Google.",
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/dashboard',
+        },
       });
+      
+      if (error) throw error;
+      
+      // For Google OAuth, we don't need to navigate or set user since the redirect will happen
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       
-      if (error.code === 'auth/unauthorized-domain') {
-        const mockGoogleUser = {
-          id: 'google-' + Math.random().toString(36).substring(2, 9),
-          username: 'Google User',
-          email: 'demo@gmail.com',
-          photoURL: 'https://lh3.googleusercontent.com/a/default-user',
-          wallet: 10000,
-        };
-        
-        setUser(mockGoogleUser);
-        localStorage.setItem('betster-user', JSON.stringify(mockGoogleUser));
-        navigate('/dashboard');
-        
-        toast({
-          title: "Google Sign-in Simulated",
-          description: "This is a demo login since your domain isn't authorized in Firebase.",
-        });
-      } else {
-        toast({
-          title: "Google Sign-in Failed",
-          description: error.message || "Something went wrong with Google authentication.",
-          variant: "destructive",
-        });
-      }
-    } finally {
+      toast({
+        title: "Google Sign-in Failed",
+        description: error.message || "Something went wrong with Google authentication.",
+        variant: "destructive",
+      });
       setIsLoading(false);
     }
   };
@@ -186,67 +175,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (username: string, email: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
-      // Use Firebase to create a new user
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      const { user: firebaseUser } = result;
-      
-      const newUser = {
-        id: firebaseUser.uid,
-        username,
-        email,
-        wallet: 10000,
-      };
-      
-      setUser(newUser);
-      localStorage.setItem('betster-user', JSON.stringify(newUser));
-      navigate('/dashboard');
+      await signUpWithEmail(email, password, username);
       
       toast({
-        title: "Welcome to Betster!",
-        description: "Your account has been created successfully.",
+        title: "Account Created!",
+        description: "Please check your email to confirm your account.",
       });
+      
+      navigate('/login');
     } catch (error: any) {
       console.error("Sign up error:", error);
       
-      // For demo purposes, create a user without Firebase if there's an error
-      if (error) {
-        const newUser = {
-          id: 'user-' + Math.random().toString(36).substring(2, 9),
-          username,
-          email,
-          wallet: 10000,
-        };
-        
-        setUser(newUser);
-        localStorage.setItem('betster-user', JSON.stringify(newUser));
-        navigate('/dashboard');
-        
-        toast({
-          title: "Welcome to Betster!",
-          description: "Your demo account has been created successfully.",
-        });
-      } else {
-        toast({
-          title: "Sign Up Failed",
-          description: error.message || "Something went wrong during sign up.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Sign Up Failed",
+        description: error.message || "Something went wrong during sign up.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const logout = () => {
-    signOut(auth).catch(error => console.error("Firebase sign out error:", error));
-    
-    setUser(null);
-    localStorage.removeItem('betster-user');
-    navigate('/login');
-    toast({
-      title: "Logged out",
-      description: "You've been successfully logged out.",
-    });
+    supabaseSignOut()
+      .then(() => {
+        setUser(null);
+        localStorage.removeItem('betster-user');
+        navigate('/login');
+        toast({
+          title: "Logged out",
+          description: "You've been successfully logged out.",
+        });
+      })
+      .catch(error => {
+        console.error("Error signing out:", error);
+        toast({
+          title: "Error",
+          description: "Failed to log out. Please try again.",
+          variant: "destructive",
+        });
+      });
   };
 
   return (
@@ -260,6 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithGoogle,
         signUp,
         logout,
+        refreshUserData,
       }}
     >
       {children}

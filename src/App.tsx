@@ -19,6 +19,7 @@ import GameScreen from "./pages/GameScreen";
 import GameResultScreen from "./pages/GameResultScreen";
 import MilestonesScreen from "./pages/MilestonesScreen";
 import ReferralScreen from "./pages/ReferralScreen";
+import TransactionHistory from "./pages/TransactionHistory";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => {
                     <Route path="/milestones" element={<MilestonesScreen />} />
                     <Route path="/referral" element={<ReferralScreen />} />
                     <Route path="/kyc" element={<KYCVerificationScreen />} />
+                    <Route path="/transactions" element={<TransactionHistory />} />
                   </Route>
                   
                   <Route path="*" element={<NotFound />} />

@@ -4,10 +4,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import BetsterLogo from "@/components/BetsterLogo";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const Login = () => {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("asdfghjkl");
+  const [password, setPassword] = useState("");
   const [signUpUsername, setSignUpUsername] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
@@ -57,13 +59,13 @@ const Login = () => {
                 <label htmlFor="email" className="text-sm font-medium text-betster-200">
                   Email
                 </label>
-                <input
+                <Input
                   id="email"
                   type="email"
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
+                  className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
                 />
               </div>
 
@@ -71,30 +73,27 @@ const Login = () => {
                 <label htmlFor="password" className="text-sm font-medium text-betster-200">
                   Password
                 </label>
-                <input
+                <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
+                  className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
                 />
-                <p className="text-xs text-betster-400">
-                  For demo: password is 'asdfghjkl'
-                </p>
               </div>
 
-              <button
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="betster-button w-full py-3"
+                className="w-full py-3"
               >
                 {isLoading ? (
                   <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
                 ) : (
                   "Sign In"
                 )}
-              </button>
+              </Button>
             </form>
           </TabsContent>
           
@@ -104,13 +103,13 @@ const Login = () => {
                 <label htmlFor="signUpUsername" className="text-sm font-medium text-betster-200">
                   Username
                 </label>
-                <input
+                <Input
                   id="signUpUsername"
                   type="text"
                   placeholder="Choose a username"
                   value={signUpUsername}
                   onChange={(e) => setSignUpUsername(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
+                  className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
                 />
               </div>
 
@@ -118,13 +117,13 @@ const Login = () => {
                 <label htmlFor="signUpEmail" className="text-sm font-medium text-betster-200">
                   Email
                 </label>
-                <input
+                <Input
                   id="signUpEmail"
                   type="email"
                   placeholder="Enter your email"
                   value={signUpEmail}
                   onChange={(e) => setSignUpEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
+                  className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
                 />
               </div>
 
@@ -132,27 +131,27 @@ const Login = () => {
                 <label htmlFor="signUpPassword" className="text-sm font-medium text-betster-200">
                   Password
                 </label>
-                <input
+                <Input
                   id="signUpPassword"
                   type="password"
                   placeholder="Choose a password"
                   value={signUpPassword}
                   onChange={(e) => setSignUpPassword(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border bg-black/50 border-betster-700/50 backdrop-blur text-white focus:outline-none focus:ring-2 focus:ring-betster-500"
+                  className="bg-black/50 border-betster-700/50 backdrop-blur text-white"
                 />
               </div>
 
-              <button
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="betster-button w-full py-3"
+                className="w-full py-3"
               >
                 {isLoading ? (
                   <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
                 ) : (
                   "Create Account"
                 )}
-              </button>
+              </Button>
             </form>
           </TabsContent>
         </Tabs>
@@ -168,11 +167,12 @@ const Login = () => {
           </div>
         </div>
 
-        <button
+        <Button
           type="button"
           onClick={handleGoogleLogin}
           disabled={isLoading}
-          className="flex items-center justify-center w-full py-2.5 px-4 rounded-md border border-betster-700/50 bg-black/30 hover:bg-black/40 backdrop-blur text-white transition duration-200"
+          variant="outline"
+          className="flex items-center justify-center w-full py-2.5 px-4 bg-black/30 hover:bg-black/40 backdrop-blur border-betster-700/50"
         >
           {isLoading ? (
             <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -203,11 +203,7 @@ const Login = () => {
               Sign in with Google
             </>
           )}
-        </button>
-        
-        <div className="text-xs text-betster-300 mt-4 text-center">
-          <p>Note: For Google sign-in to work in production, you need to add your domain to the Firebase authorized domains list in the Firebase console.</p>
-        </div>
+        </Button>
       </motion.div>
     </div>
   );
