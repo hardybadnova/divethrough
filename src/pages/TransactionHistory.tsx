@@ -12,7 +12,7 @@ interface Transaction {
   id: string;
   user_id: string;
   amount: number;
-  type: 'deposit' | 'withdrawal';
+  type: 'deposit' | 'withdrawal' | 'game_winning' | 'hint_purchase';
   status: 'pending' | 'completed' | 'failed';
   payment_id: string | null;
   transaction_id: string | null;
@@ -41,15 +41,22 @@ const TransactionHistory = () => {
         
         setTransactions(data || []);
 
-        // Calculate total fees paid - now calculated from amounts instead of fee column
+        // Calculate total fees paid
         const completedTransactions = data?.filter(t => t.status === 'completed') || [];
         
-        // Since we don't have fee column, we'll calculate it from the transaction amounts
-        // based on our fee structure (2% for deposits, 1% for withdrawals, min ₹5)
+        // Calculate fees based on transaction type
         const calculateFeeForTransaction = (transaction: Transaction) => {
-          const percentage = transaction.type === 'deposit' ? 2 : 1;
-          const calculatedFee = (transaction.amount * percentage) / 100;
-          return Math.max(calculatedFee, 5); // Minimum fee of ₹5
+          if (transaction.type === 'deposit') {
+            // 2% fee on deposits, minimum ₹5
+            return Math.max((transaction.amount * 2) / 100, 5);
+          } else if (transaction.type === 'withdrawal') {
+            // 1% fee on withdrawals, minimum ₹5
+            return Math.max((transaction.amount * 1) / 100, 5);
+          } else if (transaction.type === 'game_winning') {
+            // 10% house cut on game winnings
+            return (transaction.amount * 10) / 100;
+          }
+          return 0;
         };
         
         const fees = completedTransactions.reduce((sum, t) => sum + calculateFeeForTransaction(t), 0);
@@ -79,9 +86,47 @@ const TransactionHistory = () => {
   
   // Calculate fee for a transaction
   const calculateFee = (transaction: Transaction): number => {
-    const percentage = transaction.type === 'deposit' ? 2 : 1;
-    const calculatedFee = (transaction.amount * percentage) / 100;
-    return Math.max(calculatedFee, 5); // Minimum fee of ₹5
+    if (transaction.type === 'deposit') {
+      // 2% fee on deposits, minimum ₹5
+      return Math.max((transaction.amount * 2) / 100, 5);
+    } else if (transaction.type === 'withdrawal') {
+      // 1% fee on withdrawals, minimum ₹5
+      return Math.max((transaction.amount * 1) / 100, 5);
+    } else if (transaction.type === 'game_winning') {
+      // 10% house cut on game winnings
+      return (transaction.amount * 10) / 100;
+    }
+    return 0;
+  };
+
+  // Get transaction icon based on type
+  const getTransactionIcon = (type: string) => {
+    switch (type) {
+      case 'deposit':
+        return <ArrowDown className="h-5 w-5 text-green-500" />;
+      case 'withdrawal':
+        return <ArrowUp className="h-5 w-5 text-amber-500" />;
+      case 'game_winning':
+        return <Wallet className="h-5 w-5 text-blue-500" />;
+      case 'hint_purchase':
+        return <RefreshCw className="h-5 w-5 text-purple-500" />;
+      default:
+        return <Wallet className="h-5 w-5 text-betster-400" />;
+    }
+  };
+
+  // Get transaction color based on type
+  const getTransactionColor = (type: string) => {
+    switch (type) {
+      case 'deposit':
+      case 'game_winning':
+        return 'text-green-500';
+      case 'withdrawal':
+      case 'hint_purchase':
+        return 'text-amber-500';
+      default:
+        return 'text-betster-400';
+    }
   };
 
   return (
@@ -117,15 +162,11 @@ const TransactionHistory = () => {
                 <div className="flex justify-between items-start">
                   <div className="flex items-center">
                     <div className="mr-3 rounded-full p-2 bg-betster-800/50">
-                      {transaction.type === 'deposit' ? (
-                        <ArrowDown className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <ArrowUp className="h-5 w-5 text-amber-500" />
-                      )}
+                      {getTransactionIcon(transaction.type)}
                     </div>
                     <div>
                       <h3 className="font-medium text-white capitalize">
-                        {transaction.type}
+                        {transaction.type.replace('_', ' ')}
                       </h3>
                       <p className="text-xs text-betster-400">
                         {format(new Date(transaction.created_at), 'PPp')}
@@ -142,8 +183,9 @@ const TransactionHistory = () => {
                   </div>
                   
                   <div className="text-right">
-                    <p className={`font-medium ${transaction.type === 'deposit' ? 'text-green-500' : 'text-amber-500'}`}>
-                      {transaction.type === 'deposit' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    <p className={`font-medium ${getTransactionColor(transaction.type)}`}>
+                      {transaction.type === 'deposit' || transaction.type === 'game_winning' ? '+' : '-'}
+                      {formatCurrency(transaction.amount)}
                     </p>
                     <p className={`text-xs capitalize ${getStatusColor(transaction.status)}`}>
                       {transaction.status}

@@ -12,7 +12,6 @@ interface TransactionDetails {
 }
 
 // Payment gateway configuration
-const RAZORPAY_KEY_ID = 'rzp_test_qD3OinypDKOelt';
 const CASHFREE_APP_ID = 'TEST95084239c7cdea0ebcb9ef6f69499153';
 const CASHFREE_SECRET_KEY = 'TEST5885e4c10d527ca4de110294ec11046c55998677';
 
@@ -21,6 +20,7 @@ const FEE_PERCENTAGE = {
   deposit: 2, // 2% fee on deposits
   withdrawal: 1, // 1% fee on withdrawals
   minimum: 5, // Minimum fee amount in ₹
+  game: 10, // 10% house fee on game winnings
 };
 
 // Calculate transaction fee
@@ -28,6 +28,11 @@ export const calculateFee = (amount: number, type: 'deposit' | 'withdrawal'): nu
   const percentage = FEE_PERCENTAGE[type];
   const calculatedFee = (amount * percentage) / 100;
   return Math.max(calculatedFee, FEE_PERCENTAGE.minimum);
+};
+
+// Calculate game winnings fee (house cut)
+export const calculateGameFee = (winningAmount: number): number => {
+  return (winningAmount * FEE_PERCENTAGE.game) / 100;
 };
 
 // Log transaction in Supabase
@@ -65,7 +70,7 @@ export const logTransaction = async (transaction: TransactionDetails) => {
   }
 };
 
-// Initialize Razorpay payment
+// Initialize Cashfree payment
 export const initializeDeposit = async (userId: string, amount: number) => {
   if (amount < 100) {
     toast({
@@ -81,56 +86,7 @@ export const initializeDeposit = async (userId: string, amount: number) => {
   const totalAmount = amount + fee;
   
   try {
-    // In a real implementation, you would call your backend to create a Razorpay order
-    // For this demo, we'll create a mock order
-    const orderOptions = {
-      key: RAZORPAY_KEY_ID,
-      amount: totalAmount * 100, // Razorpay expects amount in paise
-      currency: "INR",
-      name: "Betster",
-      description: `Wallet Deposit (Fee: ₹${fee})`,
-      image: "/favicon.ico",
-      handler: async function(response: any) {
-        // This function is called when payment is successful
-        const paymentId = response.razorpay_payment_id;
-        
-        try {
-          // Log the transaction
-          await logTransaction({
-            userId,
-            amount,
-            type: 'deposit',
-            status: 'completed',
-            paymentId,
-          });
-          
-          // Update user's wallet balance (only add the actual amount, not the fee)
-          const newBalance = await updateWalletBalance(userId, amount);
-          
-          toast({
-            title: "Deposit Successful",
-            description: `₹${amount} has been added to your wallet (Fee: ₹${fee}).`
-          });
-          
-          return newBalance;
-        } catch (error) {
-          console.error("Error processing deposit:", error);
-          toast({
-            title: "Deposit Error",
-            description: "There was an error processing your deposit. Please contact support.",
-            variant: "destructive"
-          });
-        }
-      },
-      prefill: {
-        name: "Betster User",
-        email: "user@example.com",
-        contact: "9999999999"
-      },
-      theme: {
-        color: "#7e22ce"
-      }
-    };
+    const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     
     // Create a transaction record in pending state
     await logTransaction({
@@ -138,40 +94,11 @@ export const initializeDeposit = async (userId: string, amount: number) => {
       amount,
       type: 'deposit',
       status: 'pending',
+      paymentId: orderId,
     });
     
-    // Check if Razorpay is available
-    if (window && (window as any).Razorpay) {
-      // Open Razorpay payment window
-      const rzp = new (window as any).Razorpay(orderOptions);
-      rzp.open();
-      return rzp;
-    } else {
-      // Fallback to Cashfree if Razorpay is not available
-      return initializeCashfreeDeposit(userId, amount, fee);
-    }
-  } catch (error) {
-    console.error("Payment initialization error:", error);
     toast({
-      title: "Payment Gateway Error",
-      description: "Unable to initialize payment gateway. Please try again later.",
-      variant: "destructive"
-    });
-    return null;
-  }
-};
-
-// Initialize Cashfree payment as an alternative
-const initializeCashfreeDeposit = async (userId: string, amount: number, fee: number) => {
-  try {
-    const totalAmount = amount + fee;
-    const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-    
-    // In a real implementation, you would create an order on your backend
-    // For this demo, we'll mock the order creation and redirect flow
-    
-    toast({
-      title: "Redirecting to Cashfree",
+      title: "Processing with Cashfree",
       description: "You'll be redirected to complete the payment."
     });
     
