@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useStaking } from '@/contexts/StakingContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { ArrowUpRight, Calculator, Clock, CoinIcon, DollarSign, Info, Percent, RefreshCw, TrendingUp, Wallet } from 'lucide-react';
+import { ArrowUpRight, Calculator, Clock, CoinsIcon, DollarSign, Info, Percent, RefreshCw, TrendingUp, Wallet } from 'lucide-react';
 
 const StakingCalculator = ({ plans }) => {
   const [amount, setAmount] = useState<number>(100);
@@ -39,11 +38,8 @@ const StakingCalculator = ({ plans }) => {
     let returns = 0;
     
     if (isCompounding) {
-      // Compound interest formula: A = P(1 + r/n)^(nt)
-      // For simple yearly compounding: A = P(1 + r)^t
       returns = amount * Math.pow(1 + apy, periodInYears) - amount;
     } else {
-      // Simple interest formula: I = Prt
       returns = amount * apy * periodInYears;
     }
     
@@ -254,7 +250,7 @@ const ActiveStakes = ({ stakes, onCancel, onWithdraw }) => {
               <CardTitle>
                 {stake.amount.toLocaleString()} {stake.isCompounding && <Badge variant="outline" className="ml-2">Compounding</Badge>}
               </CardTitle>
-              <Badge variant={stake.status === 'active' ? 'default' : stake.status === 'completed' ? 'success' : 'destructive'}>
+              <Badge variant={stake.status === 'active' ? 'default' : stake.status === 'completed' ? 'outline' : 'destructive'}>
                 {stake.status}
               </Badge>
             </div>
@@ -340,7 +336,7 @@ const StakingDashboard = () => {
         <Card className="premium-glass">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
-              <CoinIcon className="mr-2 h-5 w-5" />
+              <CoinsIcon className="mr-2 h-5 w-5" />
               Total Rewards
             </CardTitle>
           </CardHeader>
