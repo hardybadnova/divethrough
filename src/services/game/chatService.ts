@@ -7,15 +7,20 @@ export const sendChatMessage = async (poolId: string, message: ChatMessage): Pro
   console.log(`Sending message to pool ${poolId}:`, message);
   
   try {
-    // We'll store chat messages in a separate chat_messages table
-    // For now, we'll use the Supabase Realtime channel to broadcast the message
-    await supabase
-      .channel(`chat:${poolId}`)
-      .send({
-        type: 'broadcast',
-        event: 'chat_message',
-        payload: message
+    // Store the message in the chat_messages table
+    const { error } = await supabase
+      .from('chat_messages')
+      .insert({
+        pool_id: poolId,
+        sender: message.sender,
+        message: message.message,
+        timestamp: message.timestamp
       });
+      
+    if (error) {
+      console.error("Error storing chat message:", error);
+      throw error;
+    }
       
     console.log("Message sent successfully");
   } catch (error) {
@@ -28,17 +33,49 @@ export const sendChatMessage = async (poolId: string, message: ChatMessage): Pro
 export const subscribeToChatMessages = (poolId: string, callback: (messages: ChatMessage[]) => void): (() => void) => {
   console.log(`Subscribing to chat messages for pool ${poolId}`);
   
-  // Local storage of messages
-  const messages: ChatMessage[] = [];
+  // Initial fetch of existing messages
+  const fetchExistingMessages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('pool_id', poolId)
+        .order('created_at', { ascending: true });
+        
+      if (error) {
+        console.error("Error fetching existing chat messages:", error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const messages: ChatMessage[] = data.map(msg => ({
+          sender: msg.sender,
+          message: msg.message,
+          timestamp: msg.timestamp
+        }));
+        
+        callback(messages);
+      }
+    } catch (error) {
+      console.error("Error in fetchExistingMessages:", error);
+    }
+  };
   
-  // Create a subscription
+  // Fetch existing messages immediately
+  fetchExistingMessages();
+  
+  // Subscribe to new messages
   const channel = supabase
     .channel(`chat:${poolId}`)
-    .on('broadcast', { event: 'chat_message' }, (payload) => {
-      console.log("Received chat message:", payload);
-      messages.push(payload.payload as ChatMessage);
-      callback([...messages]);
-    })
+    .on('postgres_changes', 
+      { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `pool_id=eq.${poolId}` },
+      (payload) => {
+        console.log("Received new chat message:", payload);
+        
+        // Get all messages again to ensure correct order
+        fetchExistingMessages();
+      }
+    )
     .subscribe();
   
   // Return unsubscribe function
