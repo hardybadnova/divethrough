@@ -5,15 +5,19 @@ import { supabase, updateWalletBalance } from '@/lib/supabase';
 interface TransactionDetails {
   userId: string;
   amount: number;
-  type: 'deposit' | 'withdrawal';
+  type: 'deposit' | 'withdrawal' | 'game_winning' | 'hint_purchase';
   status: 'pending' | 'completed' | 'failed';
   paymentId?: string;
   transactionId?: string;
+  gateway?: 'cashfree' | 'stripe' | 'paytm';
 }
 
 // Payment gateway configuration
 const CASHFREE_APP_ID = 'TEST95084239c7cdea0ebcb9ef6f69499153';
 const CASHFREE_SECRET_KEY = 'TEST5885e4c10d527ca4de110294ec11046c55998677';
+const STRIPE_PK = 'pk_test_51IQwmASA9GcVG1TrzK96lKaLxzkjI9LBJQe46YUXHXGnYwU0IskXGM8s5gSZgWOdREwQ0vvl3kPdfqLTntCY4Drx00wXrQyPSV';
+const PAYTM_MERCHANT_ID = 'TEST_MERCHANT_ID';
+const PAYTM_MERCHANT_KEY = 'TEST_MERCHANT_KEY';
 
 // Platform fee configuration - revenue model
 const FEE_PERCENTAGE = {
@@ -55,6 +59,7 @@ export const logTransaction = async (transaction: TransactionDetails) => {
           status: transaction.status,
           payment_id: transaction.paymentId || null,
           transaction_id: transaction.transactionId || null,
+          gateway: transaction.gateway || null,
           created_at: new Date().toISOString()
         }]);
       
@@ -71,7 +76,7 @@ export const logTransaction = async (transaction: TransactionDetails) => {
 };
 
 // Initialize Cashfree payment
-export const initializeDeposit = async (userId: string, amount: number) => {
+export const initializeCashfreeDeposit = async (userId: string, amount: number) => {
   if (amount < 100) {
     toast({
       title: "Invalid amount",
@@ -95,6 +100,7 @@ export const initializeDeposit = async (userId: string, amount: number) => {
       type: 'deposit',
       status: 'pending',
       paymentId: orderId,
+      gateway: 'cashfree'
     });
     
     toast({
@@ -112,6 +118,7 @@ export const initializeDeposit = async (userId: string, amount: number) => {
           type: 'deposit',
           status: 'completed',
           paymentId: orderId,
+          gateway: 'cashfree'
         });
         
         // Update user's wallet balance
@@ -143,6 +150,175 @@ export const initializeDeposit = async (userId: string, amount: number) => {
       variant: "destructive"
     });
     return null;
+  }
+};
+
+// Initialize Stripe payment
+export const initializeStripeDeposit = async (userId: string, amount: number) => {
+  if (amount < 100) {
+    toast({
+      title: "Invalid amount",
+      description: "Minimum deposit amount is ₹100",
+      variant: "destructive"
+    });
+    return null;
+  }
+  
+  // Calculate fee
+  const fee = calculateFee(amount, 'deposit');
+  const totalAmount = amount + fee;
+  
+  try {
+    const paymentId = `stripe_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    
+    // Create a transaction record in pending state
+    await logTransaction({
+      userId,
+      amount,
+      type: 'deposit',
+      status: 'pending',
+      paymentId: paymentId,
+      gateway: 'stripe'
+    });
+    
+    toast({
+      title: "Processing with Stripe",
+      description: "You'll be redirected to complete the payment."
+    });
+    
+    // Mock successful payment after a delay (in real implementation, this would be handled by Stripe)
+    setTimeout(async () => {
+      try {
+        // Log the transaction
+        await logTransaction({
+          userId,
+          amount,
+          type: 'deposit',
+          status: 'completed',
+          paymentId: paymentId,
+          gateway: 'stripe'
+        });
+        
+        // Update user's wallet balance
+        const newBalance = await updateWalletBalance(userId, amount);
+        
+        toast({
+          title: "Deposit Successful",
+          description: `₹${amount} has been added to your wallet (Fee: ₹${fee}).`
+        });
+        
+        // Refresh the page to show updated balance
+        window.location.reload();
+      } catch (error) {
+        console.error("Error processing Stripe deposit:", error);
+        toast({
+          title: "Deposit Error",
+          description: "There was an error processing your deposit. Please contact support.",
+          variant: "destructive"
+        });
+      }
+    }, 3000);
+    
+    return true;
+  } catch (error) {
+    console.error("Stripe initialization error:", error);
+    toast({
+      title: "Payment Gateway Error",
+      description: "Unable to initialize Stripe payment. Please try again later.",
+      variant: "destructive"
+    });
+    return null;
+  }
+};
+
+// Initialize Paytm payment
+export const initializePaytmDeposit = async (userId: string, amount: number) => {
+  if (amount < 100) {
+    toast({
+      title: "Invalid amount",
+      description: "Minimum deposit amount is ₹100",
+      variant: "destructive"
+    });
+    return null;
+  }
+  
+  // Calculate fee
+  const fee = calculateFee(amount, 'deposit');
+  const totalAmount = amount + fee;
+  
+  try {
+    const paymentId = `paytm_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    
+    // Create a transaction record in pending state
+    await logTransaction({
+      userId,
+      amount,
+      type: 'deposit',
+      status: 'pending',
+      paymentId: paymentId,
+      gateway: 'paytm'
+    });
+    
+    toast({
+      title: "Processing with Paytm",
+      description: "You'll be redirected to complete the payment."
+    });
+    
+    // Mock successful payment after a delay (in real implementation, this would be handled by Paytm)
+    setTimeout(async () => {
+      try {
+        // Log the transaction
+        await logTransaction({
+          userId,
+          amount,
+          type: 'deposit',
+          status: 'completed',
+          paymentId: paymentId,
+          gateway: 'paytm'
+        });
+        
+        // Update user's wallet balance
+        const newBalance = await updateWalletBalance(userId, amount);
+        
+        toast({
+          title: "Deposit Successful",
+          description: `₹${amount} has been added to your wallet (Fee: ₹${fee}).`
+        });
+        
+        // Refresh the page to show updated balance
+        window.location.reload();
+      } catch (error) {
+        console.error("Error processing Paytm deposit:", error);
+        toast({
+          title: "Deposit Error",
+          description: "There was an error processing your deposit. Please contact support.",
+          variant: "destructive"
+        });
+      }
+    }, 3000);
+    
+    return true;
+  } catch (error) {
+    console.error("Paytm initialization error:", error);
+    toast({
+      title: "Payment Gateway Error",
+      description: "Unable to initialize Paytm payment. Please try again later.",
+      variant: "destructive"
+    });
+    return null;
+  }
+};
+
+// Initialize deposit based on selected gateway
+export const initializeDeposit = async (userId: string, amount: number, gateway: 'cashfree' | 'stripe' | 'paytm' = 'cashfree') => {
+  switch (gateway) {
+    case 'stripe':
+      return initializeStripeDeposit(userId, amount);
+    case 'paytm':
+      return initializePaytmDeposit(userId, amount);
+    case 'cashfree':
+    default:
+      return initializeCashfreeDeposit(userId, amount);
   }
 };
 

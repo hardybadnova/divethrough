@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link, useLocation } from "react-router-dom";
@@ -12,6 +11,7 @@ import { initializeDeposit, initiateWithdrawal } from "@/services/paymentService
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -31,10 +31,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     ifsc: '',
     accountHolderName: ''
   });
+  const [selectedGateway, setSelectedGateway] = useState<'cashfree' | 'stripe' | 'paytm'>('cashfree');
 
   const verificationStatus = getVerificationStatus();
   
-  // Load Razorpay script
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -91,9 +91,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     setIsProcessing(true);
     
     try {
-      const razorpay = await initializeDeposit(user.id, depositAmount);
-      if (razorpay) {
-        // Razorpay popup will handle the rest
+      const result = await initializeDeposit(user.id, depositAmount, selectedGateway);
+      if (result) {
         setIsDepositOpen(false);
         setDepositAmount(0);
       }
@@ -137,7 +136,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       return;
     }
     
-    // Validate account details
     if (!accountDetails.accountNumber || !accountDetails.ifsc || !accountDetails.accountHolderName) {
       toast({
         title: "Missing Account Details",
@@ -252,6 +250,21 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                     onChange={(e) => setDepositAmount(Number(e.target.value))}
                     className="bg-betster-900/50 border-betster-700/50 text-white"
                   />
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-betster-300">Select Payment Gateway</label>
+                    <Select value={selectedGateway} onValueChange={(value: 'cashfree' | 'stripe' | 'paytm') => setSelectedGateway(value)}>
+                      <SelectTrigger className="bg-betster-900/50 border-betster-700/50 text-white">
+                        <SelectValue placeholder="Select payment gateway" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black/95 text-white border-betster-700/50">
+                        <SelectItem value="cashfree">Cashfree</SelectItem>
+                        <SelectItem value="stripe">Stripe</SelectItem>
+                        <SelectItem value="paytm">Paytm</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
                   <Button 
                     className="w-full" 
                     onClick={handleDeposit}

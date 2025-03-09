@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
-import { ArrowDown, ArrowUp, RefreshCw, Wallet } from "lucide-react";
+import { ArrowDown, ArrowUp, RefreshCw, Wallet, CreditCard } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { supabase } from "@/lib/supabase";
 
@@ -16,6 +15,7 @@ interface Transaction {
   status: 'pending' | 'completed' | 'failed';
   payment_id: string | null;
   transaction_id: string | null;
+  gateway?: 'cashfree' | 'stripe' | 'paytm' | null;
   created_at: string;
 }
 
@@ -41,19 +41,14 @@ const TransactionHistory = () => {
         
         setTransactions(data || []);
 
-        // Calculate total fees paid
         const completedTransactions = data?.filter(t => t.status === 'completed') || [];
         
-        // Calculate fees based on transaction type
         const calculateFeeForTransaction = (transaction: Transaction) => {
           if (transaction.type === 'deposit') {
-            // 2% fee on deposits, minimum ₹5
             return Math.max((transaction.amount * 2) / 100, 5);
           } else if (transaction.type === 'withdrawal') {
-            // 1% fee on withdrawals, minimum ₹5
             return Math.max((transaction.amount * 1) / 100, 5);
           } else if (transaction.type === 'game_winning') {
-            // 10% house cut on game winnings
             return (transaction.amount * 10) / 100;
           }
           return 0;
@@ -84,22 +79,17 @@ const TransactionHistory = () => {
     }
   };
   
-  // Calculate fee for a transaction
   const calculateFee = (transaction: Transaction): number => {
     if (transaction.type === 'deposit') {
-      // 2% fee on deposits, minimum ₹5
       return Math.max((transaction.amount * 2) / 100, 5);
     } else if (transaction.type === 'withdrawal') {
-      // 1% fee on withdrawals, minimum ₹5
       return Math.max((transaction.amount * 1) / 100, 5);
     } else if (transaction.type === 'game_winning') {
-      // 10% house cut on game winnings
       return (transaction.amount * 10) / 100;
     }
     return 0;
   };
 
-  // Get transaction icon based on type
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'deposit':
@@ -115,7 +105,6 @@ const TransactionHistory = () => {
     }
   };
 
-  // Get transaction color based on type
   const getTransactionColor = (type: string) => {
     switch (type) {
       case 'deposit':
@@ -126,6 +115,19 @@ const TransactionHistory = () => {
         return 'text-amber-500';
       default:
         return 'text-betster-400';
+    }
+  };
+
+  const getGatewayName = (gateway: string | null | undefined) => {
+    switch (gateway) {
+      case 'cashfree':
+        return 'Cashfree';
+      case 'stripe':
+        return 'Stripe';
+      case 'paytm':
+        return 'Paytm';
+      default:
+        return 'Default';
     }
   };
 
@@ -174,6 +176,12 @@ const TransactionHistory = () => {
                       {transaction.payment_id && (
                         <p className="text-xs text-betster-400 mt-1">
                           ID: {transaction.payment_id}
+                        </p>
+                      )}
+                      {transaction.gateway && transaction.type === 'deposit' && (
+                        <p className="text-xs text-betster-400 mt-1 flex items-center">
+                          <CreditCard className="h-3 w-3 mr-1" />
+                          {getGatewayName(transaction.gateway)}
                         </p>
                       )}
                       <p className="text-xs text-betster-400 mt-1">
