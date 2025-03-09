@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { useAuthOperations } from '@/hooks/use-auth-operations';
 import { AuthContextType } from '@/types/auth';
@@ -28,6 +28,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading,
     loadUserData
   });
+  
+  // Add effect to log auth state changes for debugging
+  useEffect(() => {
+    console.log("Auth context state updated:", { 
+      isAuthenticated: !!user,
+      isLoading,
+      userId: user?.id
+    });
+  }, [user, isLoading]);
 
   return (
     <AuthContext.Provider

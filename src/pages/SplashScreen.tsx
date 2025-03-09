@@ -6,11 +6,11 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const SplashScreen = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [animationComplete, setAnimationComplete] = useState(false);
 
   useEffect(() => {
-    // Simulate loading time
+    // Simulate loading time for splash animation
     const timer = setTimeout(() => {
       setAnimationComplete(true);
       console.log("Splash animation complete");
@@ -20,9 +20,16 @@ const SplashScreen = () => {
   }, []);
 
   useEffect(() => {
+    console.log("SplashScreen effect - states:", { 
+      animationComplete, 
+      isLoading, 
+      isAuthenticated,
+      userId: user?.id
+    });
+    
+    // Only proceed when animation is complete and auth state is determined
     if (animationComplete && !isLoading) {
-      // Check if user is already logged in
-      console.log("Navigation check - Auth state:", { isAuthenticated, isLoading });
+      console.log("Ready to navigate from splash screen");
       
       if (isAuthenticated) {
         console.log("User is authenticated, navigating to dashboard");
@@ -32,7 +39,26 @@ const SplashScreen = () => {
         navigate('/login');
       }
     }
-  }, [animationComplete, isAuthenticated, isLoading, navigate]);
+  }, [animationComplete, isAuthenticated, isLoading, navigate, user]);
+
+  // Force navigation after a timeout to prevent getting stuck
+  useEffect(() => {
+    const forceNavigationTimer = setTimeout(() => {
+      if (document.location.pathname === '/') {
+        console.log("Force navigation triggered after timeout");
+        const hasStoredUser = localStorage.getItem('betster-user');
+        if (hasStoredUser) {
+          console.log("Found stored user, forcing navigation to dashboard");
+          navigate('/dashboard');
+        } else {
+          console.log("No stored user, forcing navigation to login");
+          navigate('/login');
+        }
+      }
+    }, 5000); // Force navigation after 5 seconds if still on splash screen
+
+    return () => clearTimeout(forceNavigationTimer);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-betster-gradient">

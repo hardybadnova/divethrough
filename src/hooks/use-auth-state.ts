@@ -16,11 +16,16 @@ export const useAuthState = () => {
   const navigate = useNavigate();
 
   const loadUserData = async () => {
+    console.log("Loading user data...");
+    setIsLoading(true);
     try {
       const currentUser = await getCurrentUser();
+      console.log("Current user from supabase:", currentUser ? "Found" : "Not found");
+      
       if (currentUser) {
         try {
           const profile = await getUserProfile(currentUser.id);
+          console.log("User profile loaded");
           
           const newUser = {
             id: currentUser.id,
@@ -47,6 +52,7 @@ export const useAuthState = () => {
           localStorage.setItem('betster-user', JSON.stringify(newUser));
         }
       } else {
+        console.log("No current user found, setting user to null");
         setUser(null);
         localStorage.removeItem('betster-user');
       }
@@ -55,6 +61,7 @@ export const useAuthState = () => {
       setUser(null);
       localStorage.removeItem('betster-user');
     } finally {
+      console.log("User data loading complete, setting isLoading to false");
       setIsLoading(false);
     }
   };
@@ -89,8 +96,10 @@ export const useAuthState = () => {
   };
 
   useEffect(() => {
+    console.log("Auth state hook initialized");
     const storedUser = localStorage.getItem('betster-user');
     if (storedUser) {
+      console.log("Found stored user, setting initial state");
       setUser(JSON.parse(storedUser));
     }
     
@@ -105,6 +114,7 @@ export const useAuthState = () => {
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           localStorage.removeItem('betster-user');
+          setIsLoading(false);
         }
       }
     );
