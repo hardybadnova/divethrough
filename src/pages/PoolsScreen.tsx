@@ -65,7 +65,7 @@ const PoolsScreen = () => {
           if (poolsAfterInit && poolsAfterInit.length > 0) {
             console.log(`PoolsScreen: Found ${poolsAfterInit.length} ${gameType} pools after initialization`);
             
-            const formattedPools = poolsAfterInit
+            const formattedPools: Pool[] = poolsAfterInit
               .filter(p => p.game_type === gameType)
               .map(pool => ({
                 id: pool.id,
@@ -74,7 +74,7 @@ const PoolsScreen = () => {
                 maxPlayers: pool.max_players,
                 currentPlayers: pool.current_players || 0,
                 status: pool.status,
-                numberRange: [pool.number_range_min, pool.number_range_max],
+                numberRange: [pool.number_range_min, pool.number_range_max] as [number, number],
                 playFrequency: pool.play_frequency,
                 players: []
               }));
@@ -87,7 +87,7 @@ const PoolsScreen = () => {
         } else {
           console.log(`PoolsScreen: Found ${data.length} ${gameType} pools`);
           
-          const formattedPools = data
+          const formattedPools: Pool[] = data
             .filter(p => p.game_type === gameType)
             .map(pool => ({
               id: pool.id,
@@ -96,7 +96,7 @@ const PoolsScreen = () => {
               maxPlayers: pool.max_players,
               currentPlayers: pool.current_players || 0,
               status: pool.status,
-              numberRange: [pool.number_range_min, pool.number_range_max],
+              numberRange: [pool.number_range_min, pool.number_range_max] as [number, number],
               playFrequency: pool.play_frequency,
               players: []
             }));
@@ -144,7 +144,7 @@ const PoolsScreen = () => {
       if (data && data.length > 0) {
         console.log(`PoolsScreen: Refreshed ${data.length} ${gameType} pools`);
         
-        const formattedPools = data
+        const formattedPools: Pool[] = data
           .filter(p => p.game_type === gameType)
           .map(pool => ({
             id: pool.id,
@@ -153,7 +153,7 @@ const PoolsScreen = () => {
             maxPlayers: pool.max_players,
             currentPlayers: pool.current_players || 0,
             status: pool.status,
-            numberRange: [pool.number_range_min, pool.number_range_max],
+            numberRange: [pool.number_range_min, pool.number_range_max] as [number, number],
             playFrequency: pool.play_frequency,
             players: []
           }));

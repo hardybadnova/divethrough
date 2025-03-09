@@ -81,7 +81,7 @@ export async function fetchPoolWithPlayers(poolId: string): Promise<Pool | null>
       maxPlayers: poolData.max_players,
       currentPlayers: poolData.current_players || 0,
       status: poolData.status,
-      numberRange: [poolData.number_range_min, poolData.number_range_max],
+      numberRange: [poolData.number_range_min, poolData.number_range_max] as [number, number],
       playFrequency: poolData.play_frequency,
       players
     } as Pool;
@@ -153,7 +153,7 @@ export async function fetchAllPools(): Promise<Pool[]> {
       maxPlayers: pool.max_players,
       currentPlayers: pool.current_players || 0,
       status: pool.status,
-      numberRange: [pool.number_range_min, pool.number_range_max],
+      numberRange: [pool.number_range_min, pool.number_range_max] as [number, number],
       playFrequency: pool.play_frequency,
       players: []
     }));
