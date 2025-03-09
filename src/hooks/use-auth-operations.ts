@@ -62,6 +62,9 @@ export const useAuthOperations = ({
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
+          queryParams: {
+            client_id: '368870425319-s9uqj1046ov63l4kttp824g359cl8b9u.apps.googleusercontent.com',
+          },
           redirectTo: window.location.origin + '/dashboard',
         },
       });
