@@ -9,10 +9,25 @@ interface TransactionDetails {
   status: 'pending' | 'completed' | 'failed';
   paymentId?: string;
   transactionId?: string;
+  fee?: number;
 }
 
 // Razorpay configuration
 const RAZORPAY_KEY_ID = 'rzp_test_qD3OinypDKOelt';
+
+// Platform fee configuration - revenue model
+const FEE_PERCENTAGE = {
+  deposit: 2, // 2% fee on deposits
+  withdrawal: 1, // 1% fee on withdrawals
+  minimum: 5, // Minimum fee amount in ₹
+};
+
+// Calculate transaction fee
+export const calculateFee = (amount: number, type: 'deposit' | 'withdrawal'): number => {
+  const percentage = FEE_PERCENTAGE[type];
+  const calculatedFee = (amount * percentage) / 100;
+  return Math.max(calculatedFee, FEE_PERCENTAGE.minimum);
+};
 
 // Log transaction in Supabase
 export const logTransaction = async (transaction: TransactionDetails) => {
@@ -25,6 +40,7 @@ export const logTransaction = async (transaction: TransactionDetails) => {
       status: transaction.status,
       payment_id: transaction.paymentId || null,
       transaction_id: transaction.transactionId || null,
+      fee: transaction.fee || null,
       created_at: new Date().toISOString()
     }]);
   
@@ -42,15 +58,19 @@ export const initializeDeposit = async (userId: string, amount: number) => {
     return null;
   }
   
+  // Calculate fee
+  const fee = calculateFee(amount, 'deposit');
+  const totalAmount = amount + fee;
+  
   try {
     // In a real implementation, you would call your backend to create a Razorpay order
     // For this demo, we'll create a mock order
     const orderOptions = {
       key: RAZORPAY_KEY_ID,
-      amount: amount * 100, // Razorpay expects amount in paise
+      amount: totalAmount * 100, // Razorpay expects amount in paise
       currency: "INR",
       name: "Betster",
-      description: "Wallet Deposit",
+      description: `Wallet Deposit (Fee: ₹${fee})`,
       image: "/favicon.ico",
       handler: async function(response: any) {
         // This function is called when payment is successful
@@ -63,15 +83,16 @@ export const initializeDeposit = async (userId: string, amount: number) => {
             amount,
             type: 'deposit',
             status: 'completed',
-            paymentId
+            paymentId,
+            fee
           });
           
-          // Update user's wallet balance
+          // Update user's wallet balance (only add the actual amount, not the fee)
           const newBalance = await updateWalletBalance(userId, amount);
           
           toast({
             title: "Deposit Successful",
-            description: `₹${amount} has been added to your wallet.`
+            description: `₹${amount} has been added to your wallet (Fee: ₹${fee}).`
           });
           
           return newBalance;
@@ -99,7 +120,8 @@ export const initializeDeposit = async (userId: string, amount: number) => {
       userId,
       amount,
       type: 'deposit',
-      status: 'pending'
+      status: 'pending',
+      fee
     });
     
     // Open Razorpay payment window
@@ -128,6 +150,10 @@ export const initiateWithdrawal = async (userId: string, amount: number, account
     return false;
   }
   
+  // Calculate fee
+  const fee = calculateFee(amount, 'withdrawal');
+  const totalDeduction = amount + fee;
+  
   try {
     // In a real implementation, you would call your backend to process the withdrawal
     // For this demo, we'll simulate a successful withdrawal
@@ -138,13 +164,14 @@ export const initiateWithdrawal = async (userId: string, amount: number, account
       amount,
       type: 'withdrawal',
       status: 'pending',
+      fee
     });
     
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Update user's wallet balance (deduct amount)
-    const newBalance = await updateWalletBalance(userId, -amount);
+    // Update user's wallet balance (deduct amount plus fee)
+    const newBalance = await updateWalletBalance(userId, -totalDeduction);
     
     // Update transaction status to completed
     const { error } = await supabase
@@ -160,7 +187,7 @@ export const initiateWithdrawal = async (userId: string, amount: number, account
     
     toast({
       title: "Withdrawal Initiated",
-      description: `₹${amount} will be credited to your account within 24-48 hours.`
+      description: `₹${amount} will be credited to your account within 24-48 hours (Fee: ₹${fee}).`
     });
     
     return newBalance;

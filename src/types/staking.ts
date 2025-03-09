@@ -8,6 +8,7 @@ export interface StakingPlan {
   apy: number; // Annual Percentage Yield (in percentage)
   minAmount: number;
   description: string;
+  fee?: number; // Platform fee percentage for this plan
 }
 
 export interface UserStake {
@@ -20,6 +21,7 @@ export interface UserStake {
   status: 'active' | 'completed' | 'cancelled';
   rewards: number;
   isCompounding: boolean;
+  fee?: number; // Fee amount charged for this stake
 }
 
 export interface StakingContextType {

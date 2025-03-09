@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
-import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
+import { ArrowDown, ArrowUp, RefreshCw, Wallet } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { supabase } from "@/lib/supabase";
 
@@ -16,6 +16,7 @@ interface Transaction {
   status: 'pending' | 'completed' | 'failed';
   payment_id: string | null;
   transaction_id: string | null;
+  fee: number | null;
   created_at: string;
 }
 
@@ -23,6 +24,7 @@ const TransactionHistory = () => {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [totalFees, setTotalFees] = useState(0);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -39,6 +41,11 @@ const TransactionHistory = () => {
         if (error) throw error;
         
         setTransactions(data || []);
+
+        // Calculate total fees paid
+        const completedTransactions = data?.filter(t => t.status === 'completed') || [];
+        const fees = completedTransactions.reduce((sum, t) => sum + (t.fee || 0), 0);
+        setTotalFees(fees);
       } catch (error) {
         console.error("Error fetching transactions:", error);
       } finally {
@@ -113,6 +120,11 @@ const TransactionHistory = () => {
                           ID: {transaction.payment_id}
                         </p>
                       )}
+                      {transaction.fee !== null && (
+                        <p className="text-xs text-betster-400 mt-1">
+                          Fee: {formatCurrency(transaction.fee)}
+                        </p>
+                      )}
                     </div>
                   </div>
                   
@@ -127,6 +139,14 @@ const TransactionHistory = () => {
                 </div>
               </div>
             ))}
+
+            {totalFees > 0 && (
+              <div className="mt-6 p-4 rounded-xl bg-betster-900/40 border border-betster-700/40">
+                <p className="text-betster-300 text-sm">
+                  Total fees paid: <span className="text-white font-medium">{formatCurrency(totalFees)}</span>
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -135,6 +155,3 @@ const TransactionHistory = () => {
 };
 
 export default TransactionHistory;
-
-// Missing dependency import
-import { Wallet } from "lucide-react";
