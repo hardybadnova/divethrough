@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { ArrowDown, ArrowUp, RefreshCw, Wallet, CreditCard } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
-import { supabase } from "@/lib/supabase";
+import { supabase } from '@/lib/supabase';
 
 interface Transaction {
   id: string;
