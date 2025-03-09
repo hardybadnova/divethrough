@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -63,21 +62,32 @@ export const useAuthOperations = ({
         provider: 'google',
         options: {
           queryParams: {
-            client_id: '368870425319-s9uqj1046ov63l4kttp824g359cl8b9u.apps.googleusercontent.com',
+            access_type: 'offline',
+            prompt: 'consent',
           },
           redirectTo: window.location.origin + '/dashboard',
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("provider is not enabled")) {
+          throw new Error("Google authentication is not enabled in Supabase. Please enable it in your Supabase project settings.");
+        }
+        throw error;
+      }
       
       // For Google OAuth, we don't need to navigate or set user since the redirect will happen
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       
+      let errorMessage = error.message || "Something went wrong with Google authentication.";
+      if (errorMessage.includes("provider is not enabled")) {
+        errorMessage = "Google login is not enabled. Please contact the administrator to enable Google authentication.";
+      }
+      
       toast({
         title: "Google Sign-in Failed",
-        description: error.message || "Something went wrong with Google authentication.",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error; // Rethrow for the component to handle
