@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -57,16 +58,17 @@ export const useAuthOperations = ({
   
   const loginWithGoogle = async (): Promise<void> => {
     try {
-      console.log("Starting Google sign-in process...");
-      await signInWithGoogle();
-      console.log("Google OAuth process initiated successfully");
-      // The redirect to Google will happen automatically
+      console.log("Starting Google sign-in process from hook...");
+      const response = await signInWithGoogle();
+      console.log("Google OAuth process initiated successfully", response);
+      
+      // The redirect will happen automatically, no need to do anything here
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       
       toast({
         title: "Google Sign-in Failed",
-        description: error.message || "Failed to initialize Google authentication.",
+        description: error.message || "Failed to initialize Google authentication. Please try again later.",
         variant: "destructive",
       });
       throw error;

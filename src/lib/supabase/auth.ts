@@ -47,21 +47,35 @@ export const signInWithEmail = async (email: string, password: string) => {
 export const signInWithGoogle = async () => {
   try {
     console.log("Starting Google sign-in process...");
+    
+    // Check if we're in development or production
+    const redirectUrl = `${window.location.origin}/dashboard`;
+    console.log("Redirect URL:", redirectUrl);
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
       }
     });
     
     if (error) {
       console.error("Google auth error:", error);
+      toast({
+        title: "Google Sign-in Failed",
+        description: error.message || "Could not initialize Google sign-in. Please try again or use email login.",
+        variant: "destructive",
+      });
       throw error;
     }
     
-    console.log("Google auth process started:", data);
+    console.log("Google auth process started successfully:", data);
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error during Google sign-in:", error);
     throw error;
   }
