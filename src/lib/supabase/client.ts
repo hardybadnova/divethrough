@@ -10,7 +10,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
+    detectSessionInUrl: false,
   },
 });
+
+// Export to make debugging easier
+if (typeof window !== 'undefined') {
+  (window as any).supabase = supabase;
+}

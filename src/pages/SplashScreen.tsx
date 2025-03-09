@@ -31,7 +31,7 @@ const SplashScreen = () => {
     if (animationComplete && !isLoading) {
       console.log("Ready to navigate from splash screen");
       
-      if (isAuthenticated) {
+      if (isAuthenticated && user) {
         console.log("User is authenticated, navigating to dashboard");
         navigate('/dashboard');
       } else {
@@ -46,16 +46,9 @@ const SplashScreen = () => {
     const forceNavigationTimer = setTimeout(() => {
       if (document.location.pathname === '/') {
         console.log("Force navigation triggered after timeout");
-        const hasStoredUser = localStorage.getItem('betster-user');
-        if (hasStoredUser) {
-          console.log("Found stored user, forcing navigation to dashboard");
-          navigate('/dashboard');
-        } else {
-          console.log("No stored user, forcing navigation to login");
-          navigate('/login');
-        }
+        navigate('/login'); // Default to login if we're still on splash
       }
-    }, 5000); // Force navigation after 5 seconds if still on splash screen
+    }, 3000); // Force navigation after 3 seconds if still on splash screen
 
     return () => clearTimeout(forceNavigationTimer);
   }, [navigate]);
