@@ -58,41 +58,29 @@ export const useAuthOperations = ({
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-          redirectTo: window.location.origin + '/dashboard',
+          redirectTo: `${window.location.origin}/dashboard`,
         },
       });
       
       if (error) {
-        if (error.message.includes("provider is not enabled")) {
-          throw new Error("Google authentication is not enabled in Supabase. Please enable it in your Supabase project settings.");
-        }
+        console.error("Detailed Google sign-in error:", error);
         throw error;
       }
       
-      // For Google OAuth, we don't need to navigate or set user since the redirect will happen
+      // For Google OAuth, we don't need to navigate as the redirect will happen automatically
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       
-      let errorMessage = error.message || "Something went wrong with Google authentication.";
-      if (errorMessage.includes("provider is not enabled")) {
-        errorMessage = "Google login is not enabled. Please contact the administrator to enable Google authentication.";
-      }
-      
       toast({
         title: "Google Sign-in Failed",
-        description: errorMessage,
+        description: "Failed to initialize Google authentication. Please try again later.",
         variant: "destructive",
       });
-      throw error; // Rethrow for the component to handle
-    } finally {
       setIsLoading(false);
+      throw error;
     }
   };
 
