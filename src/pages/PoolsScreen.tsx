@@ -27,12 +27,15 @@ const PoolsScreen = () => {
         await initializeData();
         console.log("PoolsScreen: Game data initialized");
         
-        // Get pools after initialization
-        if (gameType) {
-          const fetchedPools = getPoolsByGameType(gameType);
-          console.log(`PoolsScreen: Got ${fetchedPools.length} pools for ${gameType}`);
-          setPools(fetchedPools);
-        }
+        // Delay fetching pools slightly to ensure initialization completes
+        setTimeout(() => {
+          if (gameType) {
+            const fetchedPools = getPoolsByGameType(gameType);
+            console.log(`PoolsScreen: Got ${fetchedPools.length} pools for ${gameType}`);
+            setPools(fetchedPools);
+            setIsLoading(false);
+          }
+        }, 1000);
       } catch (error) {
         console.error("Failed to initialize game data:", error);
         toast({
@@ -40,7 +43,6 @@ const PoolsScreen = () => {
           description: "Failed to initialize game data. Please refresh the page.",
           variant: "destructive",
         });
-      } finally {
         setIsLoading(false);
       }
     };
@@ -74,6 +76,11 @@ const PoolsScreen = () => {
   const handleJoinPool = (poolId: string, entryFee: number) => {
     if (!user) {
       console.log("PoolsScreen: Cannot join pool, user not authenticated");
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to join this pool.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -131,7 +138,13 @@ const PoolsScreen = () => {
         ) : pools.length === 0 ? (
           <div className="text-center p-8">
             <h3 className="text-lg font-medium mb-2">No pools available</h3>
-            <p className="text-muted-foreground">Check back later for available pools</p>
+            <p className="text-muted-foreground">Check back later for available pools or try refreshing</p>
+            <button 
+              className="betster-button mt-4"
+              onClick={() => window.location.reload()}
+            >
+              Refresh Pools
+            </button>
           </div>
         ) : (
           <motion.div
