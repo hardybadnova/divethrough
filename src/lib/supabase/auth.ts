@@ -53,9 +53,10 @@ export const signInWithGoogle = async () => {
     const redirectTo = `${origin}/dashboard`;
     console.log("Using redirect URL:", redirectTo);
     
-    // Get Supabase client info
+    // Log Supabase project info without accessing protected properties
     console.log("Initiating Google OAuth with Supabase");
-    console.log("Project URL:", supabase.supabaseUrl);
+    // Instead of directly accessing supabaseUrl, we'll just log what we know
+    console.log("Make sure your Supabase project and Google OAuth are properly configured");
     
     // Use the specific client ID from your Google console
     const { data, error } = await supabase.auth.signInWithOAuth({
