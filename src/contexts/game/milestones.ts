@@ -1,4 +1,6 @@
 
+import { Player } from "@/types/game";
+
 // Milestone thresholds and bonus percentages
 export const milestones = [
   { threshold: 1000, bonusPercentage: 5 },
