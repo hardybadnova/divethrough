@@ -30,11 +30,7 @@ const SocialAuthButtons = ({ onGoogleLogin, isLoading }: SocialAuthButtonsProps)
       console.error("Google sign-in failed:", error);
       setIsSubmitting(false);
       
-      toast({
-        title: "Google Sign-in Failed",
-        description: error.message || "Failed to start Google sign-in. Please try email login instead.",
-        variant: "destructive",
-      });
+      // Error toast is handled in the auth.ts file
     }
   };
 

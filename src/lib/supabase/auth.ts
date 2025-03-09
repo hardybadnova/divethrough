@@ -44,6 +44,7 @@ export const signInWithEmail = async (email: string, password: string) => {
   return data;
 };
 
+// Updated Google sign-in function with better error handling and feedback
 export const signInWithGoogle = async () => {
   try {
     console.log("Starting Google sign-in process...");
@@ -53,36 +54,36 @@ export const signInWithGoogle = async () => {
     const redirectTo = `${origin}/dashboard`;
     console.log("Using redirect URL:", redirectTo);
     
-    // Log Supabase project info without accessing protected properties
-    console.log("Initiating Google OAuth with Supabase");
-    // Instead of directly accessing supabaseUrl, we'll just log what we know
-    console.log("Make sure your Supabase project and Google OAuth are properly configured");
-    
-    // Use the specific client ID from your Google console
+    // Attempt to sign in with Google
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
-        queryParams: {
-          // These parameters help ensure proper OAuth flow
-          access_type: 'offline',
-          prompt: 'consent',
-        }
       }
     });
     
     if (error) {
       console.error("Google auth error details:", JSON.stringify(error));
-      toast({
-        title: "Google Sign-in Failed",
-        description: `Error: ${error.message || "Could not initialize Google sign-in"}. Please try email login instead.`,
-        variant: "destructive",
-      });
+      
+      // Provide specific guidance based on the error
+      if (error.message?.includes("provider is not enabled")) {
+        toast({
+          title: "Google Sign-in Not Configured",
+          description: "Google authentication is not enabled in Supabase. Please use email login instead.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Google Sign-in Failed",
+          description: `Error: ${error.message || "Could not initialize Google sign-in"}. Please try email login instead.`,
+          variant: "destructive",
+        });
+      }
       throw error;
     }
     
     console.log("Google auth process initiated successfully");
-    console.log("Auth URL:", data?.url); // This will log the URL where the user is being redirected
+    console.log("Auth URL:", data?.url);
     return data;
   } catch (error: any) {
     console.error("Error during Google sign-in:", error);
