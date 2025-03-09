@@ -123,6 +123,39 @@ export type Database = {
           },
         ]
       }
+      staking_plans: {
+        Row: {
+          apy: number
+          created_at: string
+          description: string
+          fee: number | null
+          id: string
+          min_amount: number
+          name: string
+          period: string
+        }
+        Insert: {
+          apy: number
+          created_at?: string
+          description: string
+          fee?: number | null
+          id?: string
+          min_amount?: number
+          name: string
+          period: string
+        }
+        Update: {
+          apy?: number
+          created_at?: string
+          description?: string
+          fee?: number | null
+          id?: string
+          min_amount?: number
+          name?: string
+          period?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
@@ -191,12 +224,106 @@ export type Database = {
         }
         Relationships: []
       }
+      user_stakes: {
+        Row: {
+          amount: number
+          created_at: string
+          end_date: string
+          fee: number | null
+          id: string
+          is_compounding: boolean
+          plan_id: string
+          rewards: number
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          end_date: string
+          fee?: number | null
+          id?: string
+          is_compounding?: boolean
+          plan_id: string
+          rewards?: number
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          end_date?: string
+          fee?: number | null
+          id?: string
+          is_compounding?: boolean
+          plan_id?: string
+          rewards?: number
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_stakes_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "staking_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_stakes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_user_staking_totals: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: {
+          total_staked: number
+          total_rewards: number
+        }[]
+      }
+      cancel_stake: {
+        Args: {
+          p_stake_id: string
+          p_user_id: string
+          p_refund_amount: number
+        }
+        Returns: undefined
+      }
+      create_stake: {
+        Args: {
+          p_user_id: string
+          p_plan_id: string
+          p_amount: number
+          p_start_date: string
+          p_end_date: string
+          p_is_compounding: boolean
+        }
+        Returns: undefined
+      }
+      withdraw_stake_rewards: {
+        Args: {
+          p_stake_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,6 +1,5 @@
-
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 import { StakingPlan, UserStake } from '@/types/staking';
 
 // Get available staking plans
