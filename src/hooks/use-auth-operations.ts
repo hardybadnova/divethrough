@@ -56,21 +56,26 @@ export const useAuthOperations = ({
   };
   
   const loginWithGoogle = async (): Promise<void> => {
-    setIsLoading(true);
-    
     try {
-      console.log("Starting Google sign-in process...");
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      console.log("Starting Google sign-in process with specific configuration...");
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
       });
       
-      console.log("Sign-in response:", data ? "Data exists" : "No data", error ? `Error: ${error.message}` : "No error");
-      
       if (error) {
+        console.error("Google OAuth error during initialization:", error);
         throw error;
       }
       
-      // No need to navigate as this will trigger a redirect to Google
+      console.log("Google OAuth process initiated successfully");
+      // The redirect to Google will happen automatically
     } catch (error: any) {
       console.error("Google sign-in error details:", error);
       
@@ -79,8 +84,6 @@ export const useAuthOperations = ({
         description: error.message || "Failed to initialize Google authentication.",
         variant: "destructive",
       });
-      
-      setIsLoading(false);
     }
   };
 

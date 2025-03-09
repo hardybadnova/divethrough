@@ -106,16 +106,19 @@ const Login = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      console.log("Initiating Google login...");
+      console.log("Initiating Google login from button click...");
+      setIsSubmitting(true);
       await loginWithGoogle();
     } catch (error: any) {
-      console.error("Google sign-in error in component:", error);
+      console.error("Google sign-in failed at component level:", error);
       
       toast({
         title: "Google Sign-in Failed",
-        description: "Failed to connect to Google. Please try again later.",
+        description: "Unable to sign in with Google. Please try again later.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
