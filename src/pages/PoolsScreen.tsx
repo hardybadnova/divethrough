@@ -6,19 +6,20 @@ import { useGame } from "@/contexts/GameContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/formatters";
 import { motion } from "framer-motion";
-import { Users, ArrowRight } from "lucide-react";
+import { Users, ArrowRight, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Pool } from "@/types/game";
+import { fetchAllPools } from "@/services/gameService";
 
 const PoolsScreen = () => {
   const { gameType } = useParams<{ gameType: string }>();
-  const { getPoolsByGameType, joinPool, initializeData } = useGame();
+  const { joinPool, initializeData } = useGame();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [pools, setPools] = useState<Pool[]>([]);
 
-  // Initialize game data when component loads
+  // Initialize game data and fetch pools
   useEffect(() => {
     const initialize = async () => {
       try {
@@ -27,15 +28,21 @@ const PoolsScreen = () => {
         await initializeData();
         console.log("PoolsScreen: Game data initialized");
         
-        // Delay fetching pools slightly to ensure initialization completes
-        setTimeout(() => {
+        // Fetch pools directly from Supabase
+        const fetchPools = async () => {
+          const allPools = await fetchAllPools();
+          console.log(`PoolsScreen: Fetched ${allPools.length} pools from Supabase`);
+          
           if (gameType) {
-            const fetchedPools = getPoolsByGameType(gameType);
-            console.log(`PoolsScreen: Got ${fetchedPools.length} pools for ${gameType}`);
-            setPools(fetchedPools);
-            setIsLoading(false);
+            const filteredPools = allPools.filter(pool => pool.gameType === gameType);
+            console.log(`PoolsScreen: Filtered ${filteredPools.length} ${gameType} pools`);
+            setPools(filteredPools);
           }
-        }, 1000);
+          
+          setIsLoading(false);
+        };
+        
+        fetchPools();
       } catch (error) {
         console.error("Failed to initialize game data:", error);
         toast({
@@ -48,16 +55,28 @@ const PoolsScreen = () => {
     };
     
     initialize();
-  }, [initializeData, gameType, getPoolsByGameType]);
+  }, [initializeData, gameType]);
 
-  // Update pools when gameType changes
-  useEffect(() => {
-    if (gameType && !isLoading) {
-      const fetchedPools = getPoolsByGameType(gameType);
-      console.log(`PoolsScreen: Game type changed to ${gameType}, got ${fetchedPools.length} pools`);
-      setPools(fetchedPools);
+  // Manual refresh function
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    try {
+      const allPools = await fetchAllPools();
+      if (gameType) {
+        const filteredPools = allPools.filter(pool => pool.gameType === gameType);
+        console.log(`PoolsScreen: Refreshed ${filteredPools.length} ${gameType} pools`);
+        setPools(filteredPools);
+      }
+    } catch (error) {
+      console.error("Error refreshing pools:", error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh pools. Please try again.",
+        variant: "destructive",
+      });
     }
-  }, [gameType, getPoolsByGameType, isLoading]);
+    setIsLoading(false);
+  };
 
   // Game titles mapping
   const gameTitles: Record<string, string> = {
@@ -117,13 +136,23 @@ const PoolsScreen = () => {
     <AppLayout>
       <div className="flex-1 container max-w-lg mx-auto px-4 py-6">
         <div className="space-y-2 mb-8">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight">
-              {gameTitles[gameType || ""]} Pools
-            </h1>
-            <div className="betster-chip animate-pulse">
-              Live
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight">
+                {gameTitles[gameType || ""]} Pools
+              </h1>
+              <div className="betster-chip animate-pulse">
+                Live
+              </div>
             </div>
+            <button 
+              onClick={handleRefresh} 
+              className="betster-button-secondary" 
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
           </div>
           <p className="text-muted-foreground">
             Select a pool to join and start playing
@@ -141,7 +170,7 @@ const PoolsScreen = () => {
             <p className="text-muted-foreground">Check back later for available pools or try refreshing</p>
             <button 
               className="betster-button mt-4"
-              onClick={() => window.location.reload()}
+              onClick={handleRefresh}
             >
               Refresh Pools
             </button>

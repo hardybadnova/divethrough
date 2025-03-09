@@ -12,7 +12,7 @@ export const initializeGameData = async (initialPools) => {
   try {
     console.log("Initializing game data with pools:", initialPools);
     
-    // We'll use the pool service to initialize the data
+    // Check if pools already exist
     const { data: existingPools, error: checkError } = await supabase
       .from('pools')
       .select('id')
@@ -32,7 +32,7 @@ export const initializeGameData = async (initialPools) => {
     console.log("No pools found, creating initial pools");
     
     // Insert new pools in batches to avoid request size limitations
-    const batchSize = 10;
+    const batchSize = 5;
     for (let i = 0; i < initialPools.length; i += batchSize) {
       const batch = initialPools.slice(i, i + batchSize);
       const poolsToInsert = batch.map(pool => ({
@@ -40,7 +40,7 @@ export const initializeGameData = async (initialPools) => {
         game_type: pool.gameType,
         entry_fee: pool.entryFee,
         max_players: pool.maxPlayers,
-        current_players: pool.currentPlayers,
+        current_players: pool.currentPlayers || 0,
         status: pool.status,
         number_range_min: pool.numberRange[0],
         number_range_max: pool.numberRange[1],

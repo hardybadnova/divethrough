@@ -79,7 +79,7 @@ export async function fetchPoolWithPlayers(poolId: string): Promise<Pool | null>
       gameType: poolData.game_type,
       entryFee: poolData.entry_fee,
       maxPlayers: poolData.max_players,
-      currentPlayers: poolData.current_players,
+      currentPlayers: poolData.current_players || 0,
       status: poolData.status,
       numberRange: [poolData.number_range_min, poolData.number_range_max],
       playFrequency: poolData.play_frequency,
@@ -94,6 +94,12 @@ export async function fetchPoolWithPlayers(poolId: string): Promise<Pool | null>
 // Listen for changes in all pools
 export const subscribeToAllPools = (callback: (pools: Pool[]) => void): (() => void) => {
   console.log("Subscribing to all pools");
+  
+  // Fetch pools immediately
+  fetchAllPools().then(pools => {
+    console.log(`Initial fetch of all pools: ${pools.length} pools`);
+    callback(pools);
+  });
   
   // Create a subscription using Supabase realtime
   const subscription = supabase
@@ -110,12 +116,6 @@ export const subscribeToAllPools = (callback: (pools: Pool[]) => void): (() => v
       }
     )
     .subscribe();
-  
-  // Initial fetch of pools data
-  fetchAllPools().then(pools => {
-    console.log(`Initial fetch of all pools: ${pools.length} pools`);
-    callback(pools);
-  });
   
   // Return unsubscribe function
   return () => {
@@ -143,7 +143,7 @@ export async function fetchAllPools(): Promise<Pool[]> {
       return [];
     }
     
-    console.log(`Found ${poolsData.length} pools`);
+    console.log(`Found ${poolsData.length} pools in database`);
     
     // Convert the Supabase response to our Pool type
     return poolsData.map(pool => ({
@@ -151,7 +151,7 @@ export async function fetchAllPools(): Promise<Pool[]> {
       gameType: pool.game_type,
       entryFee: pool.entry_fee,
       maxPlayers: pool.max_players,
-      currentPlayers: pool.current_players,
+      currentPlayers: pool.current_players || 0,
       status: pool.status,
       numberRange: [pool.number_range_min, pool.number_range_max],
       playFrequency: pool.play_frequency,
