@@ -48,10 +48,16 @@ export const signInWithGoogle = async () => {
   try {
     console.log("Starting Google sign-in process...");
     
-    // Check if we're in development or production
-    const redirectUrl = `${window.location.origin}/dashboard`;
-    console.log("Redirect URL:", redirectUrl);
+    // Get the current origin for proper redirect
+    const origin = window.location.origin;
+    const redirectUrl = `${origin}/dashboard`;
+    console.log("Using redirect URL:", redirectUrl);
+    console.log("Current origin:", origin);
     
+    // Check if service is configured properly
+    console.log("Supabase URL:", supabase.supabaseUrl);
+    
+    // Add more debug query params to help diagnose the issue
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -64,16 +70,16 @@ export const signInWithGoogle = async () => {
     });
     
     if (error) {
-      console.error("Google auth error:", error);
+      console.error("Google auth error details:", error);
       toast({
         title: "Google Sign-in Failed",
-        description: error.message || "Could not initialize Google sign-in. Please try again or use email login.",
+        description: `Error: ${error.message || "Could not initialize Google sign-in"}. Please try email login instead.`,
         variant: "destructive",
       });
       throw error;
     }
     
-    console.log("Google auth process started successfully:", data);
+    console.log("Google auth process initiated successfully:", data);
     return data;
   } catch (error: any) {
     console.error("Error during Google sign-in:", error);

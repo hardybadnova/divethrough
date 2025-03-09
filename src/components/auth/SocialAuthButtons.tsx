@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -16,20 +15,18 @@ const SocialAuthButtons = ({ onGoogleLogin, isLoading }: SocialAuthButtonsProps)
       setIsSubmitting(true);
       console.log("Google login button clicked, starting sign-in process");
       
-      // Add a toast to indicate the process is starting
       toast({
         title: "Starting Google sign-in",
-        description: "You'll be redirected to Google to complete the sign-in process.",
+        description: "You'll be redirected to Google. If this doesn't work, please check the Google provider configuration.",
       });
       
       await onGoogleLogin();
       
-      console.log("Google sign-in function completed without errors");
     } catch (error: any) {
       console.error("Google sign-in failed at component level:", error);
       toast({
         title: "Google Sign-in Failed",
-        description: error.message || "Failed to start Google sign-in. Please try again.",
+        description: error.message || "Failed to start Google sign-in. Please try email login instead.",
         variant: "destructive",
       });
     } finally {
