@@ -1,5 +1,5 @@
 
-import { supabase } from './apiClient';
+import { supabase } from '@/lib/supabase/client';
 import { Pool } from '@/types/game';
 
 // Listen for changes in a specific pool
@@ -48,7 +48,17 @@ export async function fetchPoolWithPlayers(poolId: string): Promise<Pool | null>
     
   const players = playersData?.map(item => item.player_data) || [];
   
-  return { ...poolData, players } as Pool;
+  return {
+    id: poolData.id,
+    gameType: poolData.game_type,
+    entryFee: poolData.entry_fee,
+    maxPlayers: poolData.max_players,
+    currentPlayers: poolData.current_players,
+    status: poolData.status,
+    numberRange: [poolData.number_range_min, poolData.number_range_max],
+    playFrequency: poolData.play_frequency,
+    players
+  } as Pool;
 }
 
 // Listen for changes in all pools
@@ -86,7 +96,16 @@ export async function fetchAllPools(): Promise<Pool[]> {
     
   if (poolsError || !poolsData) return [];
   
-  // For simplicity, we're not fetching players for all pools
-  // In a real implementation, you might want to batch this or fetch on demand
-  return poolsData as Pool[];
+  // Convert the Supabase response to our Pool type
+  return poolsData.map(pool => ({
+    id: pool.id,
+    gameType: pool.game_type,
+    entryFee: pool.entry_fee,
+    maxPlayers: pool.max_players,
+    currentPlayers: pool.current_players,
+    status: pool.status,
+    numberRange: [pool.number_range_min, pool.number_range_max],
+    playFrequency: pool.play_frequency,
+    players: []
+  }));
 }

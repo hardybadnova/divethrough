@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useGame } from "@/contexts/GameContext";
@@ -14,11 +14,27 @@ const PoolsScreen = () => {
   const { getPoolsByGameType, joinPool, initializeData } = useGame();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
 
   // Initialize game data when component loads
   useEffect(() => {
-    // Attempt to initialize game data if needed
-    initializeData().catch(console.error);
+    const initialize = async () => {
+      try {
+        setIsLoading(true);
+        await initializeData();
+      } catch (error) {
+        console.error("Failed to initialize game data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to initialize game data. Please refresh the page.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    initialize();
   }, [initializeData]);
 
   const pools = getPoolsByGameType(gameType || "");
@@ -84,10 +100,15 @@ const PoolsScreen = () => {
           </p>
         </div>
 
-        {pools.length === 0 ? (
+        {isLoading ? (
           <div className="text-center p-8">
             <h3 className="text-lg font-medium mb-2">Loading pools...</h3>
             <p className="text-muted-foreground">Please wait while we initialize game data</p>
+          </div>
+        ) : pools.length === 0 ? (
+          <div className="text-center p-8">
+            <h3 className="text-lg font-medium mb-2">No pools available</h3>
+            <p className="text-muted-foreground">Check back later for available pools</p>
           </div>
         ) : (
           <motion.div

@@ -60,8 +60,19 @@ export const leaveGamePool = async (poolId: string, playerId: string): Promise<v
 
 // Set up initial mock data in Supabase (only call this once or when resetting)
 export const initializeGameData = async (initialPools: Pool[]): Promise<void> => {
-  // Clear existing pools first
-  await supabase.from('pools').delete().neq('id', '0');
+  // Check if pools already exist
+  const { data: existingPools } = await supabase
+    .from('pools')
+    .select('id')
+    .limit(1);
+  
+  // Only initialize if no pools exist
+  if (existingPools && existingPools.length > 0) {
+    console.log("Pools already exist, skipping initialization");
+    return;
+  }
+  
+  console.log("Initializing game data with pools:", initialPools);
   
   // Insert new pools
   for (const pool of initialPools) {
@@ -84,4 +95,6 @@ export const initializeGameData = async (initialPools: Pool[]): Promise<void> =>
       throw error;
     }
   }
+  
+  console.log("Game data initialization complete");
 };

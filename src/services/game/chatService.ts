@@ -1,5 +1,5 @@
 
-import { supabase } from './apiClient';
+import { supabase } from '@/lib/supabase/client';
 
 // Send a chat message in a game
 export const sendChatMessage = async (poolId: string, message: { sender: string; message: string; timestamp: string }): Promise<void> => {
