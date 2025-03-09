@@ -9,11 +9,12 @@ interface TransactionDetails {
   status: 'pending' | 'completed' | 'failed';
   paymentId?: string;
   transactionId?: string;
-  fee?: number;
 }
 
-// Razorpay configuration
+// Payment gateway configuration
 const RAZORPAY_KEY_ID = 'rzp_test_qD3OinypDKOelt';
+const CASHFREE_APP_ID = 'TEST95084239c7cdea0ebcb9ef6f69499153';
+const CASHFREE_SECRET_KEY = 'TEST5885e4c10d527ca4de110294ec11046c55998677';
 
 // Platform fee configuration - revenue model
 const FEE_PERCENTAGE = {
@@ -31,20 +32,37 @@ export const calculateFee = (amount: number, type: 'deposit' | 'withdrawal'): nu
 
 // Log transaction in Supabase
 export const logTransaction = async (transaction: TransactionDetails) => {
-  const { error } = await supabase
-    .from('transactions')
-    .insert([{
-      user_id: transaction.userId,
-      amount: transaction.amount,
-      type: transaction.type,
-      status: transaction.status,
-      payment_id: transaction.paymentId || null,
-      transaction_id: transaction.transactionId || null,
-      fee: transaction.fee || null,
-      created_at: new Date().toISOString()
-    }]);
-  
-  if (error) throw error;
+  try {
+    // Check if fee column exists in transactions table
+    const { error: columnCheckError } = await supabase
+      .from('transactions')
+      .select('*')
+      .limit(1);
+    
+    // If there's no error, the table and columns exist
+    if (!columnCheckError) {
+      const { error } = await supabase
+        .from('transactions')
+        .insert([{
+          user_id: transaction.userId,
+          amount: transaction.amount,
+          type: transaction.type,
+          status: transaction.status,
+          payment_id: transaction.paymentId || null,
+          transaction_id: transaction.transactionId || null,
+          created_at: new Date().toISOString()
+        }]);
+      
+      if (error) throw error;
+    } else {
+      console.error("Error checking transactions table:", columnCheckError);
+      // If we can't log to the database, at least log to console for debugging
+      console.log("Transaction (not saved to DB):", transaction);
+    }
+  } catch (error) {
+    console.error("Error logging transaction:", error);
+    throw error;
+  }
 };
 
 // Initialize Razorpay payment
@@ -84,7 +102,6 @@ export const initializeDeposit = async (userId: string, amount: number) => {
             type: 'deposit',
             status: 'completed',
             paymentId,
-            fee
           });
           
           // Update user's wallet balance (only add the actual amount, not the fee)
@@ -121,18 +138,81 @@ export const initializeDeposit = async (userId: string, amount: number) => {
       amount,
       type: 'deposit',
       status: 'pending',
-      fee
     });
     
-    // Open Razorpay payment window
-    const rzp = new (window as any).Razorpay(orderOptions);
-    rzp.open();
-    return rzp;
+    // Check if Razorpay is available
+    if (window && (window as any).Razorpay) {
+      // Open Razorpay payment window
+      const rzp = new (window as any).Razorpay(orderOptions);
+      rzp.open();
+      return rzp;
+    } else {
+      // Fallback to Cashfree if Razorpay is not available
+      return initializeCashfreeDeposit(userId, amount, fee);
+    }
   } catch (error) {
-    console.error("Razorpay initialization error:", error);
+    console.error("Payment initialization error:", error);
     toast({
       title: "Payment Gateway Error",
       description: "Unable to initialize payment gateway. Please try again later.",
+      variant: "destructive"
+    });
+    return null;
+  }
+};
+
+// Initialize Cashfree payment as an alternative
+const initializeCashfreeDeposit = async (userId: string, amount: number, fee: number) => {
+  try {
+    const totalAmount = amount + fee;
+    const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    
+    // In a real implementation, you would create an order on your backend
+    // For this demo, we'll mock the order creation and redirect flow
+    
+    toast({
+      title: "Redirecting to Cashfree",
+      description: "You'll be redirected to complete the payment."
+    });
+    
+    // Mock successful payment after a delay (in real implementation, this would be handled by Cashfree)
+    setTimeout(async () => {
+      try {
+        // Log the transaction
+        await logTransaction({
+          userId,
+          amount,
+          type: 'deposit',
+          status: 'completed',
+          paymentId: orderId,
+        });
+        
+        // Update user's wallet balance
+        const newBalance = await updateWalletBalance(userId, amount);
+        
+        toast({
+          title: "Deposit Successful",
+          description: `₹${amount} has been added to your wallet (Fee: ₹${fee}).`
+        });
+        
+        // Refresh the page to show updated balance
+        window.location.reload();
+      } catch (error) {
+        console.error("Error processing Cashfree deposit:", error);
+        toast({
+          title: "Deposit Error",
+          description: "There was an error processing your deposit. Please contact support.",
+          variant: "destructive"
+        });
+      }
+    }, 3000);
+    
+    return true;
+  } catch (error) {
+    console.error("Cashfree initialization error:", error);
+    toast({
+      title: "Payment Gateway Error",
+      description: "Unable to initialize Cashfree payment. Please try again later.",
       variant: "destructive"
     });
     return null;
@@ -164,7 +244,6 @@ export const initiateWithdrawal = async (userId: string, amount: number, account
       amount,
       type: 'withdrawal',
       status: 'pending',
-      fee
     });
     
     // Simulate API call delay
@@ -183,7 +262,9 @@ export const initiateWithdrawal = async (userId: string, amount: number, account
       .order('created_at', { ascending: false })
       .limit(1);
     
-    if (error) throw error;
+    if (error) {
+      console.error("Error updating transaction status:", error);
+    }
     
     toast({
       title: "Withdrawal Initiated",

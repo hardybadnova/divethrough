@@ -16,7 +16,6 @@ interface Transaction {
   status: 'pending' | 'completed' | 'failed';
   payment_id: string | null;
   transaction_id: string | null;
-  fee: number | null;
   created_at: string;
 }
 
@@ -42,9 +41,18 @@ const TransactionHistory = () => {
         
         setTransactions(data || []);
 
-        // Calculate total fees paid
+        // Calculate total fees paid - now calculated from amounts instead of fee column
         const completedTransactions = data?.filter(t => t.status === 'completed') || [];
-        const fees = completedTransactions.reduce((sum, t) => sum + (t.fee || 0), 0);
+        
+        // Since we don't have fee column, we'll calculate it from the transaction amounts
+        // based on our fee structure (2% for deposits, 1% for withdrawals, min ₹5)
+        const calculateFeeForTransaction = (transaction: Transaction) => {
+          const percentage = transaction.type === 'deposit' ? 2 : 1;
+          const calculatedFee = (transaction.amount * percentage) / 100;
+          return Math.max(calculatedFee, 5); // Minimum fee of ₹5
+        };
+        
+        const fees = completedTransactions.reduce((sum, t) => sum + calculateFeeForTransaction(t), 0);
         setTotalFees(fees);
       } catch (error) {
         console.error("Error fetching transactions:", error);
@@ -67,6 +75,13 @@ const TransactionHistory = () => {
       default:
         return 'text-gray-500';
     }
+  };
+  
+  // Calculate fee for a transaction
+  const calculateFee = (transaction: Transaction): number => {
+    const percentage = transaction.type === 'deposit' ? 2 : 1;
+    const calculatedFee = (transaction.amount * percentage) / 100;
+    return Math.max(calculatedFee, 5); // Minimum fee of ₹5
   };
 
   return (
@@ -120,11 +135,9 @@ const TransactionHistory = () => {
                           ID: {transaction.payment_id}
                         </p>
                       )}
-                      {transaction.fee !== null && (
-                        <p className="text-xs text-betster-400 mt-1">
-                          Fee: {formatCurrency(transaction.fee)}
-                        </p>
-                      )}
+                      <p className="text-xs text-betster-400 mt-1">
+                        Fee: {formatCurrency(calculateFee(transaction))}
+                      </p>
                     </div>
                   </div>
                   
