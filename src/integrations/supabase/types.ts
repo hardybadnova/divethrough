@@ -9,7 +9,188 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      game_players: {
+        Row: {
+          game_id: string
+          id: string
+          is_winner: boolean
+          joined_at: string
+          prize_amount: number
+          selected_number: number | null
+          user_id: string
+        }
+        Insert: {
+          game_id: string
+          id?: string
+          is_winner?: boolean
+          joined_at?: string
+          prize_amount?: number
+          selected_number?: number | null
+          user_id: string
+        }
+        Update: {
+          game_id?: string
+          id?: string
+          is_winner?: boolean
+          joined_at?: string
+          prize_amount?: number
+          selected_number?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_players_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_players_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      games: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          entry_fee: number
+          game_type: string
+          id: string
+          status: string
+          winning_number: number | null
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          entry_fee: number
+          game_type: string
+          id?: string
+          status: string
+          winning_number?: number | null
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          entry_fee?: number
+          game_type?: string
+          id?: string
+          status?: string
+          winning_number?: number | null
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          bonus_amount: number
+          created_at: string
+          id: string
+          referred_id: string
+          referrer_id: string
+        }
+        Insert: {
+          bonus_amount?: number
+          created_at?: string
+          id?: string
+          referred_id: string
+          referrer_id: string
+        }
+        Update: {
+          bonus_amount?: number
+          created_at?: string
+          id?: string
+          referred_id?: string
+          referrer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          payment_id: string | null
+          status: string
+          transaction_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          payment_id?: string | null
+          status: string
+          transaction_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_id?: string | null
+          status?: string
+          transaction_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          updated_at: string
+          username: string
+          wallet_balance: number
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          updated_at?: string
+          username: string
+          wallet_balance?: number
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          updated_at?: string
+          username?: string
+          wallet_balance?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
