@@ -36,7 +36,7 @@ export const useAuthOperations = ({
       }
       
       toast({
-        title: "Welcome to Betster!",
+        title: "Welcome to Numbet!",
         description: "You've successfully logged in.",
       });
       
