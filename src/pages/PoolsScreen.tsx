@@ -8,6 +8,7 @@ import { formatCurrency } from "@/lib/formatters";
 import { motion } from "framer-motion";
 import { Users, ArrowRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Pool } from "@/types/game";
 
 const PoolsScreen = () => {
   const { gameType } = useParams<{ gameType: string }>();
@@ -15,13 +16,23 @@ const PoolsScreen = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [pools, setPools] = useState<Pool[]>([]);
 
   // Initialize game data when component loads
   useEffect(() => {
     const initialize = async () => {
       try {
         setIsLoading(true);
+        console.log("PoolsScreen: Initializing game data...");
         await initializeData();
+        console.log("PoolsScreen: Game data initialized");
+        
+        // Get pools after initialization
+        if (gameType) {
+          const fetchedPools = getPoolsByGameType(gameType);
+          console.log(`PoolsScreen: Got ${fetchedPools.length} pools for ${gameType}`);
+          setPools(fetchedPools);
+        }
       } catch (error) {
         console.error("Failed to initialize game data:", error);
         toast({
@@ -35,9 +46,16 @@ const PoolsScreen = () => {
     };
     
     initialize();
-  }, [initializeData]);
+  }, [initializeData, gameType, getPoolsByGameType]);
 
-  const pools = getPoolsByGameType(gameType || "");
+  // Update pools when gameType changes
+  useEffect(() => {
+    if (gameType && !isLoading) {
+      const fetchedPools = getPoolsByGameType(gameType);
+      console.log(`PoolsScreen: Game type changed to ${gameType}, got ${fetchedPools.length} pools`);
+      setPools(fetchedPools);
+    }
+  }, [gameType, getPoolsByGameType, isLoading]);
 
   // Game titles mapping
   const gameTitles: Record<string, string> = {
@@ -48,12 +66,16 @@ const PoolsScreen = () => {
 
   useEffect(() => {
     if (!gameType || !["bluff", "topspot", "jackpot"].includes(gameType)) {
+      console.log("PoolsScreen: Invalid game type, redirecting to dashboard");
       navigate("/dashboard");
     }
   }, [gameType, navigate]);
 
   const handleJoinPool = (poolId: string, entryFee: number) => {
-    if (!user) return;
+    if (!user) {
+      console.log("PoolsScreen: Cannot join pool, user not authenticated");
+      return;
+    }
 
     if (user.wallet < entryFee) {
       toast({
@@ -64,6 +86,7 @@ const PoolsScreen = () => {
       return;
     }
 
+    console.log(`PoolsScreen: Joining pool ${poolId}`);
     joinPool(poolId);
     navigate(`/game/${poolId}`);
   };
@@ -139,7 +162,10 @@ const PoolsScreen = () => {
                     <div>
                       <button 
                         className="betster-button"
-                        onClick={() => handleJoinPool(pool.id, pool.entryFee)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleJoinPool(pool.id, pool.entryFee);
+                        }}
                       >
                         Join <ArrowRight className="h-4 w-4 ml-1" />
                       </button>

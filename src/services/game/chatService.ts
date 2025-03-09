@@ -1,55 +1,49 @@
 
 import { supabase } from '@/lib/supabase/client';
+import { ChatMessage } from '@/types/game';
 
-// Send a chat message in a game
-export const sendChatMessage = async (poolId: string, message: { sender: string; message: string; timestamp: string }): Promise<void> => {
-  const { error } = await supabase
-    .from('game_chat')
-    .insert([{
-      pool_id: poolId,
-      sender: message.sender,
-      message: message.message,
-      timestamp: message.timestamp
-    }]);
-    
-  if (error) throw error;
+// Send a message to the pool chat
+export const sendChatMessage = async (poolId: string, message: ChatMessage): Promise<void> => {
+  console.log(`Sending message to pool ${poolId}:`, message);
+  
+  try {
+    // We'll store chat messages in a separate chat_messages table
+    // For now, we'll use the Supabase Realtime channel to broadcast the message
+    await supabase
+      .channel(`chat:${poolId}`)
+      .send({
+        type: 'broadcast',
+        event: 'chat_message',
+        payload: message
+      });
+      
+    console.log("Message sent successfully");
+  } catch (error) {
+    console.error("Error sending chat message:", error);
+    throw error;
+  }
 };
 
-// Listen for chat messages in a game
-export const subscribeToChatMessages = (poolId: string, callback: (messages: any[]) => void): (() => void) => {
-  // Create a subscription using Supabase realtime
-  const subscription = supabase
-    .channel(`chat:${poolId}`)
-    .on('postgres_changes', 
-      { event: 'INSERT', schema: 'public', table: 'game_chat', filter: `pool_id=eq.${poolId}` },
-      () => {
-        // Fetch all messages for this pool
-        fetchChatMessages(poolId).then(messages => {
-          callback(messages);
-        });
-      }
-    )
-    .subscribe();
+// Subscribe to chat messages for a pool
+export const subscribeToChatMessages = (poolId: string, callback: (messages: ChatMessage[]) => void): (() => void) => {
+  console.log(`Subscribing to chat messages for pool ${poolId}`);
   
-  // Initial fetch of messages
-  fetchChatMessages(poolId).then(messages => {
-    callback(messages);
-  });
+  // Local storage of messages
+  const messages: ChatMessage[] = [];
+  
+  // Create a subscription
+  const channel = supabase
+    .channel(`chat:${poolId}`)
+    .on('broadcast', { event: 'chat_message' }, (payload) => {
+      console.log("Received chat message:", payload);
+      messages.push(payload.payload as ChatMessage);
+      callback([...messages]);
+    })
+    .subscribe();
   
   // Return unsubscribe function
   return () => {
-    supabase.removeChannel(subscription);
+    console.log(`Unsubscribing from chat for pool ${poolId}`);
+    supabase.removeChannel(channel);
   };
 };
-
-// Helper function to fetch chat messages for a pool
-async function fetchChatMessages(poolId: string): Promise<any[]> {
-  const { data, error } = await supabase
-    .from('game_chat')
-    .select('*')
-    .eq('pool_id', poolId)
-    .order('created_at', { ascending: true });
-    
-  if (error || !data) return [];
-  return data;
-}
