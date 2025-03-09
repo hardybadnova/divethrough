@@ -12,6 +12,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isBetaVersion: boolean;
+  isInitialized: boolean;
   login: (username: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   signUp: (username: string, email: string, password: string) => Promise<void>;

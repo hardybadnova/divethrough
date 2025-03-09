@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { useAuthOperations } from '@/hooks/use-auth-operations';
 import { AuthContextType } from '@/types/auth';
@@ -7,6 +7,8 @@ import { AuthContextType } from '@/types/auth';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isInitialized, setIsInitialized] = useState(false);
+  
   const { 
     user, 
     setUser,
@@ -34,9 +36,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log("Auth context state updated:", { 
       isAuthenticated: !!user,
       isLoading,
-      userId: user?.id
+      userId: user?.id,
+      isInitialized
     });
-  }, [user, isLoading]);
+
+    // Mark as initialized after the first auth check completes
+    if (!isInitialized && !isLoading) {
+      setIsInitialized(true);
+    }
+  }, [user, isLoading, isInitialized]);
 
   return (
     <AuthContext.Provider
@@ -45,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         isBetaVersion,
+        isInitialized,
         login,
         loginWithGoogle,
         signUp,

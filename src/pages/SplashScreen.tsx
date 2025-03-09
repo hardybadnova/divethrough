@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const SplashScreen = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, isInitialized, user } = useAuth();
   const [animationComplete, setAnimationComplete] = useState(false);
 
   useEffect(() => {
@@ -24,11 +24,12 @@ const SplashScreen = () => {
       animationComplete, 
       isLoading, 
       isAuthenticated,
+      isInitialized,
       userId: user?.id
     });
     
     // Only proceed when animation is complete and auth state is determined
-    if (animationComplete && !isLoading) {
+    if (animationComplete && isInitialized) {
       console.log("Ready to navigate from splash screen");
       
       if (isAuthenticated && user) {
@@ -39,7 +40,7 @@ const SplashScreen = () => {
         navigate('/login');
       }
     }
-  }, [animationComplete, isAuthenticated, isLoading, navigate, user]);
+  }, [animationComplete, isAuthenticated, isInitialized, navigate, user]);
 
   // Force navigation after a timeout to prevent getting stuck
   useEffect(() => {

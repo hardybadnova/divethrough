@@ -4,17 +4,17 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const ProtectedRoute = () => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, isInitialized, user } = useAuth();
 
-  console.log("ProtectedRoute check:", { isAuthenticated, isLoading, userId: user?.id });
+  console.log("ProtectedRoute check:", { isAuthenticated, isLoading, isInitialized, userId: user?.id });
 
   useEffect(() => {
-    if (!isLoading) {
-      console.log("ProtectedRoute loading complete, auth status:", isAuthenticated ? "Authenticated" : "Not authenticated");
+    if (isInitialized) {
+      console.log("ProtectedRoute initialized, auth status:", isAuthenticated ? "Authenticated" : "Not authenticated");
     }
-  }, [isLoading, isAuthenticated]);
+  }, [isInitialized, isAuthenticated]);
 
-  if (isLoading) {
+  if (isLoading && !isInitialized) {
     console.log("Auth is still loading, showing loading spinner");
     return (
       <div className="min-h-screen flex items-center justify-center bg-betster-gradient">

@@ -100,21 +100,33 @@ export const useAuthState = () => {
     const storedUser = localStorage.getItem('betster-user');
     if (storedUser) {
       console.log("Found stored user, setting initial state");
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Error parsing stored user:", e);
+        localStorage.removeItem('betster-user');
+      }
     }
     
+    // Load user data immediately on mount
     loadUserData();
     
+    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Auth state changed:", event, session ? "User session exists" : "No session");
         if (event === 'SIGNED_IN' && session) {
+          console.log("User signed in, loading user data");
           await loadUserData();
           navigate('/dashboard');
         } else if (event === 'SIGNED_OUT') {
+          console.log("User signed out, clearing user data");
           setUser(null);
           localStorage.removeItem('betster-user');
           setIsLoading(false);
+          navigate('/login');
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log("Session token refreshed");
         }
       }
     );
