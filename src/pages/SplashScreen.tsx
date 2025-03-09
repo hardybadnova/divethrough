@@ -2,31 +2,37 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BetsterLogo from "@/components/BetsterLogo";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SplashScreen = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading } = useAuth();
   const [animationComplete, setAnimationComplete] = useState(false);
 
   useEffect(() => {
     // Simulate loading time
     const timer = setTimeout(() => {
       setAnimationComplete(true);
+      console.log("Splash animation complete");
     }, 2000);
 
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    if (animationComplete) {
+    if (animationComplete && !isLoading) {
       // Check if user is already logged in
-      const storedUser = localStorage.getItem('betster-user');
-      if (storedUser) {
+      console.log("Navigation check - Auth state:", { isAuthenticated, isLoading });
+      
+      if (isAuthenticated) {
+        console.log("User is authenticated, navigating to dashboard");
         navigate('/dashboard');
       } else {
+        console.log("User is not authenticated, navigating to login");
         navigate('/login');
       }
     }
-  }, [animationComplete, navigate]);
+  }, [animationComplete, isAuthenticated, isLoading, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-betster-gradient">

@@ -23,12 +23,19 @@ import ReferralScreen from "./pages/ReferralScreen";
 import TransactionHistory from "./pages/TransactionHistory";
 import StakingScreen from "./pages/StakingScreen";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => {
-  // For DEBUG: Log Firebase console output to browser console
+  // For DEBUG: Log app initialization
   useEffect(() => {
-    console.log("App initialized. Firebase configured with Firebase Realtime Database.");
+    console.log("App initialized. Ready to handle routing.");
   }, []);
   
   return (

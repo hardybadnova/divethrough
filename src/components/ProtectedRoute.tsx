@@ -5,6 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 const ProtectedRoute = () => {
   const { isAuthenticated, isLoading } = useAuth();
 
+  console.log("ProtectedRoute check:", { isAuthenticated, isLoading });
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-betster-gradient">
@@ -14,9 +16,11 @@ const ProtectedRoute = () => {
   }
 
   if (!isAuthenticated) {
+    console.log("User not authenticated, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
+  console.log("User authenticated, rendering outlet");
   return <Outlet />;
 };
 
