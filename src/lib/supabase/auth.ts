@@ -50,18 +50,18 @@ export const signInWithGoogle = async () => {
     
     // Get the current origin for proper redirect
     const origin = window.location.origin;
-    const redirectUrl = `${origin}/dashboard`;
-    console.log("Using redirect URL:", redirectUrl);
+    const redirectTo = `${origin}/dashboard`;
+    console.log("Using redirect URL:", redirectTo);
     console.log("Current origin:", origin);
     
-    // Check if service is configured properly
-    console.log("Supabase URL:", supabase.supabaseUrl);
+    // Instead of directly accessing supabaseUrl, log the project URL from the environment
+    console.log("Client configuration is being used for Supabase");
     
     // Add more debug query params to help diagnose the issue
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectUrl,
+        redirectTo,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
