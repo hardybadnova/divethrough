@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase/client';
 import { Player, Pool, Winner } from '@/types/game';
 
@@ -149,15 +148,29 @@ async function fetchAllPools(): Promise<Pool[]> {
 
 // Update a player's selected number for a game
 export const lockNumber = async (poolId: string, playerId: string, selectedNumber: number): Promise<void> => {
-  const { error } = await supabase
+  // First update the selectedNumber
+  const { error: error1 } = await supabase
     .from('game_pools')
     .update({
-      'player_data': supabase.raw(`jsonb_set(player_data, '{selectedNumber}', '${selectedNumber}')::jsonb`),
-      'player_data': supabase.raw(`jsonb_set(player_data, '{locked}', 'true')::jsonb`)
+      player_data: JSON.stringify({
+        selectedNumber: selectedNumber
+      })
     })
     .match({ pool_id: poolId, player_id: playerId });
     
-  if (error) throw error;
+  if (error1) throw error1;
+  
+  // Then update the locked status
+  const { error: error2 } = await supabase
+    .from('game_pools')
+    .update({
+      player_data: JSON.stringify({
+        locked: true
+      })
+    })
+    .match({ pool_id: poolId, player_id: playerId });
+    
+  if (error2) throw error2;
 };
 
 // Send a chat message in a game
