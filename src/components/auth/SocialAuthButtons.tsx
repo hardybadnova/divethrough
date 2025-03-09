@@ -13,7 +13,9 @@ const SocialAuthButtons = ({ onGoogleLogin, isLoading }: SocialAuthButtonsProps)
   const handleGoogleLogin = async () => {
     try {
       setIsSubmitting(true);
+      console.log("Google login button clicked, starting sign-in process");
       await onGoogleLogin();
+      console.log("Google sign-in function completed without errors");
     } catch (error: any) {
       console.error("Google sign-in failed at component level:", error);
       // Toast is handled in the auth operations
