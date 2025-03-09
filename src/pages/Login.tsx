@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import BetsterLogo from "@/components/BetsterLogo";
@@ -21,7 +20,6 @@ const Login = () => {
   const { login, loginWithGoogle, signUp, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  // If user is already authenticated, redirect to dashboard
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard');
@@ -42,7 +40,6 @@ const Login = () => {
     setIsSubmitting(true);
     try {
       await login(email, password);
-      // Navigation is handled in the useEffect above when isAuthenticated changes
     } catch (error: any) {
       console.error("Login error:", error);
       toast({
@@ -58,7 +55,6 @@ const Login = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate inputs
     if (!signUpUsername || !signUpEmail || !signUpPassword) {
       toast({
         title: "Missing information",
@@ -77,7 +73,6 @@ const Login = () => {
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(signUpEmail)) {
       toast({
@@ -91,7 +86,6 @@ const Login = () => {
     setIsSubmitting(true);
     try {
       await signUp(signUpUsername, signUpEmail, signUpPassword);
-      // Navigate to login tab after successful signup
       setActiveTab("login");
       toast({
         title: "Account Created!",
@@ -112,14 +106,14 @@ const Login = () => {
 
   const handleGoogleLogin = async () => {
     try {
+      console.log("Initiating Google login...");
       await loginWithGoogle();
-      // Redirect is handled by Supabase OAuth
     } catch (error: any) {
-      console.error("Google sign-in error:", error);
+      console.error("Google sign-in error in component:", error);
       
       toast({
         title: "Google Sign-in Failed",
-        description: error.message || "Something went wrong with Google authentication.",
+        description: "Failed to connect to Google. Please try again later.",
         variant: "destructive",
       });
     }

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -58,29 +59,28 @@ export const useAuthOperations = ({
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log("Starting Google sign-in process...");
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
       });
       
+      console.log("Sign-in response:", data ? "Data exists" : "No data", error ? `Error: ${error.message}` : "No error");
+      
       if (error) {
-        console.error("Detailed Google sign-in error:", error);
         throw error;
       }
       
-      // For Google OAuth, we don't need to navigate as the redirect will happen automatically
+      // No need to navigate as this will trigger a redirect to Google
     } catch (error: any) {
-      console.error("Google sign-in error:", error);
+      console.error("Google sign-in error details:", error);
       
       toast({
         title: "Google Sign-in Failed",
-        description: "Failed to initialize Google authentication. Please try again later.",
+        description: error.message || "Failed to initialize Google authentication.",
         variant: "destructive",
       });
+      
       setIsLoading(false);
-      throw error;
     }
   };
 
