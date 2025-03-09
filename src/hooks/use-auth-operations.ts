@@ -5,6 +5,7 @@ import {
   signInWithEmail, 
   signUpWithEmail, 
   signOut as supabaseSignOut,
+  signInWithGoogle,
   supabase
 } from '@/lib/supabase';
 import { User } from '@/types/auth';
@@ -57,23 +58,7 @@ export const useAuthOperations = ({
   const loginWithGoogle = async (): Promise<void> => {
     try {
       console.log("Starting Google sign-in process...");
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        }
-      });
-      
-      if (error) {
-        console.error("Google OAuth error:", error);
-        toast({
-          title: "Google Sign-in Failed",
-          description: error.message || "Failed to initialize Google authentication.",
-          variant: "destructive",
-        });
-        throw error;
-      }
-      
+      await signInWithGoogle();
       console.log("Google OAuth process initiated successfully");
       // The redirect to Google will happen automatically
     } catch (error: any) {
@@ -84,6 +69,7 @@ export const useAuthOperations = ({
         description: error.message || "Failed to initialize Google authentication.",
         variant: "destructive",
       });
+      throw error;
     }
   };
 
