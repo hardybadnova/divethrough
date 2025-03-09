@@ -95,12 +95,6 @@ export async function fetchPoolWithPlayers(poolId: string): Promise<Pool | null>
 export const subscribeToAllPools = (callback: (pools: Pool[]) => void): (() => void) => {
   console.log("Subscribing to all pools");
   
-  // Fetch pools immediately
-  fetchAllPools().then(pools => {
-    console.log(`Initial fetch of all pools: ${pools.length} pools`);
-    callback(pools);
-  });
-  
   // Create a subscription using Supabase realtime
   const subscription = supabase
     .channel('all_pools')
@@ -116,6 +110,12 @@ export const subscribeToAllPools = (callback: (pools: Pool[]) => void): (() => v
       }
     )
     .subscribe();
+  
+  // Fetch pools immediately
+  fetchAllPools().then(pools => {
+    console.log(`Initial fetch of all pools: ${pools.length} pools`);
+    callback(pools);
+  });
   
   // Return unsubscribe function
   return () => {
@@ -143,7 +143,7 @@ export async function fetchAllPools(): Promise<Pool[]> {
       return [];
     }
     
-    console.log(`Found ${poolsData.length} pools in database`);
+    console.log(`Found ${poolsData.length} pools in database:`, poolsData);
     
     // Convert the Supabase response to our Pool type
     return poolsData.map(pool => ({

@@ -31,32 +31,28 @@ export const initializeGameData = async (initialPools) => {
     
     console.log("No pools found, creating initial pools");
     
-    // Insert new pools in batches to avoid request size limitations
-    const batchSize = 5;
-    for (let i = 0; i < initialPools.length; i += batchSize) {
-      const batch = initialPools.slice(i, i + batchSize);
-      const poolsToInsert = batch.map(pool => ({
-        id: pool.id,
-        game_type: pool.gameType,
-        entry_fee: pool.entryFee,
-        max_players: pool.maxPlayers,
-        current_players: pool.currentPlayers || 0,
-        status: pool.status,
-        number_range_min: pool.numberRange[0],
-        number_range_max: pool.numberRange[1],
-        play_frequency: pool.playFrequency,
-      }));
-      
+    // Insert each pool individually to avoid potential batch issues
+    for (const pool of initialPools) {
       const { error } = await supabase
         .from('pools')
-        .insert(poolsToInsert);
+        .insert({
+          id: pool.id,
+          game_type: pool.gameType,
+          entry_fee: pool.entryFee,
+          max_players: pool.maxPlayers,
+          current_players: pool.currentPlayers || 0,
+          status: pool.status,
+          number_range_min: pool.numberRange[0],
+          number_range_max: pool.numberRange[1],
+          play_frequency: pool.playFrequency,
+        });
         
       if (error) {
-        console.error(`Error inserting pool batch ${i}:`, error);
-        throw error;
+        console.error(`Error inserting pool ${pool.id}:`, error);
+        // Continue with other pools even if one fails
+      } else {
+        console.log(`Successfully inserted pool ${pool.id}`);
       }
-      
-      console.log(`Inserted batch ${i} to ${i + batch.length}`);
     }
     
     console.log("Game data initialization complete");

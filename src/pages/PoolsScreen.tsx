@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { Users, ArrowRight, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Pool } from "@/types/game";
-import { fetchAllPools } from "@/services/gameService";
+import { supabase } from "@/lib/supabase/client";
 
 const PoolsScreen = () => {
   const { gameType } = useParams<{ gameType: string }>();
@@ -21,61 +21,158 @@ const PoolsScreen = () => {
 
   // Initialize game data and fetch pools
   useEffect(() => {
-    const initialize = async () => {
+    const fetchPoolsDirectly = async () => {
       try {
         setIsLoading(true);
-        console.log("PoolsScreen: Initializing game data...");
-        await initializeData();
-        console.log("PoolsScreen: Game data initialized");
+        console.log(`PoolsScreen: Directly fetching ${gameType} pools from Supabase`);
         
-        // Fetch pools directly from Supabase
-        const fetchPools = async () => {
-          const allPools = await fetchAllPools();
-          console.log(`PoolsScreen: Fetched ${allPools.length} pools from Supabase`);
+        const { data, error } = await supabase
+          .from('pools')
+          .select('*')
+          .eq('game_type', gameType);
           
-          if (gameType) {
-            const filteredPools = allPools.filter(pool => pool.gameType === gameType);
-            console.log(`PoolsScreen: Filtered ${filteredPools.length} ${gameType} pools`);
-            setPools(filteredPools);
+        if (error) {
+          console.error("PoolsScreen: Error fetching pools:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load pools. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (!data || data.length === 0) {
+          console.log(`PoolsScreen: No ${gameType} pools found, trying to initialize...`);
+          // Try to initialize data if no pools found
+          await initializeData();
+          
+          // Try fetching again after initialization
+          const { data: poolsAfterInit, error: errorAfterInit } = await supabase
+            .from('pools')
+            .select('*')
+            .eq('game_type', gameType);
+            
+          if (errorAfterInit) {
+            console.error("PoolsScreen: Error fetching pools after init:", errorAfterInit);
+            toast({
+              title: "Error",
+              description: "Failed to load pools after initialization. Please try again.",
+              variant: "destructive",
+            });
+            return;
           }
           
-          setIsLoading(false);
-        };
-        
-        fetchPools();
+          if (poolsAfterInit && poolsAfterInit.length > 0) {
+            console.log(`PoolsScreen: Found ${poolsAfterInit.length} ${gameType} pools after initialization`);
+            
+            const formattedPools = poolsAfterInit
+              .filter(p => p.game_type === gameType)
+              .map(pool => ({
+                id: pool.id,
+                gameType: pool.game_type,
+                entryFee: pool.entry_fee,
+                maxPlayers: pool.max_players,
+                currentPlayers: pool.current_players || 0,
+                status: pool.status,
+                numberRange: [pool.number_range_min, pool.number_range_max],
+                playFrequency: pool.play_frequency,
+                players: []
+              }));
+            
+            setPools(formattedPools);
+          } else {
+            console.log(`PoolsScreen: No ${gameType} pools found even after initialization`);
+            setPools([]);
+          }
+        } else {
+          console.log(`PoolsScreen: Found ${data.length} ${gameType} pools`);
+          
+          const formattedPools = data
+            .filter(p => p.game_type === gameType)
+            .map(pool => ({
+              id: pool.id,
+              gameType: pool.game_type,
+              entryFee: pool.entry_fee,
+              maxPlayers: pool.max_players,
+              currentPlayers: pool.current_players || 0,
+              status: pool.status,
+              numberRange: [pool.number_range_min, pool.number_range_max],
+              playFrequency: pool.play_frequency,
+              players: []
+            }));
+          
+          setPools(formattedPools);
+        }
       } catch (error) {
-        console.error("Failed to initialize game data:", error);
+        console.error("PoolsScreen: Unexpected error:", error);
         toast({
           title: "Error",
-          description: "Failed to initialize game data. Please refresh the page.",
+          description: "An unexpected error occurred. Please try again.",
           variant: "destructive",
         });
+      } finally {
         setIsLoading(false);
       }
     };
     
-    initialize();
-  }, [initializeData, gameType]);
+    if (gameType) {
+      fetchPoolsDirectly();
+    }
+  }, [gameType, initializeData]);
 
   // Manual refresh function
   const handleRefresh = async () => {
     setIsLoading(true);
     try {
-      const allPools = await fetchAllPools();
-      if (gameType) {
-        const filteredPools = allPools.filter(pool => pool.gameType === gameType);
-        console.log(`PoolsScreen: Refreshed ${filteredPools.length} ${gameType} pools`);
-        setPools(filteredPools);
+      console.log(`PoolsScreen: Manually refreshing ${gameType} pools`);
+      
+      const { data, error } = await supabase
+        .from('pools')
+        .select('*')
+        .eq('game_type', gameType);
+        
+      if (error) {
+        console.error("PoolsScreen: Error refreshing pools:", error);
+        toast({
+          title: "Error",
+          description: "Failed to refresh pools. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        console.log(`PoolsScreen: Refreshed ${data.length} ${gameType} pools`);
+        
+        const formattedPools = data
+          .filter(p => p.game_type === gameType)
+          .map(pool => ({
+            id: pool.id,
+            gameType: pool.game_type,
+            entryFee: pool.entry_fee,
+            maxPlayers: pool.max_players,
+            currentPlayers: pool.current_players || 0,
+            status: pool.status,
+            numberRange: [pool.number_range_min, pool.number_range_max],
+            playFrequency: pool.play_frequency,
+            players: []
+          }));
+        
+        setPools(formattedPools);
+      } else {
+        console.log(`PoolsScreen: No ${gameType} pools found during refresh`);
+        setPools([]);
       }
     } catch (error) {
-      console.error("Error refreshing pools:", error);
+      console.error("PoolsScreen: Error during refresh:", error);
       toast({
         title: "Error",
         description: "Failed to refresh pools. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   // Game titles mapping
@@ -162,7 +259,7 @@ const PoolsScreen = () => {
         {isLoading ? (
           <div className="text-center p-8">
             <h3 className="text-lg font-medium mb-2">Loading pools...</h3>
-            <p className="text-muted-foreground">Please wait while we initialize game data</p>
+            <p className="text-muted-foreground">Please wait while we fetch game data</p>
           </div>
         ) : pools.length === 0 ? (
           <div className="text-center p-8">
