@@ -1,5 +1,5 @@
 
-import { supabase } from './apiClient';
+import { supabase } from '@/lib/supabase/client';
 import { Pool } from '@/types/game';
 
 // Join a specific game pool

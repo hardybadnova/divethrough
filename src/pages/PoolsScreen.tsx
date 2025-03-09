@@ -11,9 +11,15 @@ import { toast } from "@/hooks/use-toast";
 
 const PoolsScreen = () => {
   const { gameType } = useParams<{ gameType: string }>();
-  const { getPoolsByGameType, joinPool } = useGame();
+  const { getPoolsByGameType, joinPool, initializeData } = useGame();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Initialize game data when component loads
+  useEffect(() => {
+    // Attempt to initialize game data if needed
+    initializeData().catch(console.error);
+  }, [initializeData]);
 
   const pools = getPoolsByGameType(gameType || "");
 
@@ -78,44 +84,51 @@ const PoolsScreen = () => {
           </p>
         </div>
 
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 gap-4"
-        >
-          {pools.map((pool) => (
-            <motion.div key={pool.id} variants={itemVariants}>
-              <div 
-                className="rounded-xl glass-card p-5 hover:shadow-lg hover:shadow-betster-500/10 transition-all cursor-pointer"
-                onClick={() => handleJoinPool(pool.id, pool.entryFee)}
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="betster-chip mb-2">
-                      {formatCurrency(pool.entryFee)}
+        {pools.length === 0 ? (
+          <div className="text-center p-8">
+            <h3 className="text-lg font-medium mb-2">Loading pools...</h3>
+            <p className="text-muted-foreground">Please wait while we initialize game data</p>
+          </div>
+        ) : (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 gap-4"
+          >
+            {pools.map((pool) => (
+              <motion.div key={pool.id} variants={itemVariants}>
+                <div 
+                  className="rounded-xl glass-card p-5 hover:shadow-lg hover:shadow-betster-500/10 transition-all cursor-pointer"
+                  onClick={() => handleJoinPool(pool.id, pool.entryFee)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="betster-chip mb-2">
+                        {formatCurrency(pool.entryFee)}
+                      </div>
+                      <h3 className="font-medium text-lg">
+                        {formatCurrency(pool.entryFee)} Pool
+                      </h3>
+                      <div className="flex items-center mt-1 text-muted-foreground text-sm">
+                        <Users className="h-3.5 w-3.5 mr-1" />
+                        <span>{pool.currentPlayers}/{pool.maxPlayers} Players</span>
+                      </div>
                     </div>
-                    <h3 className="font-medium text-lg">
-                      {formatCurrency(pool.entryFee)} Pool
-                    </h3>
-                    <div className="flex items-center mt-1 text-muted-foreground text-sm">
-                      <Users className="h-3.5 w-3.5 mr-1" />
-                      <span>{pool.currentPlayers}/{pool.maxPlayers} Players</span>
+                    <div>
+                      <button 
+                        className="betster-button"
+                        onClick={() => handleJoinPool(pool.id, pool.entryFee)}
+                      >
+                        Join <ArrowRight className="h-4 w-4 ml-1" />
+                      </button>
                     </div>
-                  </div>
-                  <div>
-                    <button 
-                      className="betster-button"
-                      onClick={() => handleJoinPool(pool.id, pool.entryFee)}
-                    >
-                      Join <ArrowRight className="h-4 w-4 ml-1" />
-                    </button>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
       </div>
     </AppLayout>
   );

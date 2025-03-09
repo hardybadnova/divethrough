@@ -54,6 +54,38 @@ export type Database = {
           },
         ]
       }
+      game_pools: {
+        Row: {
+          created_at: string
+          id: string
+          player_data: Json
+          player_id: string
+          pool_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_data: Json
+          player_id: string
+          pool_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_data?: Json
+          player_id?: string
+          pool_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_pools_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "pools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       games: {
         Row: {
           created_at: string
@@ -81,6 +113,48 @@ export type Database = {
           id?: string
           status?: string
           winning_number?: number | null
+        }
+        Relationships: []
+      }
+      pools: {
+        Row: {
+          created_at: string
+          current_players: number
+          entry_fee: number
+          game_type: string
+          id: string
+          max_players: number
+          number_range_max: number
+          number_range_min: number
+          play_frequency: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_players?: number
+          entry_fee: number
+          game_type: string
+          id: string
+          max_players: number
+          number_range_max: number
+          number_range_min: number
+          play_frequency?: string | null
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_players?: number
+          entry_fee?: number
+          game_type?: string
+          id?: string
+          max_players?: number
+          number_range_max?: number
+          number_range_min?: number
+          play_frequency?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
