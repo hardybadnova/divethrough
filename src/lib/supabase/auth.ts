@@ -1,3 +1,4 @@
+
 import { toast } from '@/hooks/use-toast';
 import { supabase } from './client';
 
@@ -51,27 +52,26 @@ export const signInWithGoogle = async () => {
     const origin = window.location.origin;
     const redirectTo = `${origin}/dashboard`;
     console.log("Using redirect URL:", redirectTo);
-    console.log("Current origin:", origin);
     
-    // Instead of accessing protected properties, log general information
-    console.log("Using Supabase project configuration for Google Auth");
-    console.log("Make sure Google provider is enabled in Supabase Auth settings");
+    // Get Supabase client info
+    console.log("Initiating Google OAuth with Supabase");
+    console.log("Project URL:", supabase.supabaseUrl);
     
-    // Add more debug query params to help diagnose the issue
+    // Use the specific client ID from your Google console
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
         queryParams: {
+          // These parameters help ensure proper OAuth flow
           access_type: 'offline',
           prompt: 'consent',
-          debug: 'true' // Add debug flag
         }
       }
     });
     
     if (error) {
-      console.error("Google auth error details:", error);
+      console.error("Google auth error details:", JSON.stringify(error));
       toast({
         title: "Google Sign-in Failed",
         description: `Error: ${error.message || "Could not initialize Google sign-in"}. Please try email login instead.`,
@@ -80,7 +80,8 @@ export const signInWithGoogle = async () => {
       throw error;
     }
     
-    console.log("Google auth process initiated successfully:", data);
+    console.log("Google auth process initiated successfully");
+    console.log("Auth URL:", data?.url); // This will log the URL where the user is being redirected
     return data;
   } catch (error: any) {
     console.error("Error during Google sign-in:", error);
