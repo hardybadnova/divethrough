@@ -1,4 +1,3 @@
-
 import { toast } from '@/hooks/use-toast';
 import { supabase } from './client';
 
@@ -54,11 +53,9 @@ export const signInWithGoogle = async () => {
     console.log("Using redirect URL:", redirectTo);
     console.log("Current origin:", origin);
     
-    // Add debug information about the Supabase project
-    console.log("Project reference:", supabase.storageUrl.split('https://')[1].split('.')[0]);
-    
-    // Get information about enabled auth providers
-    console.log("Checking auth configuration...");
+    // Instead of accessing protected properties, log general information
+    console.log("Using Supabase project configuration for Google Auth");
+    console.log("Make sure Google provider is enabled in Supabase Auth settings");
     
     // Add more debug query params to help diagnose the issue
     const { data, error } = await supabase.auth.signInWithOAuth({
