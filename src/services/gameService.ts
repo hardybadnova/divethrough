@@ -5,6 +5,8 @@ export * from './game/playerActions';
 export * from './game/chatService';
 export * from './game/subscriptionService';
 
+import { supabase } from '@/lib/supabase/client';
+
 // Function to initialize game data
 export const initializeGameData = async (initialPools) => {
   try {
