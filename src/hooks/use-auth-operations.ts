@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -57,27 +56,28 @@ export const useAuthOperations = ({
   
   const loginWithGoogle = async (): Promise<void> => {
     try {
-      console.log("Starting Google sign-in process with specific configuration...");
+      console.log("Starting Google sign-in process...");
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
         }
       });
       
       if (error) {
-        console.error("Google OAuth error during initialization:", error);
+        console.error("Google OAuth error:", error);
+        toast({
+          title: "Google Sign-in Failed",
+          description: error.message || "Failed to initialize Google authentication.",
+          variant: "destructive",
+        });
         throw error;
       }
       
       console.log("Google OAuth process initiated successfully");
       // The redirect to Google will happen automatically
     } catch (error: any) {
-      console.error("Google sign-in error details:", error);
+      console.error("Google sign-in error:", error);
       
       toast({
         title: "Google Sign-in Failed",

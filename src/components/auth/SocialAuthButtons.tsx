@@ -12,7 +12,6 @@ const SocialAuthButtons = ({ onGoogleLogin, isLoading }: SocialAuthButtonsProps)
 
   const handleGoogleLogin = async () => {
     try {
-      console.log("Initiating Google login from button click...");
       setIsSubmitting(true);
       await onGoogleLogin();
     } catch (error: any) {
