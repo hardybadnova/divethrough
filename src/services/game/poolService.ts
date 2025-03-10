@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase/client';
 import { Pool } from '@/types/game';
 import { updateWalletBalance } from '@/lib/supabase/profiles';
+import { createTransaction, updateTransactionStatus } from '@/lib/supabase/transactions';
 
 // Join a specific game pool with debouncing
 let joiningPools = new Set<string>();
@@ -51,6 +52,14 @@ export const joinGamePool = async (poolId: string, player: any): Promise<void> =
     
     const entryFee = poolData.entry_fee;
     
+    // Create a transaction record for game entry fee
+    const transaction = await createTransaction(
+      player.id,
+      -entryFee,
+      'game_entry',
+      `Entry fee for pool ${poolId}`
+    );
+    
     // Deduct entry fee from user's wallet - this updates the balance in the database
     await updateWalletBalance(player.id, -entryFee);
     console.log(`Deducted ${entryFee} from user ${player.id}'s wallet`);
@@ -70,6 +79,12 @@ export const joinGamePool = async (poolId: string, player: any): Promise<void> =
       console.error("Error joining game pool:", error);
       // If there's an error, refund the entry fee
       await updateWalletBalance(player.id, entryFee);
+      
+      // Update transaction as failed
+      if (transaction && transaction.id) {
+        await updateTransactionStatus(transaction.id, 'failed');
+      }
+      
       throw error;
     }
     
@@ -90,6 +105,11 @@ export const joinGamePool = async (poolId: string, player: any): Promise<void> =
       if (updateError) {
         console.error("Error updating player count:", updateError);
       }
+    }
+    
+    // Update transaction as completed
+    if (transaction && transaction.id) {
+      await updateTransactionStatus(transaction.id, 'completed');
     }
     
     console.log(`Successfully joined pool ${poolId}`);
@@ -147,8 +167,21 @@ export const leaveGamePool = async (poolId: string, playerId: string): Promise<v
       // Refund entry fee (minus small fee)
       const refundAmount = poolData.entry_fee * 0.9; // 10% fee for leaving
       
+      // Create refund transaction
+      const transaction = await createTransaction(
+        playerId,
+        refundAmount,
+        'refund',
+        `Refund for leaving pool ${poolId} (10% fee applied)`
+      );
+      
       // Update wallet balance
       await updateWalletBalance(playerId, refundAmount);
+      
+      // Mark transaction as completed
+      if (transaction && transaction.id) {
+        await updateTransactionStatus(transaction.id, 'completed');
+      }
       
       console.log(`Refunded ${refundAmount} to user ${playerId}'s wallet`);
     }
@@ -197,8 +230,21 @@ export const processGameResult = async (poolId: string, winningPlayers: string[]
   try {
     // Update each winning player's wallet
     for (const playerId of winningPlayers) {
+      // Create winning transaction
+      const transaction = await createTransaction(
+        playerId,
+        prizeAmount,
+        'game_win',
+        `Prize for winning in pool ${poolId}`
+      );
+      
       // Add prize to winner's wallet
       await updateWalletBalance(playerId, prizeAmount);
+      
+      // Mark transaction as completed
+      if (transaction && transaction.id) {
+        await updateTransactionStatus(transaction.id, 'completed');
+      }
       
       console.log(`Added ${prizeAmount} to winner ${playerId}'s wallet`);
     }
