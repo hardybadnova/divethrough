@@ -13,7 +13,7 @@ const FakeMoneyPanel = () => {
   const [isDepositing, setIsDepositing] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
 
-  const handleAddMoney = async () => {
+  const handleAddMoney = () => {
     if (!amount || amount <= 0) {
       toast({
         title: "Invalid amount",
@@ -23,32 +23,36 @@ const FakeMoneyPanel = () => {
       return;
     }
 
-    // Set processing state
-    setIsDepositing(true);
-    
-    try {
-      // Call addFakeMoney with optimistic UI update for immediate visual feedback
-      await addFakeMoney(amount, true);
+    // Optimistic UI update - immediately show success and update UI
+    if (user) {
+      // Update UI immediately with optimistic state change
+      setIsDepositing(true);
       
-      // Show success message
+      // Show success message immediately
       toast({
         title: "Success",
         description: `${amount} fake money added to your wallet`,
       });
-    } catch (error) {
-      console.error("Error adding fake money:", error);
-      toast({
-        title: "Failed to add fake money",
-        description: "There was an error processing your request. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      // Always clear the processing state
-      setIsDepositing(false);
+      
+      // Optimistically update balance
+      addFakeMoney(amount, true)
+        .catch(error => {
+          console.error("Error adding fake money:", error);
+          // Only show error if there's an actual failure
+          toast({
+            title: "Failed to add fake money",
+            description: "There was an error processing your request. Please try again.",
+            variant: "destructive"
+          });
+        })
+        .finally(() => {
+          // Always clear the processing state
+          setIsDepositing(false);
+        });
     }
   };
 
-  const handleWithdrawMoney = async () => {
+  const handleWithdrawMoney = () => {
     if (!amount || amount <= 0) {
       toast({
         title: "Invalid amount",
@@ -67,28 +71,32 @@ const FakeMoneyPanel = () => {
       return;
     }
 
-    // Set processing state
-    setIsWithdrawing(true);
-    
-    try {
-      // Call withdrawFakeMoney with optimistic UI update for immediate visual feedback
-      await withdrawFakeMoney(amount, true);
+    // Optimistic UI update - immediately show success and update UI
+    if (user) {
+      // Update UI immediately with optimistic state change
+      setIsWithdrawing(true);
       
-      // Show success message
+      // Show success message immediately
       toast({
         title: "Success",
         description: `${amount} fake money withdrawn from your wallet`,
       });
-    } catch (error) {
-      console.error("Error withdrawing fake money:", error);
-      toast({
-        title: "Failed to withdraw fake money",
-        description: "There was an error processing your request. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      // Always clear the processing state
-      setIsWithdrawing(false);
+      
+      // Optimistically update balance
+      withdrawFakeMoney(amount, true)
+        .catch(error => {
+          console.error("Error withdrawing fake money:", error);
+          // Only show error if there's an actual failure
+          toast({
+            title: "Failed to withdraw fake money",
+            description: "There was an error processing your request. Please try again.",
+            variant: "destructive"
+          });
+        })
+        .finally(() => {
+          // Always clear the processing state
+          setIsWithdrawing(false);
+        });
     }
   };
 
