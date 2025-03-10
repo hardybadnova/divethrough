@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,6 +25,8 @@ import TransactionHistory from "./pages/TransactionHistory";
 import StakingScreen from "./pages/StakingScreen";
 import SupportChat from "./pages/SupportChat";
 import AdminDashboard from "./pages/AdminDashboard";
+import TestWalletPage from "./pages/TestWalletPage";
+import AppLayout from "./components/AppLayout";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,8 +37,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => {
-  // For DEBUG: Log app initialization
+function App() {
   useEffect(() => {
     console.log("App initialized. Ready to handle routing.");
   }, []);
@@ -68,6 +68,13 @@ const App = () => {
                         <Route path="/transactions" element={<TransactionHistory />} />
                         <Route path="/staking" element={<StakingScreen />} />
                         <Route path="/support" element={<SupportChat />} />
+                        <Route path="/test-wallet" element={
+                          <ProtectedRoute>
+                            <AppLayout>
+                              <TestWalletPage />
+                            </AppLayout>
+                          </ProtectedRoute>
+                        } />
                       </Route>
                       
                       {/* Admin Routes */}
@@ -86,6 +93,6 @@ const App = () => {
       </BrowserRouter>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;
