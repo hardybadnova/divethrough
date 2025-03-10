@@ -59,23 +59,51 @@ export const getUserProfile = async (userId: string) => {
 };
 
 export const updateWalletBalance = async (userId: string, amount: number) => {
-  // First get current balance
-  const { data: profile, error: fetchError } = await supabase
-    .from('user_profiles')
-    .select('wallet_balance')
-    .eq('id', userId)
-    .single();
-  
-  if (fetchError) throw fetchError;
-  
-  const newBalance = (profile?.wallet_balance || 0) + amount;
-  
-  const { error } = await supabase
-    .from('user_profiles')
-    .update({ wallet_balance: newBalance })
-    .eq('id', userId);
-  
-  if (error) throw error;
-  
-  return newBalance;
+  try {
+    // First get current balance
+    const { data: profile, error: fetchError } = await supabase
+      .from('user_profiles')
+      .select('wallet_balance')
+      .eq('id', userId)
+      .single();
+    
+    if (fetchError) {
+      // If no profile exists, create one first
+      if (fetchError.code === 'PGRST116') {
+        const user = await getCurrentUser();
+        if (user) {
+          await createUserProfile(
+            userId, 
+            user.user_metadata?.username || `user_${userId.substring(0, 8)}`, 
+            user.email || ''
+          );
+          
+          // Set initial balance
+          const newBalance = amount > 0 ? amount : 0;
+          const { error } = await supabase
+            .from('user_profiles')
+            .update({ wallet_balance: newBalance })
+            .eq('id', userId);
+          
+          if (error) throw error;
+          return newBalance;
+        }
+      }
+      throw fetchError;
+    }
+    
+    const newBalance = (profile?.wallet_balance || 0) + amount;
+    
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ wallet_balance: newBalance })
+      .eq('id', userId);
+    
+    if (error) throw error;
+    
+    return newBalance;
+  } catch (error) {
+    console.error("Error updating wallet balance:", error);
+    throw error;
+  }
 };

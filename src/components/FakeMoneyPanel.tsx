@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 const FakeMoneyPanel = () => {
   const { user, addFakeMoney, withdrawFakeMoney } = useAuth();
@@ -24,6 +25,17 @@ const FakeMoneyPanel = () => {
     setIsProcessing(true);
     try {
       await addFakeMoney(amount);
+      toast({
+        title: "Success",
+        description: `${amount} fake money added to your wallet`,
+      });
+    } catch (error) {
+      console.error("Error adding fake money:", error);
+      toast({
+        title: "Failed to add fake money",
+        description: "There was an error processing your request. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -51,6 +63,17 @@ const FakeMoneyPanel = () => {
     setIsProcessing(true);
     try {
       await withdrawFakeMoney(amount);
+      toast({
+        title: "Success",
+        description: `${amount} fake money withdrawn from your wallet`,
+      });
+    } catch (error) {
+      console.error("Error withdrawing fake money:", error);
+      toast({
+        title: "Failed to withdraw fake money",
+        description: "There was an error processing your request. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -85,7 +108,12 @@ const FakeMoneyPanel = () => {
           disabled={isProcessing}
           className="bg-green-600 hover:bg-green-700 text-white"
         >
-          {isProcessing ? 'Processing...' : 'Add Fake Money'}
+          {isProcessing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+              Processing...
+            </>
+          ) : 'Add Fake Money'}
         </Button>
         <Button 
           variant="default" 
@@ -93,7 +121,12 @@ const FakeMoneyPanel = () => {
           disabled={isProcessing}
           className="bg-amber-600 hover:bg-amber-700 text-white"
         >
-          {isProcessing ? 'Processing...' : 'Withdraw Fake Money'}
+          {isProcessing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+              Processing...
+            </>
+          ) : 'Withdraw Fake Money'}
         </Button>
       </CardFooter>
       <div className="px-6 pb-4 text-xs text-betster-400">

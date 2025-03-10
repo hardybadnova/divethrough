@@ -453,6 +453,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_player_winner_status: {
+        Args: {
+          p_pool_id: string
+          p_player_id: string
+          p_is_winner: boolean
+        }
+        Returns: undefined
+      }
       withdraw_stake_rewards: {
         Args: {
           p_stake_id: string

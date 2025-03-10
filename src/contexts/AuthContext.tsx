@@ -68,18 +68,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { ...prev, wallet: newBalance };
       });
       
-      toast({
-        title: "Success",
-        description: `${amount} fake money added to your wallet`,
-      });
-      
     } catch (error) {
       console.error("Error adding fake money:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add fake money",
-        variant: "destructive"
-      });
+      throw error; // Rethrow for component handling
     }
   };
   
@@ -124,18 +115,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { ...prev, wallet: newBalance };
       });
       
-      toast({
-        title: "Success",
-        description: `${amount} fake money withdrawn from your wallet`,
-      });
-      
     } catch (error) {
       console.error("Error withdrawing fake money:", error);
-      toast({
-        title: "Error",
-        description: "Failed to withdraw fake money",
-        variant: "destructive"
-      });
+      throw error; // Rethrow for component handling
     }
   };
   
