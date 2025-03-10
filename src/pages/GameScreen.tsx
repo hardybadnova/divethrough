@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useGame } from "@/contexts/GameContext";
@@ -48,70 +48,122 @@ const GameScreen = () => {
   const [statsCharged, setStatsCharged] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [gameUrl, setGameUrl] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  
+  const preGameIntervalRef = useRef<number | null>(null);
+  const gameIntervalRef = useRef<number | null>(null);
+  const hasInitialized = useRef(false);
+  const hasJoinedPool = useRef(false);
 
   const pool = currentPool || pools.find(p => p.id === poolId);
   
   useEffect(() => {
-    initializeData().catch(console.error);
-  }, []);
+    if (!hasInitialized.current) {
+      console.log("Initializing game data");
+      initializeData().catch(console.error);
+      hasInitialized.current = true;
+    }
+  }, [initializeData]);
   
   useEffect(() => {
+    if (!pool || !poolId || isJoining || hasJoinedPool.current) {
+      return;
+    }
+
+    const joinCurrentPool = async () => {
+      try {
+        console.log("Joining pool:", poolId);
+        setIsJoining(true);
+        hasJoinedPool.current = true;
+        await joinPool(poolId);
+        
+        const baseUrl = window.location.origin;
+        setGameUrl(`${baseUrl}/game/${poolId}`);
+        
+        if (preGameIntervalRef.current === null) {
+          preGameIntervalRef.current = window.setInterval(() => {
+            setPreGameCountdown(prev => {
+              if (prev <= 1) {
+                if (preGameIntervalRef.current !== null) {
+                  clearInterval(preGameIntervalRef.current);
+                  preGameIntervalRef.current = null;
+                }
+                setGameState("in-progress");
+                toast({
+                  title: "Game Started!",
+                  description: "Choose your number and lock it in",
+                });
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+        }
+      } catch (error) {
+        console.error("Failed to join pool:", error);
+        toast({
+          title: "Error",
+          description: "Failed to join the game. Please try again.",
+          variant: "destructive"
+        });
+        hasJoinedPool.current = false;
+      } finally {
+        setIsJoining(false);
+      }
+    };
+
     if (!pool) {
+      console.log("No pool found, navigating to dashboard");
       navigate('/dashboard');
       return;
     }
     
-    joinPool(poolId || "");
-    
-    const baseUrl = window.location.origin;
-    setGameUrl(`${baseUrl}/game/${poolId}`);
-    
-    const preGameInterval = setInterval(() => {
-      setPreGameCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(preGameInterval);
-          setGameState("in-progress");
-          toast({
-            title: "Game Started!",
-            description: "Choose your number and lock it in",
-          });
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    joinCurrentPool();
     
     return () => {
-      clearInterval(preGameInterval);
-      leavePool();
+      if (preGameIntervalRef.current !== null) {
+        clearInterval(preGameIntervalRef.current);
+        preGameIntervalRef.current = null;
+      }
     };
-  }, [pool, poolId, joinPool, leavePool, navigate]);
+  }, [pool, poolId, joinPool, navigate, isJoining]);
   
   useEffect(() => {
     if (gameState !== "in-progress") return;
     
-    const gameInterval = setInterval(() => {
-      setGameTimer(prev => {
-        if (prev <= 1) {
-          clearInterval(gameInterval);
-          setGameState("completed");
-          
-          setTimeout(() => {
-            console.log("Game timer ended, navigating to results");
-            navigate(`/result/${poolId}`);
-          }, 500);
-          
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    if (gameIntervalRef.current === null) {
+      gameIntervalRef.current = window.setInterval(() => {
+        setGameTimer(prev => {
+          if (prev <= 1) {
+            if (gameIntervalRef.current !== null) {
+              clearInterval(gameIntervalRef.current);
+              gameIntervalRef.current = null;
+            }
+            setGameState("completed");
+            
+            setTimeout(() => {
+              console.log("Game timer ended, navigating to results");
+              navigate(`/result/${poolId}`);
+            }, 500);
+            
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
     
-    return () => clearInterval(gameInterval);
+    return () => {
+      if (gameIntervalRef.current !== null) {
+        clearInterval(gameIntervalRef.current);
+        gameIntervalRef.current = null;
+      }
+    };
   }, [gameState, navigate, poolId]);
   
   useEffect(() => {
-    if (gameState === "completed") {
+    if (gameState === "completed" && poolId) {
       console.log("Game state is completed, navigating to results");
       navigate(`/result/${poolId}`);
     }
@@ -126,6 +178,25 @@ const GameScreen = () => {
       }
     }
   }, [currentPool, user]);
+  
+  useEffect(() => {
+    return () => {
+      if (hasJoinedPool.current && !isLeaving) {
+        console.log("Component unmounting, cleaning up and leaving pool");
+        safeLeavePool();
+      }
+      
+      if (preGameIntervalRef.current !== null) {
+        clearInterval(preGameIntervalRef.current);
+        preGameIntervalRef.current = null;
+      }
+      
+      if (gameIntervalRef.current !== null) {
+        clearInterval(gameIntervalRef.current);
+        gameIntervalRef.current = null;
+      }
+    };
+  }, []);
   
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -146,20 +217,55 @@ const GameScreen = () => {
   const handleLockNumber = async () => {
     if (!selectedNumber || gameState !== "in-progress" || isLocked) return;
     
-    await lockInNumber(selectedNumber);
-    setIsLocked(true);
+    try {
+      await lockInNumber(selectedNumber);
+      setIsLocked(true);
+    } catch (error) {
+      console.error("Error locking number:", error);
+      toast({
+        title: "Error",
+        description: "Failed to lock in your number. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
   const handleExitGame = () => {
     setShowExitDialog(true);
   };
   
-  const confirmExit = () => {
-    leavePool();
+  const safeLeavePool = async () => {
+    if (isLeaving || !hasJoinedPool.current) return;
+    
+    try {
+      setIsLeaving(true);
+      await leavePool();
+      hasJoinedPool.current = false;
+      
+      if (preGameIntervalRef.current !== null) {
+        clearInterval(preGameIntervalRef.current);
+        preGameIntervalRef.current = null;
+      }
+      
+      if (gameIntervalRef.current !== null) {
+        clearInterval(gameIntervalRef.current);
+        gameIntervalRef.current = null;
+      }
+      
+    } catch (error) {
+      console.error("Error leaving pool:", error);
+    } finally {
+      setIsLeaving(false);
+    }
+  };
+  
+  const confirmExit = async () => {
+    await safeLeavePool();
     navigate(`/pools/${pool?.gameType}`);
   };
   
-  const handleChangeTable = () => {
+  const handleChangeTable = async () => {
+    await safeLeavePool();
     navigate(`/pools/${pool?.gameType}`);
   };
 
@@ -167,8 +273,17 @@ const GameScreen = () => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
     
-    await sendMessage(chatMessage);
-    setChatMessage("");
+    try {
+      await sendMessage(chatMessage);
+      setChatMessage("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send your message. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
   const copyGameLink = () => {
@@ -178,32 +293,6 @@ const GameScreen = () => {
       description: "Share this link with your friends to play together"
     });
     setShowShareDialog(false);
-  };
-  
-  const renderNumberButtons = () => {
-    if (!pool) return null;
-    
-    const [min, max] = pool.numberRange;
-    const numbers = Array.from({ length: max - min + 1 }, (_, i) => i + min);
-    
-    return (
-      <div className="grid grid-cols-5 gap-3">
-        {numbers.map(num => (
-          <button
-            key={num}
-            onClick={() => handleNumberSelect(num)}
-            className={`h-12 w-12 rounded-full font-medium flex items-center justify-center 
-              ${selectedNumber === num ? 'bg-betster-600 text-white' : 'bg-secondary hover:bg-secondary/80'}
-              ${isLocked && selectedNumber === num ? 'ring-2 ring-green-500' : ''}
-              ${isLocked && selectedNumber !== num ? 'opacity-30 cursor-not-allowed' : ''}
-              transition-all`}
-            disabled={isLocked && selectedNumber !== num}
-          >
-            {num}
-          </button>
-        ))}
-      </div>
-    );
   };
   
   const handleViewStats = () => {

@@ -2,8 +2,21 @@
 import { supabase } from './client';
 import { updateWalletBalance } from './profiles';
 
-export const createTransaction = async (userId: string, amount: number, type: 'deposit' | 'withdrawal', paymentId?: string) => {
+// Track ongoing transactions to prevent duplicates
+const ongoingTransactions = new Set<string>();
+
+export const createTransaction = async (userId: string, amount: number, type: 'deposit' | 'withdrawal' | 'game_entry' | 'game_refund' | 'game_winning', paymentId?: string) => {
+  // Create a unique transaction key to prevent duplicates
+  const transactionKey = `${userId}-${type}-${amount}-${paymentId || Date.now()}`;
+  
+  if (ongoingTransactions.has(transactionKey)) {
+    console.log(`Transaction ${transactionKey} already in progress, skipping duplicate`);
+    return null;
+  }
+  
   try {
+    ongoingTransactions.add(transactionKey);
+    
     const { data, error } = await supabase
       .from('transactions')
       .insert([
@@ -27,6 +40,9 @@ export const createTransaction = async (userId: string, amount: number, type: 'd
   } catch (error) {
     console.error("Failed to create transaction:", error);
     throw error;
+  } finally {
+    // Remove transaction from tracking after completion or error
+    ongoingTransactions.delete(transactionKey);
   }
 };
 
@@ -35,13 +51,19 @@ export const updateTransactionStatus = async (transactionId: string, status: 'co
     // First, get the transaction details to avoid an extra query later
     const { data: transaction, error: fetchError } = await supabase
       .from('transactions')
-      .select('user_id, amount, type')
+      .select('user_id, amount, type, status')
       .eq('id', transactionId)
       .single();
     
     if (fetchError) {
       console.error("Error fetching transaction details:", fetchError);
       throw fetchError;
+    }
+    
+    // Skip if transaction is already in the target status
+    if (transaction.status === status) {
+      console.log(`Transaction ${transactionId} already has status ${status}, skipping update`);
+      return transaction;
     }
     
     // Update the transaction status
@@ -64,9 +86,9 @@ export const updateTransactionStatus = async (transactionId: string, status: 'co
     // If transaction is completed, update wallet balance immediately
     if (status === 'completed' && transaction) {
       try {
-        if (transaction.type === 'deposit') {
+        if (transaction.type === 'deposit' || transaction.type === 'game_refund' || transaction.type === 'game_winning') {
           await updateWalletBalance(transaction.user_id, transaction.amount);
-        } else if (transaction.type === 'withdrawal') {
+        } else if (transaction.type === 'withdrawal' || transaction.type === 'game_entry') {
           await updateWalletBalance(transaction.user_id, -transaction.amount);
         }
       } catch (balanceError) {
