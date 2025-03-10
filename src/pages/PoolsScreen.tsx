@@ -18,14 +18,14 @@ const PoolsScreen = () => {
   const navigate = useNavigate();
   const { pools, isLoading, fetchPools } = usePools(gameType);
 
-  // For immediate UI response, show skeleton loading state for a very short time
+  // For better UX, ensure we never show loading for more than 500ms
   const [showLoading, setShowLoading] = useState(true);
   
   useEffect(() => {
     // Very short loading state for better user experience
     const timer = setTimeout(() => {
       setShowLoading(false);
-    }, 300);
+    }, 200);
     
     return () => clearTimeout(timer);
   }, []);
@@ -37,6 +37,13 @@ const PoolsScreen = () => {
       navigate("/dashboard");
     }
   }, [gameType, navigate]);
+
+  // Immediate force refresh of pools on mount
+  useEffect(() => {
+    if (gameType) {
+      fetchPools();
+    }
+  }, [gameType, fetchPools]);
 
   const handleJoinPool = async (poolId: string, entryFee: number) => {
     if (!user) {
@@ -83,6 +90,14 @@ const PoolsScreen = () => {
     }
   };
 
+  // If we have pools data but it's empty, we should manually create at least one pool
+  useEffect(() => {
+    if (!isLoading && pools.length === 0 && gameType) {
+      console.log("PoolsScreen: No pools found, triggering initialization");
+      fetchPools();
+    }
+  }, [isLoading, pools, gameType, fetchPools]);
+
   return (
     <AppLayout>
       <div className="flex-1 container max-w-lg mx-auto px-4 py-6">
@@ -94,7 +109,7 @@ const PoolsScreen = () => {
         
         {(showLoading && isLoading) ? (
           <div className="grid grid-cols-1 gap-4">
-            {[1, 2].map((i) => (
+            {[1, 2, 3].map((i) => (
               <div 
                 key={i} 
                 className="rounded-xl glass-card p-5 animate-pulse"

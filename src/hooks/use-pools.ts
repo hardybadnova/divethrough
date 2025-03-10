@@ -1,16 +1,61 @@
-
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Pool } from "@/types/game";
 import { supabase } from "@/lib/supabase/client";
 import { useGame } from "@/contexts/GameContext";
 import { toast } from "@/hooks/use-toast";
 
+const getDefaultPools = (gameType: string): Pool[] => {
+  return [
+    {
+      id: `${gameType}_pool_1_${Date.now()}`,
+      gameType: gameType,
+      entryFee: 100,
+      maxPlayers: 10,
+      currentPlayers: 0,
+      status: 'open',
+      numberRange: [1, 10] as [number, number],
+      playFrequency: 'daily',
+      players: []
+    },
+    {
+      id: `${gameType}_pool_2_${Date.now()}`,
+      gameType: gameType,
+      entryFee: 500,
+      maxPlayers: 5,
+      currentPlayers: 0,
+      status: 'open',
+      numberRange: [1, 20] as [number, number],
+      playFrequency: 'daily',
+      players: []
+    }
+  ];
+};
+
 export const usePools = (gameType: string | undefined) => {
   const [isLoading, setIsLoading] = useState(true);
   const [pools, setPools] = useState<Pool[]>([]);
   const { initializeData } = useGame();
+  const fetchAttempts = useRef(0);
+  const localCacheKey = `betster-pools-${gameType}`;
+  
+  useEffect(() => {
+    if (!gameType) return;
+    
+    try {
+      const cachedPools = localStorage.getItem(localCacheKey);
+      if (cachedPools) {
+        const parsedPools = JSON.parse(cachedPools);
+        if (Array.isArray(parsedPools) && parsedPools.length > 0) {
+          console.log(`Using cached ${gameType} pools for instant UI`);
+          setPools(parsedPools);
+          // Still keep loading to refresh with real data
+        }
+      }
+    } catch (error) {
+      console.error("Error loading cached pools:", error);
+    }
+  }, [gameType, localCacheKey]);
 
-  // Memoize fetch pools to prevent unnecessary re-renders
   const fetchPools = useCallback(async () => {
     if (!gameType) {
       setIsLoading(false);
@@ -25,64 +70,36 @@ export const usePools = (gameType: string | undefined) => {
         .from('pools')
         .select('*')
         .eq('game_type', gameType);
-        
+
       if (error) {
         console.error("usePools: Error fetching pools:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load pools. Please try again.",
-          variant: "destructive",
-        });
+        
+        const fallbackPools = getDefaultPools(gameType);
+        setPools(fallbackPools);
+        localStorage.setItem(localCacheKey, JSON.stringify(fallbackPools));
+        
+        fetchAttempts.current += 1;
+        if (fetchAttempts.current <= 2) {
+          await initializeData();
+        } else {
+          toast({
+            title: "Using Offline Pools",
+            description: "Couldn't connect to the server. Using local pools data.",
+          });
+        }
+        
         setIsLoading(false);
         return;
       }
       
-      // Check if we need to initialize data
       if (!data || data.length === 0) {
-        console.log(`usePools: No ${gameType} pools found, trying to initialize...`);
+        console.log(`usePools: No ${gameType} pools found, creating default pools`);
         
-        // Try to initialize data if no pools found
-        await initializeData();
+        const defaultPools = getDefaultPools(gameType);
+        setPools(defaultPools);
+        localStorage.setItem(localCacheKey, JSON.stringify(defaultPools));
         
-        // Try fetching again after initialization
-        const { data: poolsAfterInit, error: errorAfterInit } = await supabase
-          .from('pools')
-          .select('*')
-          .eq('game_type', gameType);
-          
-        if (errorAfterInit) {
-          console.error("usePools: Error fetching pools after init:", errorAfterInit);
-          toast({
-            title: "Error",
-            description: "Failed to load pools after initialization. Please try again.",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
-        
-        if (poolsAfterInit && poolsAfterInit.length > 0) {
-          console.log(`usePools: Found ${poolsAfterInit.length} ${gameType} pools after initialization`);
-          
-          const formattedPools: Pool[] = poolsAfterInit
-            .filter(p => p.game_type === gameType)
-            .map(pool => ({
-              id: pool.id,
-              gameType: pool.game_type,
-              entryFee: pool.entry_fee,
-              maxPlayers: pool.max_players,
-              currentPlayers: pool.current_players || 0,
-              status: pool.status,
-              numberRange: [pool.number_range_min, pool.number_range_max] as [number, number],
-              playFrequency: pool.play_frequency,
-              players: []
-            }));
-          
-          setPools(formattedPools);
-        } else {
-          console.log(`usePools: No ${gameType} pools found even after initialization`);
-          setPools([]);
-        }
+        initializeGameData();
       } else {
         console.log(`usePools: Found ${data.length} ${gameType} pools`);
         
@@ -101,34 +118,86 @@ export const usePools = (gameType: string | undefined) => {
           }));
         
         setPools(formattedPools);
+        localStorage.setItem(localCacheKey, JSON.stringify(formattedPools));
       }
     } catch (error) {
       console.error("usePools: Unexpected error:", error);
+      
+      const fallbackPools = getDefaultPools(gameType);
+      setPools(fallbackPools);
+      localStorage.setItem(localCacheKey, JSON.stringify(fallbackPools));
+      
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
+        description: "Using local pool data due to connection issues.",
       });
     } finally {
       setIsLoading(false);
     }
-  }, [gameType, initializeData]);
+  }, [gameType, initializeData, localCacheKey]);
 
-  // Initialize pools on mount with cached data
+  const initializeGameData = async () => {
+    if (!gameType) return;
+    
+    try {
+      console.log(`Initializing game data for ${gameType}`);
+      await initializeData();
+      
+      const { data, error } = await supabase
+        .from('pools')
+        .select('*')
+        .eq('game_type', gameType);
+        
+      if (error) {
+        console.error("Error fetching pools after init:", error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const formattedPools: Pool[] = data
+          .filter(p => p.game_type === gameType)
+          .map(pool => ({
+            id: pool.id,
+            gameType: pool.game_type,
+            entryFee: pool.entry_fee,
+            maxPlayers: pool.max_players,
+            currentPlayers: pool.current_players || 0,
+            status: pool.status,
+            numberRange: [pool.number_range_min, pool.number_range_max] as [number, number],
+            playFrequency: pool.play_frequency,
+            players: []
+          }));
+        
+        setPools(formattedPools);
+        localStorage.setItem(localCacheKey, JSON.stringify(formattedPools));
+      }
+    } catch (error) {
+      console.error("Error initializing game data:", error);
+    }
+  };
+
   useEffect(() => {
-    // Set loading to false after a max of 1.5 seconds, regardless of API response
+    if (gameType) {
+      fetchPools();
+    } else {
+      setIsLoading(false);
+    }
+    
     const timeoutId = setTimeout(() => {
       if (isLoading) {
         setIsLoading(false);
+        if (pools.length === 0 && gameType) {
+          const defaultPools = getDefaultPools(gameType);
+          setPools(defaultPools);
+          localStorage.setItem(localCacheKey, JSON.stringify(defaultPools));
+        }
       }
-    }, 1500);
-    
-    fetchPools();
+    }, 1000);
     
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [gameType, fetchPools]);
+  }, [gameType, fetchPools, isLoading, pools.length, localCacheKey]);
 
   return {
     pools,

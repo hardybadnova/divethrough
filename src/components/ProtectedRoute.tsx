@@ -7,15 +7,17 @@ const ProtectedRoute = () => {
   const { isAuthenticated, isLoading, isInitialized, refreshUserData } = useAuth();
   const location = useLocation();
 
-  // Super optimized: Only refresh on truly necessary paths and much less frequently
+  // Only refresh on essential paths, much less frequently
   useEffect(() => {
-    // Only refresh data on very specific screens that absolutely need it
-    const essentialPaths = ['/transactions'];
-    const shouldRefresh = isAuthenticated && essentialPaths.includes(location.pathname);
+    // Don't refresh on game paths to prevent wallet issues
+    const nonRefreshPaths = ['/game', '/pools'];
+    const shouldSkipRefresh = nonRefreshPaths.some(path => location.pathname.includes(path));
     
-    if (shouldRefresh) {
-      // One immediate refresh when entering the page, no timeout
-      refreshUserData();
+    if (isAuthenticated && !shouldSkipRefresh) {
+      // One immediate refresh when entering specific screens
+      if (location.pathname === '/transactions' || location.pathname === '/dashboard') {
+        refreshUserData();
+      }
     }
   }, [isAuthenticated, location.pathname, refreshUserData]);
 
