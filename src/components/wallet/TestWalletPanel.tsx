@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
 export const TestWalletPanel = () => {
-  const { user } = useAuth();
+  const { user, addFakeMoney, withdrawFakeMoney } = useAuth();
   const [depositAmount, setDepositAmount] = useState(100);
   const [withdrawAmount, setWithdrawAmount] = useState(100);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -27,11 +27,11 @@ export const TestWalletPanel = () => {
     
     setIsProcessing(true);
     try {
-      const result = await initializeDeposit(user.id, depositAmount);
-      if (result.success) {
+      const result = await addFakeMoney(depositAmount);
+      if (result !== undefined) {
         toast({
-          title: "Test Deposit Initiated",
-          description: "Your deposit is being processed (Test Mode)"
+          title: "Deposit Successful",
+          description: `Your deposit is being processed (Test Mode)`
         });
       }
     } catch (error) {
@@ -53,10 +53,10 @@ export const TestWalletPanel = () => {
     
     setIsProcessing(true);
     try {
-      const success = await initiateWithdrawal(user.id, withdrawAmount);
-      if (success) {
+      const result = await withdrawFakeMoney(withdrawAmount);
+      if (result !== undefined) {
         toast({
-          title: "Test Withdrawal Initiated",
+          title: "Withdrawal Initiated",
           description: "Your withdrawal is being processed (Test Mode)"
         });
       }
