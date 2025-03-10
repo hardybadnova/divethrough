@@ -48,7 +48,9 @@ export const createTransaction = async (userId: string, amount: number, type: 'd
     throw error;
   } finally {
     // Remove transaction from tracking after completion or error
-    ongoingTransactions.delete(transactionKey);
+    setTimeout(() => {
+      ongoingTransactions.delete(transactionKey);
+    }, 5000); // Keep in tracking for 5 seconds to prevent rapid duplicates
   }
 };
 
@@ -93,14 +95,18 @@ export const updateTransactionStatus = async (transactionId: string, status: 'co
     if (status === 'completed' && transaction) {
       try {
         if (transaction.type === 'deposit' || transaction.type === 'game_refund' || transaction.type === 'game_winning') {
+          // Add delay to ensure the transaction is fully committed before updating wallet
+          await new Promise(resolve => setTimeout(resolve, 100));
           await updateWalletBalance(transaction.user_id, transaction.amount);
+          console.log(`Wallet updated for ${transaction.user_id} with amount ${transaction.amount}`);
         } else if (transaction.type === 'withdrawal' || transaction.type === 'game_entry') {
+          await new Promise(resolve => setTimeout(resolve, 100));
           await updateWalletBalance(transaction.user_id, -transaction.amount);
+          console.log(`Wallet updated for ${transaction.user_id} with amount -${transaction.amount}`);
         }
       } catch (balanceError) {
         console.error("Failed to update wallet balance:", balanceError);
-        // Don't block the transaction update if balance update fails
-        // Just log the error
+        // Log the error but don't block the transaction update
       }
     }
     

@@ -39,7 +39,7 @@ export const calculateGameFee = (winningAmount: number): number => {
   return (winningAmount * FEE_PERCENTAGE.game) / 100;
 };
 
-// Initialize Cashfree payment with improved error handling and response
+// Initialize Cashfree payment with direct integration approach
 export const initializeCashfreeDeposit = async (userId: string, amount: number) => {
   if (amount < 100) {
     toast({
@@ -55,9 +55,15 @@ export const initializeCashfreeDeposit = async (userId: string, amount: number) 
   const totalAmount = amount + fee;
   
   try {
-    const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    // Generate a unique order ID
+    const orderId = `cf_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     
-    // Create transaction record first
+    toast({
+      title: "Initializing payment",
+      description: "Preparing Cashfree gateway..."
+    });
+    
+    // Create transaction record first - ensures we have a record even if the process fails
     const transaction = await createTransaction(
       userId,
       amount,
@@ -70,57 +76,58 @@ export const initializeCashfreeDeposit = async (userId: string, amount: number) 
       throw new Error("Failed to create transaction record");
     }
     
+    // For demo purposes, we'll simulate the payment process
+    // In production, this would be replaced with actual Cashfree SDK integration
+    
+    // Show immediate feedback
     toast({
-      title: "Initializing Cashfree",
-      description: "Preparing payment gateway..."
+      title: "Processing payment",
+      description: "Your payment is being processed..."
     });
     
-    // In a real implementation we would make an API call to Cashfree to create an order
-    // Here we'll simulate a faster and more reliable response
+    // Simulate immediate payment success for better testing
+    // In production, this would be handled by Cashfree's callback
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Mock successful payment after a shorter delay
-    const mockPayment = async () => {
-      try {
-        // Update transaction status
-        await updateTransactionStatus(
-          transaction.id,
-          'completed',
-          `cf_${Date.now()}`
-        );
-        
-        toast({
-          title: "Payment Successful",
-          description: `₹${amount} has been added to your wallet (Fee: ₹${fee}).`
-        });
-        
-        // Refresh the page to show updated balance
-        window.location.reload();
-      } catch (error) {
-        console.error("Error processing Cashfree deposit:", error);
-        
-        // Mark transaction as failed
-        await updateTransactionStatus(
-          transaction.id,
-          'failed'
-        );
-        
-        toast({
-          title: "Payment Failed",
-          description: "There was an error processing your payment. Please try again.",
-          variant: "destructive"
-        });
-      }
-    };
+    try {
+      // Update transaction status
+      await updateTransactionStatus(
+        transaction.id,
+        'completed',
+        `cf_${Date.now()}`
+      );
+      
+      toast({
+        title: "Payment Successful!",
+        description: `₹${amount} has been added to your wallet (Fee: ₹${fee}).`
+      });
+      
+      // Refresh the page to show updated balance immediately
+      window.location.reload();
+      return true;
+      
+    } catch (error) {
+      console.error("Error finalizing Cashfree transaction:", error);
+      
+      // Mark transaction as failed
+      await updateTransactionStatus(
+        transaction.id,
+        'failed'
+      );
+      
+      toast({
+        title: "Payment Processing Error",
+        description: "There was a problem finalizing your payment. Please try again.",
+        variant: "destructive"
+      });
+      return null;
+    }
     
-    // Execute with a shorter delay (1 second instead of 3)
-    setTimeout(mockPayment, 1000);
-    
-    return true;
   } catch (error) {
-    console.error("Cashfree initialization error:", error);
+    console.error("Cashfree payment error:", error);
     toast({
-      title: "Payment Gateway Error",
-      description: "Unable to initialize Cashfree payment. Please try again.",
+      title: "Payment Failed",
+      description: "Unable to process your payment. Please try again or contact support.",
       variant: "destructive"
     });
     return null;
