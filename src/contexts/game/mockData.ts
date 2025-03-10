@@ -4,7 +4,7 @@ import { Pool } from "@/types/game";
 // Mock data for pools - will be used to initialize Firebase if needed
 export const mockPools: Pool[] = [
   // Bluff The Tough pools
-  ...([20, 50, 100, 500, 1000, 1500, 2000] as const).map((fee, index) => ({
+  ...([20, 50, 100, 250, 500, 1000, 1500, 2000] as const).map((fee, index) => ({
     id: `bluff-${index}`,
     gameType: 'bluff' as const,
     entryFee: fee,
@@ -16,7 +16,7 @@ export const mockPools: Pool[] = [
   })),
   
   // Top Spot pools
-  ...([20, 50, 100, 500, 1000, 1500, 2000] as const).map((fee, index) => ({
+  ...([20, 50, 100, 250, 500, 1000, 1500, 2000] as const).map((fee, index) => ({
     id: `topspot-${index}`,
     gameType: 'topspot' as const,
     entryFee: fee,
