@@ -1,32 +1,24 @@
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import GameDetailsModal, { GameDetails } from "@/components/dashboard/GameDetailsModal";
-import NotificationSystem from "@/components/dashboard/NotificationSystem";
+import { GameDetails } from "@/components/dashboard/GameDetailsModal";
 import { useGame } from "@/contexts/GameContext";
-import { toast } from "@/hooks/use-toast";
 import AppLayout from "@/components/AppLayout";
-import { Sun, Moon } from "lucide-react";
 import QuickStats from "@/components/dashboard/QuickStats";
 import StatsSection from "@/components/dashboard/StatsSection";
-import GamesList from "@/components/dashboard/GamesList";
-import TabsSection from "@/components/dashboard/TabsSection";
-import HowToPlay from "@/components/dashboard/HowToPlay";
-import { gameModules, GameModule } from "@/data/gameModules";
+import { gameModules } from "@/data/gameModules";
 import { CompetitionsTabs } from "@/components/competitions/CompetitionsTabs";
+import { mapModuleToGameDetails } from "@/utils/gameModuleMapping";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import GamesSection from "@/components/dashboard/GamesSection";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { initializeData } = useGame();
-  const [selectedTab, setSelectedTab] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedGame, setSelectedGame] = useState<GameDetails | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([
     {
       id: "1",
@@ -71,143 +63,28 @@ const Dashboard = () => {
     return () => clearTimeout(timer);
   }, [initializeData]);
 
-  // Transform GameModule to GameDetails
-  const mapModuleToGameDetails = (module: GameModule): GameDetails => {
-    // Default values for game details
-    const defaultImage = `/placeholder.svg`;
-    const defaultTags = ["game", module.id];
-    const defaultColor = module.id === "bluff" 
-      ? "from-purple-500 to-purple-800" 
-      : module.id === "topspot" 
-        ? "from-blue-500 to-blue-800" 
-        : "from-amber-500 to-amber-800";
-    
-    return {
-      id: module.id,
-      title: module.name,
-      description: module.description,
-      color: defaultColor,
-      image: defaultImage,
-      tags: module.isNew ? [...defaultTags, "new"] : module.isHot ? [...defaultTags, "hot"] : defaultTags,
-      currentPlayers: Math.floor(Math.random() * 5000) + 1000, // Mock data
-      timeLeft: "48 hours",
-      payout: `₹${Math.floor(Math.random() * 100000) + 10000}`,
-      difficulty: module.id === "bluff" ? "hard" : module.id === "topspot" ? "medium" : "easy",
-      featured: module.isHot || module.isNew,
-      rules: [],
-      winningStrategy: ""
-    };
-  };
-
   const gameDetailsArray: GameDetails[] = gameModules.map(mapModuleToGameDetails);
-
-  const applySearchFilter = (games: GameDetails[]) => {
-    if (!searchQuery) return games;
-    
-    return games.filter(game => 
-      game.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      game.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      game.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-  };
-
-  const applyTabFilter = (games: GameDetails[]) => {
-    if (selectedTab === "all") return games;
-    if (selectedTab === "featured") return games.filter(game => game.featured);
-    return games.filter(game => game.tags.includes(selectedTab));
-  };
-
-  const filteredGames = applySearchFilter(applyTabFilter(gameDetailsArray));
-
-  const openGameDetails = (game: GameDetails) => {
-    setSelectedGame(game);
-    setIsModalOpen(true);
-  };
-
-  const handleMarkAsRead = (id: string) => {
-    setNotifications(prevNotifications => 
-      prevNotifications.map(notification => 
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
-    toast({
-      title: "Notification marked as read",
-      description: "The notification has been marked as read.",
-    });
-  };
-
-  const handleClearAllNotifications = () => {
-    setNotifications([]);
-    toast({
-      title: "Notifications cleared",
-      description: "All notifications have been cleared.",
-    });
-  };
-
-  const resetFilters = () => {
-    setSearchQuery('');
-    setSelectedTab('all');
-  };
 
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-8">
         <CompetitionsTabs />
-        <div className="space-y-4 mb-8">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold tracking-tight text-gradient">
-              Welcome Back{user?.username ? `, ${user.username}` : ''}
-            </h1>
-            <div className="flex items-center gap-2">
-              <motion.button
-                onClick={toggleTheme}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-gradient-to-r from-betster-600/20 to-betster-800/20 backdrop-blur-md rounded-lg p-2 border border-betster-700/30"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="h-5 w-5 text-betster-400" />
-                ) : (
-                  <Moon className="h-5 w-5 text-betster-400" />
-                )}
-              </motion.button>
-              <NotificationSystem 
-                notifications={notifications} 
-                onMarkAsRead={handleMarkAsRead} 
-                onClearAll={handleClearAllNotifications} 
-              />
-            </div>
-          </div>
-          <p className="text-betster-300">
-            Select a game module to start playing. Remember, the least picked numbers win!
-          </p>
-          
-          <QuickStats user={user} />
-          
-          <StatsSection />
-          
-          <TabsSection 
-            selectedTab={selectedTab} 
-            setSelectedTab={setSelectedTab}
-            setSearchQuery={setSearchQuery}
-          />
-        </div>
-
-        <Separator className="my-6" />
-
-        <GamesList 
-          filteredGames={filteredGames}
-          isLoading={isLoading}
-          openGameDetails={openGameDetails}
-          resetFilters={resetFilters}
-        />
         
-        <HowToPlay />
-
-        <GameDetailsModal 
-          game={selectedGame} 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
+        <DashboardHeader 
+          user={user}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          notifications={notifications}
+          setNotifications={setNotifications}
+        />
+          
+        <QuickStats user={user} />
+          
+        <StatsSection />
+          
+        <GamesSection 
+          gameDetailsArray={gameDetailsArray}
+          isLoading={isLoading}
         />
       </div>
     </AppLayout>
