@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link, useLocation } from "react-router-dom";
@@ -7,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useKYC } from "@/contexts/KYCContext";
 import { formatCurrency } from "@/lib/formatters";
 import BetsterLogo from "./BetsterLogo";
+import SupportChatBadge from "./SupportChatBadge";
 import { initializeDeposit, initiateWithdrawal } from "@/services/paymentService";
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -226,6 +228,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
 
           <div className="flex items-center gap-2">
+            <SupportChatBadge className="mr-2" />
+            
             <Sheet open={isDepositOpen} onOpenChange={setIsDepositOpen}>
               <SheetTrigger asChild>
                 <button

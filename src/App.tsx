@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { GameProvider } from "./contexts/GameContext";
 import { KYCProvider } from './contexts/KYCContext';
 import { StakingProvider } from './contexts/StakingContext';
+import { SupportProvider } from './contexts/SupportContext';
 import { useEffect } from "react";
 import KYCVerificationScreen from './pages/KYCVerificationScreen';
 import SplashScreen from "./pages/SplashScreen";
@@ -22,6 +23,7 @@ import MilestonesScreen from "./pages/MilestonesScreen";
 import ReferralScreen from "./pages/ReferralScreen";
 import TransactionHistory from "./pages/TransactionHistory";
 import StakingScreen from "./pages/StakingScreen";
+import SupportChat from "./pages/SupportChat";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,26 +48,29 @@ const App = () => {
             <GameProvider>
               <KYCProvider>
                 <StakingProvider>
-                  <Toaster />
-                  <Sonner />
-                  <Routes>
-                    <Route path="/" element={<SplashScreen />} />
-                    <Route path="/login" element={<Login />} />
-                    
-                    <Route element={<ProtectedRoute />}>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/pools/:gameType" element={<PoolsScreen />} />
-                      <Route path="/game/:poolId" element={<GameScreen />} />
-                      <Route path="/result/:poolId" element={<GameResultScreen />} />
-                      <Route path="/milestones" element={<MilestonesScreen />} />
-                      <Route path="/referral" element={<ReferralScreen />} />
-                      <Route path="/kyc" element={<KYCVerificationScreen />} />
-                      <Route path="/transactions" element={<TransactionHistory />} />
-                      <Route path="/staking" element={<StakingScreen />} />
-                    </Route>
-                    
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                  <SupportProvider>
+                    <Toaster />
+                    <Sonner />
+                    <Routes>
+                      <Route path="/" element={<SplashScreen />} />
+                      <Route path="/login" element={<Login />} />
+                      
+                      <Route element={<ProtectedRoute />}>
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/pools/:gameType" element={<PoolsScreen />} />
+                        <Route path="/game/:poolId" element={<GameScreen />} />
+                        <Route path="/result/:poolId" element={<GameResultScreen />} />
+                        <Route path="/milestones" element={<MilestonesScreen />} />
+                        <Route path="/referral" element={<ReferralScreen />} />
+                        <Route path="/kyc" element={<KYCVerificationScreen />} />
+                        <Route path="/transactions" element={<TransactionHistory />} />
+                        <Route path="/staking" element={<StakingScreen />} />
+                        <Route path="/support" element={<SupportChat />} />
+                      </Route>
+                      
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </SupportProvider>
                 </StakingProvider>
               </KYCProvider>
             </GameProvider>
