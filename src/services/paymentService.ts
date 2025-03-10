@@ -1,4 +1,3 @@
-
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { createTransaction, updateTransactionStatus } from '@/lib/supabase/transactions';
@@ -40,7 +39,7 @@ export const calculateGameFee = (winningAmount: number): number => {
   return (winningAmount * FEE_PERCENTAGE.game) / 100;
 };
 
-// Initialize Cashfree payment
+// Initialize Cashfree payment with improved error handling and response
 export const initializeCashfreeDeposit = async (userId: string, amount: number) => {
   if (amount < 100) {
     toast({
@@ -58,35 +57,39 @@ export const initializeCashfreeDeposit = async (userId: string, amount: number) 
   try {
     const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     
-    // Create a transaction record in pending state using the new createTransaction function
+    // Create transaction record first
     const transaction = await createTransaction(
       userId,
       amount,
       'deposit',
       orderId,
-      'cashfree' // Pass gateway as a parameter
+      'cashfree'
     );
     
+    if (!transaction) {
+      throw new Error("Failed to create transaction record");
+    }
+    
     toast({
-      title: "Processing with Cashfree",
-      description: "You'll be redirected to complete the payment."
+      title: "Initializing Cashfree",
+      description: "Preparing payment gateway..."
     });
     
-    // In a real implementation, this would initiate a Cashfree payment session
-    // For demo purposes, we'll simulate a successful payment after a delay
-    setTimeout(async () => {
+    // In a real implementation we would make an API call to Cashfree to create an order
+    // Here we'll simulate a faster and more reliable response
+    
+    // Mock successful payment after a shorter delay
+    const mockPayment = async () => {
       try {
         // Update transaction status
-        if (transaction) {
-          await updateTransactionStatus(
-            transaction.id,
-            'completed',
-            `cf_${Date.now()}`
-          );
-        }
+        await updateTransactionStatus(
+          transaction.id,
+          'completed',
+          `cf_${Date.now()}`
+        );
         
         toast({
-          title: "Deposit Successful",
+          title: "Payment Successful",
           description: `₹${amount} has been added to your wallet (Fee: ₹${fee}).`
         });
         
@@ -94,20 +97,30 @@ export const initializeCashfreeDeposit = async (userId: string, amount: number) 
         window.location.reload();
       } catch (error) {
         console.error("Error processing Cashfree deposit:", error);
+        
+        // Mark transaction as failed
+        await updateTransactionStatus(
+          transaction.id,
+          'failed'
+        );
+        
         toast({
-          title: "Deposit Error",
-          description: "There was an error processing your deposit. Please contact support.",
+          title: "Payment Failed",
+          description: "There was an error processing your payment. Please try again.",
           variant: "destructive"
         });
       }
-    }, 3000);
+    };
+    
+    // Execute with a shorter delay (1 second instead of 3)
+    setTimeout(mockPayment, 1000);
     
     return true;
   } catch (error) {
     console.error("Cashfree initialization error:", error);
     toast({
       title: "Payment Gateway Error",
-      description: "Unable to initialize Cashfree payment. Please try again later.",
+      description: "Unable to initialize Cashfree payment. Please try again.",
       variant: "destructive"
     });
     return null;
