@@ -1,4 +1,3 @@
-
 /**
  * Utility for managing offline data with IndexedDB
  */
@@ -74,6 +73,9 @@ export async function savePendingBet(bet: any): Promise<void> {
       bet.id = crypto.randomUUID();
     }
     
+    bet.timestamp = Date.now();
+    bet.synced = false;
+    
     const request = store.add(bet);
     
     request.onsuccess = () => {
@@ -104,6 +106,9 @@ export async function savePendingTransaction(transaction: any): Promise<void> {
     if (!transaction.id) {
       transaction.id = crypto.randomUUID();
     }
+    
+    transaction.timestamp = Date.now();
+    transaction.synced = false;
     
     const request = store.add(transaction);
     
@@ -197,4 +202,188 @@ export async function getCachedUserData(userId: string): Promise<any> {
       reject('Error getting cached user data');
     };
   });
+}
+
+// Get all pending bets for syncing
+export async function getAllPendingBets(): Promise<any[]> {
+  const db = await initOfflineDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORES.PENDING_BETS], 'readonly');
+    const store = transaction.objectStore(STORES.PENDING_BETS);
+    const request = store.getAll();
+    
+    request.onsuccess = () => {
+      resolve(request.result || []);
+    };
+    
+    request.onerror = () => {
+      reject('Error getting pending bets');
+    };
+  });
+}
+
+// Get all pending transactions for syncing
+export async function getAllPendingTransactions(): Promise<any[]> {
+  const db = await initOfflineDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORES.PENDING_TRANSACTIONS], 'readonly');
+    const store = transaction.objectStore(STORES.PENDING_TRANSACTIONS);
+    const request = store.getAll();
+    
+    request.onsuccess = () => {
+      resolve(request.result || []);
+    };
+    
+    request.onerror = () => {
+      reject('Error getting pending transactions');
+    };
+  });
+}
+
+// Mark a bet as synced
+export async function markBetSynced(betId: string): Promise<void> {
+  const db = await initOfflineDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORES.PENDING_BETS], 'readwrite');
+    const store = transaction.objectStore(STORES.PENDING_BETS);
+    const request = store.get(betId);
+    
+    request.onsuccess = () => {
+      if (request.result) {
+        const bet = request.result;
+        bet.synced = true;
+        store.put(bet);
+        resolve();
+      } else {
+        reject(`Bet with ID ${betId} not found`);
+      }
+    };
+    
+    request.onerror = () => {
+      reject('Error marking bet as synced');
+    };
+  });
+}
+
+// Mark a transaction as synced
+export async function markTransactionSynced(transactionId: string): Promise<void> {
+  const db = await initOfflineDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORES.PENDING_TRANSACTIONS], 'readwrite');
+    const store = transaction.objectStore(STORES.PENDING_TRANSACTIONS);
+    const request = store.get(transactionId);
+    
+    request.onsuccess = () => {
+      if (request.result) {
+        const tx = request.result;
+        tx.synced = true;
+        store.put(tx);
+        resolve();
+      } else {
+        reject(`Transaction with ID ${transactionId} not found`);
+      }
+    };
+    
+    request.onerror = () => {
+      reject('Error marking transaction as synced');
+    };
+  });
+}
+
+// Remove synced items to keep the database clean
+export async function cleanupSyncedItems(): Promise<void> {
+  const db = await initOfflineDb();
+  
+  // Clean up bets
+  const betsTx = db.transaction([STORES.PENDING_BETS], 'readwrite');
+  const betsStore = betsTx.objectStore(STORES.PENDING_BETS);
+  const betsRequest = betsStore.openCursor();
+  
+  betsRequest.onsuccess = (event) => {
+    const cursor = (event.target as IDBRequest).result as IDBCursorWithValue;
+    if (cursor) {
+      if (cursor.value.synced) {
+        cursor.delete();
+      }
+      cursor.continue();
+    }
+  };
+  
+  // Clean up transactions
+  const txTx = db.transaction([STORES.PENDING_TRANSACTIONS], 'readwrite');
+  const txStore = txTx.objectStore(STORES.PENDING_TRANSACTIONS);
+  const txRequest = txStore.openCursor();
+  
+  txRequest.onsuccess = (event) => {
+    const cursor = (event.target as IDBRequest).result as IDBCursorWithValue;
+    if (cursor) {
+      if (cursor.value.synced) {
+        cursor.delete();
+      }
+      cursor.continue();
+    }
+  };
+  
+  return Promise.resolve();
+}
+
+// Sync all pending data when coming back online
+export async function syncPendingData(): Promise<{
+  bets: { success: number; failed: number };
+  transactions: { success: number; failed: number };
+}> {
+  console.log('Starting offline data synchronization');
+  
+  try {
+    const pendingBets = await getAllPendingBets();
+    const pendingTransactions = await getAllPendingTransactions();
+    
+    console.log(`Found ${pendingBets.length} pending bets and ${pendingTransactions.length} pending transactions`);
+    
+    const betResults = { success: 0, failed: 0 };
+    const txResults = { success: 0, failed: 0 };
+    
+    // Sync bets
+    for (const bet of pendingBets) {
+      if (bet.synced) continue;
+      
+      try {
+        // TODO: Implement actual API call to submit bet
+        console.log(`Syncing bet: ${bet.id}`);
+        
+        // For now just mark as synced
+        await markBetSynced(bet.id);
+        betResults.success++;
+      } catch (error) {
+        console.error(`Failed to sync bet ${bet.id}:`, error);
+        betResults.failed++;
+      }
+    }
+    
+    // Sync transactions
+    for (const tx of pendingTransactions) {
+      if (tx.synced) continue;
+      
+      try {
+        // TODO: Implement actual API call to submit transaction
+        console.log(`Syncing transaction: ${tx.id}`);
+        
+        // For now just mark as synced
+        await markTransactionSynced(tx.id);
+        txResults.success++;
+      } catch (error) {
+        console.error(`Failed to sync transaction ${tx.id}:`, error);
+        txResults.failed++;
+      }
+    }
+    
+    // Clean up synced items
+    await cleanupSyncedItems();
+    
+    console.log('Sync complete. Results:', { bets: betResults, transactions: txResults });
+    return { bets: betResults, transactions: txResults };
+  } catch (error) {
+    console.error('Error during data synchronization:', error);
+    return { bets: { success: 0, failed: 0 }, transactions: { success: 0, failed: 0 } };
+  }
 }

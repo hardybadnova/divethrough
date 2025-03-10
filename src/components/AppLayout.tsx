@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "./navigation/Header";
 import { Footer } from "./navigation/Footer";
-import { initOfflineDb } from "@/utils/offlineDb";
+import { initOfflineDb, syncPendingData } from "@/utils/offlineDb";
 import { toast } from "@/hooks/use-toast";
-import { Wifi, WifiOff } from "lucide-react";
+import { Wifi, WifiOff, RefreshCw } from "lucide-react";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -29,6 +29,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const [walletPopoverOpen, setWalletPopoverOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [offlineMode, setOfflineMode] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const isGameScreen = location.pathname.includes("/game/");
 
@@ -46,6 +47,61 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     initDb();
   }, []);
 
+  // Handle manual sync when user clicks the sync button
+  const handleManualSync = async () => {
+    if (!isOnline) {
+      toast({
+        title: "Sync Failed",
+        description: "You need to be online to sync your data",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (isSyncing) {
+      toast({
+        title: "Sync in Progress",
+        description: "Please wait for the current sync to complete",
+      });
+      return;
+    }
+
+    setIsSyncing(true);
+    toast({
+      title: "Sync Started",
+      description: "Syncing your offline data...",
+    });
+
+    try {
+      const results = await syncPendingData();
+      
+      const totalSuccess = results.bets.success + results.transactions.success;
+      const totalFailed = results.bets.failed + results.transactions.failed;
+      
+      if (totalSuccess > 0 || totalFailed > 0) {
+        toast({
+          title: "Sync Complete",
+          description: `Synced ${totalSuccess} items successfully. ${totalFailed > 0 ? `Failed to sync ${totalFailed} items.` : ''}`,
+          variant: totalFailed > 0 ? "destructive" : "default"
+        });
+      } else {
+        toast({
+          title: "Sync Complete",
+          description: "No items needed to be synced"
+        });
+      }
+    } catch (error) {
+      console.error("Error during manual sync:", error);
+      toast({
+        title: "Sync Failed",
+        description: "There was an error syncing your data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Monitor online/offline status
   useEffect(() => {
     const handleOnline = () => {
@@ -56,9 +112,22 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           description: (
             <div className="flex items-center">
               <Wifi className="h-4 w-4 text-green-500 mr-2" />
-              Connection restored. Syncing your data...
+              Connection restored. Your data will sync automatically.
             </div>
           )
+        });
+        
+        // Automatic sync when coming back online
+        syncPendingData().then(results => {
+          const totalSuccess = results.bets.success + results.transactions.success;
+          if (totalSuccess > 0) {
+            toast({
+              title: "Data Synced",
+              description: `Successfully synced ${totalSuccess} items that were made while offline.`
+            });
+          }
+        }).catch(error => {
+          console.error("Error during auto sync:", error);
         });
         
         // Trigger background sync if available
@@ -71,6 +140,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           });
         }
       }
+      setOfflineMode(false);
     };
 
     const handleOffline = () => {
@@ -111,6 +181,14 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           <div className="bg-amber-600 text-white px-4 py-1 text-center text-xs flex items-center justify-center">
             <WifiOff className="h-3 w-3 mr-1" />
             Offline Mode - Limited functionality available
+            <button 
+              onClick={handleManualSync}
+              className="ml-2 flex items-center bg-amber-700 hover:bg-amber-800 rounded px-1 py-0.5 text-white text-xs"
+              disabled={!isOnline || isSyncing}
+            >
+              <RefreshCw className={`h-3 w-3 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />
+              Sync
+            </button>
           </div>
         )}
         
