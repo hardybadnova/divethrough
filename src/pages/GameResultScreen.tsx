@@ -117,20 +117,28 @@ const GameResultScreen = () => {
         
         if (user) {
           try {
-            updateWalletBalance(user.id, prizeAmount)
-              .then(() => {
-                return supabase
-                  .from('transactions')
-                  .insert([{
-                    user_id: user.id,
-                    amount: prizeAmount,
-                    type: 'game_winning',
-                    status: 'completed',
-                    payment_id: `game_winning_${poolId}_${Date.now()}`,
-                  }]);
+            import('@/services/paymentService')
+              .then(({ processGameWinnings }) => {
+                return processGameWinnings(user.id, prizeAmount, poolId || '');
               })
-              .then(() => refreshUserData())
-              .catch(error => console.error("Error processing winnings:", error));
+              .then(newBalance => {
+                if (newBalance !== undefined) {
+                  refreshUserData();
+                  
+                  toast({
+                    title: `You won ${prizeAmount.toFixed(2)}!`,
+                    description: `Winnings have been added to your wallet`,
+                  });
+                }
+              })
+              .catch(error => {
+                console.error("Error processing winnings:", error);
+                toast({
+                  title: "Error processing winnings",
+                  description: "Please contact support if this persists",
+                  variant: "destructive"
+                });
+              });
           } catch (error) {
             console.error("Error processing game winnings:", error);
           }

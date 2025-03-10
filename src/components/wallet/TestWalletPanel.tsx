@@ -31,11 +31,16 @@ export const TestWalletPanel = () => {
       if (result !== undefined) {
         toast({
           title: "Deposit Successful",
-          description: `Your deposit is being processed (Test Mode)`
+          description: `${depositAmount} has been added to your wallet`,
         });
       }
     } catch (error) {
       console.error("Error initiating deposit:", error);
+      toast({
+        title: "Deposit Failed",
+        description: "There was an error processing your deposit",
+        variant: "destructive"
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -51,17 +56,32 @@ export const TestWalletPanel = () => {
       return;
     }
     
+    // Validate sufficient funds
+    if (user.wallet < withdrawAmount) {
+      toast({
+        title: "Insufficient Balance",
+        description: "You don't have enough funds to withdraw this amount",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsProcessing(true);
     try {
       const result = await withdrawFakeMoney(withdrawAmount);
       if (result !== undefined) {
         toast({
           title: "Withdrawal Initiated",
-          description: "Your withdrawal is being processed (Test Mode)"
+          description: `${withdrawAmount} has been withdrawn from your wallet`,
         });
       }
     } catch (error) {
       console.error("Error initiating withdrawal:", error);
+      toast({
+        title: "Withdrawal Failed",
+        description: "There was an error processing your withdrawal",
+        variant: "destructive"
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -107,7 +127,7 @@ export const TestWalletPanel = () => {
               <Button
                 variant="outline"
                 onClick={handleWithdraw}
-                disabled={isProcessing || withdrawAmount <= 0}
+                disabled={isProcessing || withdrawAmount <= 0 || (user?.wallet || 0) < withdrawAmount}
               >
                 Withdraw
               </Button>
