@@ -3,14 +3,14 @@ import React from 'react';
 import { motion } from "framer-motion";
 import { Sun, Moon } from "lucide-react";
 import { User } from "@/types/auth";
-import NotificationsPanel from "./NotificationsPanel";
+import NotificationsPanel, { Notification } from "./NotificationsPanel";
 
 interface DashboardHeaderProps {
   user: User | null;
   theme: string;
   toggleTheme: () => void;
-  notifications: any[];
-  setNotifications: React.Dispatch<React.SetStateAction<any[]>>;
+  notifications: Notification[];
+  setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ 
@@ -24,7 +24,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     <div className="space-y-4 mb-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight text-gradient">
-          Welcome Back{user?.username ? `, ${user.username}` : ''}
+          Welcome{user?.username ? `, ${user.username}` : ''}
         </h1>
         <div className="flex items-center gap-2">
           <motion.button
@@ -46,7 +46,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         </div>
       </div>
       <p className="text-betster-300">
-        Select a game module to start playing. Remember, the least picked numbers win!
+        Choose from upcoming matches and create your fantasy team to win big rewards!
       </p>
     </div>
   );

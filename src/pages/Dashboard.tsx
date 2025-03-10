@@ -13,34 +13,51 @@ import { CompetitionsTabs } from "@/components/competitions/CompetitionsTabs";
 import { mapModuleToGameDetails } from "@/utils/gameModuleMapping";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import GamesSection from "@/components/dashboard/GamesSection";
+import { Notification } from "@/components/dashboard/NotificationsPanel";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { initializeData } = useGame();
   const [isLoading, setIsLoading] = useState(true);
-  const [notifications, setNotifications] = useState<any[]>([
+  const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: "1",
-      title: "New Game Available",
-      message: "Jackpot Horse has been added with a prize pool of ₹100,000!",
+      title: "IPL 2023: MI vs CSK Match",
+      message: "Match starts in 2 hours. Create your team now!",
       timestamp: "Just now",
       read: false,
-      type: "game",
+      type: "match",
     },
     {
       id: "2",
-      title: "You Won!",
-      message: "Congratulations! You won ₹500 in Bluff The Tough game.",
-      timestamp: "2h ago",
+      title: "Mega Contest Available",
+      message: "₹10 Lakhs prize pool for today's match! Join now.",
+      timestamp: "1h ago",
+      read: false,
+      type: "contest",
+    },
+    {
+      id: "3",
+      title: "Your Team Won!",
+      message: "Congratulations! You won ₹500 in yesterday's match.",
+      timestamp: "5h ago",
       read: false,
       type: "reward",
     },
     {
-      id: "3",
+      id: "4",
+      title: "Player Update: Virat Kohli",
+      message: "Virat Kohli is confirmed to play in today's match.",
+      timestamp: "Yesterday",
+      read: true,
+      type: "team",
+    },
+    {
+      id: "5",
       title: "System Maintenance",
       message: "The platform will be under maintenance tomorrow from 2-4 AM.",
-      timestamp: "5h ago",
+      timestamp: "2 days ago",
       read: true,
       type: "system",
     },
