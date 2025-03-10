@@ -27,6 +27,9 @@ import StakingScreen from "./pages/StakingScreen";
 import SupportChat from "./pages/SupportChat";
 import AdminDashboard from "./pages/AdminDashboard";
 import TestWalletPage from "./pages/TestWalletPage";
+import ProfilePage from "./pages/ProfilePage";
+import LeaderboardPage from "./pages/LeaderboardPage";
+import GameHistoryPage from "./pages/GameHistoryPage";
 import AppLayout from "./components/AppLayout";
 
 const queryClient = new QueryClient({
@@ -74,6 +77,9 @@ function App() {
                             <TestWalletPage />
                           </AppLayout>
                         } />
+                        <Route path="/profile" element={<ProfilePage />} />
+                        <Route path="/leaderboard" element={<LeaderboardPage />} />
+                        <Route path="/game-history" element={<GameHistoryPage />} />
                       </Route>
                       
                       {/* Admin Routes */}
