@@ -13,7 +13,7 @@ import { gameTitles, isValidGameType } from "@/utils/game-titles";
 const PoolsScreen = () => {
   const { gameType } = useParams<{ gameType: string }>();
   const { joinPool } = useGame();
-  const { user } = useAuth();
+  const { user, refreshUserData } = useAuth();
   const navigate = useNavigate();
   const { pools, isLoading, fetchPools } = usePools(gameType);
 
@@ -25,7 +25,7 @@ const PoolsScreen = () => {
     }
   }, [gameType, navigate]);
 
-  const handleJoinPool = (poolId: string, entryFee: number) => {
+  const handleJoinPool = async (poolId: string, entryFee: number) => {
     if (!user) {
       console.log("PoolsScreen: Cannot join pool, user not authenticated");
       toast({
@@ -45,9 +45,22 @@ const PoolsScreen = () => {
       return;
     }
 
-    console.log(`PoolsScreen: Joining pool ${poolId}`);
-    joinPool(poolId);
-    navigate(`/game/${poolId}`);
+    try {
+      console.log(`PoolsScreen: Joining pool ${poolId}`);
+      await joinPool(poolId);
+      
+      // Refresh user data to update wallet balance after joining
+      await refreshUserData();
+      
+      navigate(`/game/${poolId}`);
+    } catch (error) {
+      console.error("Error joining pool:", error);
+      toast({
+        title: "Error",
+        description: "Failed to join the pool. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -8,6 +7,8 @@ import { motion } from "framer-motion";
 import { Trophy, ThumbsUp, ThumbsDown, ArrowLeft, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/contexts/AuthContext";
+import { updateWalletBalance } from "@/lib/wallet";
 
 interface NumberResult {
   number: number;
@@ -18,6 +19,7 @@ interface NumberResult {
 const GameResultScreen = () => {
   const { poolId } = useParams<{ poolId: string }>();
   const { pools, players, getWinners, resetGame } = useGame();
+  const { user, refreshUserData } = useAuth();
   const navigate = useNavigate();
   
   const [results, setResults] = useState<NumberResult[]>([]);
@@ -34,31 +36,26 @@ const GameResultScreen = () => {
       return;
     }
     
-    // Show loading animation for a short while
     const timer = setTimeout(() => {
       setLoadingResults(false);
       
-      // Generate mock results for the game - simulate number frequency
       const maxNumber = pool.numberRange[1];
       const mockNumberResults: NumberResult[] = [];
       
-      // Create the distribution of number selections
       for (let i = 0; i <= maxNumber; i++) {
-        // Set predefined counts for our example
         let count;
         let playersList: string[] = [];
         
-        if (i === 2) { // Example: A chooses 2 (least picked)
+        if (i === 2) {
           count = 1;
           playersList = ["Player A"];
-        } else if (i === 3) { // Example: B, C, D choose 3 (second least picked)
+        } else if (i === 3) {
           count = 3;
           playersList = ["Player B", "Player C", "Player D"];
-        } else if (i === 9) { // Example: E, F, G, H, I choose 9 (third least picked)
+        } else if (i === 9) {
           count = 5;
           playersList = ["Player E", "Player F", "Player G", "Player H", "Player I"];
         } else {
-          // Random distribution for other numbers
           count = Math.floor(Math.random() * 10) + 5;
           playersList = players
             .slice(0, count)
@@ -72,49 +69,71 @@ const GameResultScreen = () => {
         });
       }
       
-      // Sort by count to find least chosen numbers
       const sortedResults = [...mockNumberResults].sort((a, b) => a.count - b.count);
       setResults(sortedResults);
       
-      // Calculate winners based on game type
       const gameWinners = [];
       const totalPoolAmount = pool.entryFee * pool.currentPlayers;
-      const taxDeduction = totalPoolAmount * 0.28; // 28% GST
+      const taxDeduction = totalPoolAmount * 0.28;
       const prizePool = totalPoolAmount - taxDeduction;
       
-      // First place - least picked number (all game types)
       gameWinners.push({
         position: 1,
-        number: sortedResults[0].number, // Number 2 in our example
-        players: sortedResults[0].players, // Player A
+        number: sortedResults[0].number,
+        players: sortedResults[0].players,
         prize: prizePool * (pool.gameType === 'topspot' ? 0.9 : 0.5)
       });
       
-      // Add 2nd and 3rd for bluff and jackpot
       if (pool.gameType !== 'topspot') {
         gameWinners.push({
           position: 2,
-          number: sortedResults[1].number, // Number 3 in our example
-          players: sortedResults[1].players, // Players B, C, D
+          number: sortedResults[1].number,
+          players: sortedResults[1].players,
           prize: prizePool * 0.25
         });
         
         gameWinners.push({
           position: 3,
-          number: sortedResults[2].number, // Number 9 in our example
-          players: sortedResults[2].players, // Players E, F, G, H, I
+          number: sortedResults[2].number,
+          players: sortedResults[2].players,
           prize: prizePool * 0.15
         });
       }
       
       setWinners(gameWinners);
       
-      // Simulate if current user is a winner and which position
       const randomChance = Math.random();
       if (randomChance > 0.7) {
         const position = randomChance > 0.9 ? 1 : randomChance > 0.8 ? 2 : 3;
         setUserResult("winner");
         setUserPosition(position);
+        
+        const prizeAmount = position === 1 ? 
+          (pool.entryFee * pool.currentPlayers * 0.5) : 
+          position === 2 ? 
+            (pool.entryFee * pool.currentPlayers * 0.3) : 
+            (pool.entryFee * pool.currentPlayers * 0.15);
+        
+        if (user) {
+          try {
+            updateWalletBalance(user.id, prizeAmount)
+              .then(() => {
+                return supabase
+                  .from('transactions')
+                  .insert([{
+                    user_id: user.id,
+                    amount: prizeAmount,
+                    type: 'game_winning',
+                    status: 'completed',
+                    payment_id: `game_winning_${poolId}_${Date.now()}`,
+                  }]);
+              })
+              .then(() => refreshUserData())
+              .catch(error => console.error("Error processing winnings:", error));
+          } catch (error) {
+            console.error("Error processing game winnings:", error);
+          }
+        }
         
         toast({
           title: `Congratulations! ${position === 1 ? "First" : position === 2 ? "Second" : "Third"} place!`,
@@ -127,13 +146,12 @@ const GameResultScreen = () => {
           description: "Your number wasn't among the least chosen numbers.",
         });
       }
-    }, 2000); // Show loading state for 2 seconds
+    }, 2000);
     
     return () => clearTimeout(timer);
-  }, [pool, poolId, navigate, players]);
+  }, [pool, poolId, navigate, players, user, refreshUserData]);
   
   const handleBackToPools = () => {
-    // Reset the game and navigate back to pools
     if (pool) {
       resetGame();
       navigate(`/pools/${pool.gameType}`);
@@ -143,7 +161,6 @@ const GameResultScreen = () => {
   };
   
   const handlePlayAgain = () => {
-    // Reset the game and navigate to the game screen
     if (pool) {
       resetGame();
       navigate(`/game/${poolId}`);
@@ -186,7 +203,6 @@ const GameResultScreen = () => {
           </div>
         ) : (
           <>
-            {/* Winner announcement with podium animation */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -252,7 +268,6 @@ const GameResultScreen = () => {
               </div>
             </motion.div>
             
-            {/* Podium visualization */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -262,7 +277,6 @@ const GameResultScreen = () => {
               <h2 className="font-medium text-lg mb-4 text-center">Winner's Podium</h2>
               
               <div className="flex justify-center items-end h-64 mb-4">
-                {/* Second Place */}
                 {winners.length > 1 && (
                   <motion.div 
                     initial={{ height: 0 }}
@@ -286,7 +300,6 @@ const GameResultScreen = () => {
                   </motion.div>
                 )}
                 
-                {/* First Place */}
                 <motion.div 
                   initial={{ height: 0 }}
                   animate={{ height: "100%" }}
@@ -308,7 +321,6 @@ const GameResultScreen = () => {
                   </div>
                 </motion.div>
                 
-                {/* Third Place */}
                 {winners.length > 2 && (
                   <motion.div 
                     initial={{ height: 0 }}
@@ -336,7 +348,6 @@ const GameResultScreen = () => {
               <div className="w-full h-4 bg-gray-200 rounded-lg"></div>
             </motion.div>
             
-            {/* Winners List */}
             <div className="glass-card rounded-xl mb-6 overflow-hidden">
               <div className="p-4 border-b border-border/40">
                 <h2 className="font-medium text-lg">Winners - Least Picked Numbers</h2>
@@ -381,12 +392,11 @@ const GameResultScreen = () => {
                       </div>
                     </div>
                     
-                    {/* Show players who chose this number */}
                     <div className="mt-3 pl-12">
                       <p className="text-xs text-muted-foreground mb-1">Players:</p>
                       <div className="flex flex-wrap gap-1">
                         {winner.players.map((player, i) => (
-                          <span key={i} className="text-xs bg-secondary/50 px-2 py-0.5 rounded">
+                          <span key={i} className="text-xs bg-secondary/50 px-1.5 py-0.5 rounded truncate max-w-full">
                             {player}
                           </span>
                         ))}
@@ -397,7 +407,6 @@ const GameResultScreen = () => {
               </div>
             </div>
             
-            {/* All Numbers Results */}
             <div className="glass-card rounded-xl overflow-hidden">
               <div className="p-4 border-b border-border/40">
                 <h2 className="font-medium text-lg">All Results</h2>
@@ -453,7 +462,6 @@ const GameResultScreen = () => {
         )}
       </div>
       
-      {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-10 bg-background/80 backdrop-blur-sm border-t border-border">
         <div className="container mx-auto px-4">
           <div className="flex justify-around py-3">

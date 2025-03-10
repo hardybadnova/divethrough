@@ -135,6 +135,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
+    // Check if user has enough balance
+    if (user.wallet < poolToJoin.entryFee) {
+      toast({
+        title: "Insufficient Balance",
+        description: `You need at least ${poolToJoin.entryFee} in your wallet to join this pool`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Find current player or create a new one
     let currentPlayer = players.find(p => p.id === user.id);
     if (!currentPlayer) {
@@ -159,7 +169,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
-      // Join the pool in Firebase
+      // Join the pool in Supabase - this will handle deducting the entry fee
       await joinGamePool(poolId, currentPlayer);
       
       // Set as current pool locally
@@ -183,6 +193,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Failed to join the pool. Please try again.",
         variant: "destructive"
       });
+      throw error; // Propagate the error to handle in the UI
     }
   };
 
