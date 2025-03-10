@@ -1,3 +1,4 @@
+
 /**
  * Utility for managing offline data with IndexedDB
  */
@@ -14,8 +15,13 @@ const STORES = {
   USER_DATA: 'user-data'
 };
 
+// Type definition for ServiceWorker with Sync
+interface SyncManager {
+  register(tag: string): Promise<void>;
+}
+
 // Type guard for background sync
-const hasBackgroundSync = (registration: ServiceWorkerRegistration): registration is ServiceWorkerRegistration & { sync: { register(tag: string): Promise<void> } } => {
+const hasBackgroundSync = (registration: ServiceWorkerRegistration): registration is ServiceWorkerRegistration & { sync: SyncManager } => {
   return 'sync' in registration;
 };
 

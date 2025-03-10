@@ -13,8 +13,13 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+// Type definition for ServiceWorker with Sync
+interface SyncManager {
+  register(tag: string): Promise<void>;
+}
+
 // Type guard for background sync support
-const hasBackgroundSync = (registration: ServiceWorkerRegistration): registration is ServiceWorkerRegistration & { sync: { register(tag: string): Promise<void> } } => {
+const hasBackgroundSync = (registration: ServiceWorkerRegistration): registration is ServiceWorkerRegistration & { sync: SyncManager } => {
   return 'sync' in registration;
 };
 
