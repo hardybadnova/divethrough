@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { motion, AnimatePresence } from "framer-motion";
@@ -97,7 +96,6 @@ const Dashboard = () => {
       description: "Choose one number from 0-15. The player with the least chosen number wins first prize. The second and third least chosen numbers win second and third prizes. A game of strategy where you want to pick numbers others avoid!",
       color: "from-purple-500 to-pink-500",
       image: "/card-game.svg",
-      icon: <Shield className="h-5 w-5" />,
       tags: ["strategy", "multi-winner", "popular"],
       currentPlayers: 187,
       timeLeft: "4h 32m",
@@ -116,7 +114,6 @@ const Dashboard = () => {
       description: "Select one number from 0-15. Only the player with the least chosen number wins the prize. More challenging with a single winner taking 90% of the prize pool!",
       color: "from-blue-500 to-cyan-500",
       image: "/podium.svg",
-      icon: <Trophy className="h-5 w-5" />,
       tags: ["winner-takes-all", "difficult"],
       currentPlayers: 92,
       timeLeft: "2h 45m",
@@ -135,7 +132,6 @@ const Dashboard = () => {
       description: "Choose one number from 0-200. Played only once daily with massive pools. The least chosen numbers win first, second, and third prizes. Join thousands of players for a chance at huge winnings!",
       color: "from-amber-500 to-orange-500",
       image: "/horseshoe.svg",
-      icon: <Zap className="h-5 w-5" />,
       tags: ["daily", "high-stakes", "new"],
       currentPlayers: 2453,
       timeLeft: "21h 12m",
@@ -402,7 +398,9 @@ const Dashboard = () => {
                               game.id === 'topspot' ? 'bg-blue-500/20' : 
                               'bg-amber-500/20'
                             }`}>
-                              {game.icon}
+                              {game.id === 'bluff' ? <Shield className="h-5 w-5" /> :
+                               game.id === 'topspot' ? <Trophy className="h-5 w-5" /> :
+                               <Zap className="h-5 w-5" />}
                             </div>
                             <div>
                               <h3 className="text-xl font-semibold text-white">{game.title}</h3>
