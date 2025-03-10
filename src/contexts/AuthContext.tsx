@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { useAuthOperations } from '@/hooks/use-auth-operations';
@@ -37,51 +36,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Determine if the current user is an admin
   const isAdmin = user?.role === 'admin';
   
-  // Re-enable wallet functionality
-  const addFakeMoney = async (amount: number) => {
+  // Fixed wallet functionality to match return type in interface
+  const addFakeMoney = async (amount: number, optimistic?: boolean): Promise<number | void> => {
     if (!user?.id) {
       toast({
         title: "Authentication Required",
         description: "Please log in to add money",
         variant: "destructive"
       });
-      return false;
+      return;
     }
     
     try {
       const result = await initializeDeposit(user.id, amount);
       if (result.success) {
         await refreshUserData();
-        return true;
+        // Return the updated wallet amount as per interface
+        return user?.wallet || 0;
       }
-      return false;
+      return;
     } catch (error) {
       console.error("Error adding fake money:", error);
-      return false;
+      return;
     }
   };
   
-  // Re-enable withdrawal functionality
-  const withdrawFakeMoney = async (amount: number) => {
+  // Fixed withdrawal functionality to match return type in interface
+  const withdrawFakeMoney = async (amount: number, optimistic?: boolean): Promise<number | void> => {
     if (!user?.id) {
       toast({
         title: "Authentication Required",
         description: "Please log in to withdraw money",
         variant: "destructive"
       });
-      return false;
+      return;
     }
     
     try {
       const success = await initiateWithdrawal(user.id, amount);
       if (success) {
         await refreshUserData();
-        return true;
+        // Return the updated wallet amount as per interface
+        return user?.wallet || 0;
       }
-      return false;
+      return;
     } catch (error) {
       console.error("Error withdrawing fake money:", error);
-      return false;
+      return;
     }
   };
   
