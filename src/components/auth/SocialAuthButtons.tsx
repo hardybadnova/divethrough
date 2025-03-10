@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -13,26 +14,17 @@ const SocialAuthButtons = ({ onGoogleLogin, isLoading }: SocialAuthButtonsProps)
   const handleGoogleLogin = async () => {
     try {
       setIsSubmitting(true);
-      console.log("Google login button clicked");
       
+      // Simpler toast message
       toast({
         title: "Starting Google sign-in",
-        description: "You'll be redirected to Google for authentication.",
       });
       
       await onGoogleLogin();
       
-      // Note: User will be redirected to Google, so the code below might not execute
-      console.log("Google OAuth redirect initiated");
-      
-      // We're keeping isSubmitting true because the user is being redirected
-      // It will reset when they come back from Google
-      
     } catch (error: any) {
       console.error("Google sign-in failed:", error);
       setIsSubmitting(false);
-      
-      // Error toast is handled in the auth.ts file
     }
   };
 

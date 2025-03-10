@@ -15,17 +15,26 @@ export const useAuthState = () => {
   const [isBetaVersion] = useState<boolean>(true);
   const navigate = useNavigate();
 
+  // Optimized to be faster and more efficient
   const loadUserData = async () => {
     console.log("Loading user data...");
-    setIsLoading(true);
     try {
       const currentUser = await getCurrentUser();
-      console.log("Current user from supabase:", currentUser ? "Found" : "Not found");
       
       if (currentUser) {
         try {
+          // Try to load user from localStorage first for immediate UI response
+          const storedUser = localStorage.getItem('betster-user');
+          if (storedUser) {
+            try {
+              setUser(JSON.parse(storedUser));
+            } catch (e) {
+              console.error("Error parsing stored user:", e);
+            }
+          }
+          
+          // Then load profile in background
           const profile = await getUserProfile(currentUser.id);
-          console.log("User profile loaded");
           
           const newUser = {
             id: currentUser.id,
@@ -39,7 +48,7 @@ export const useAuthState = () => {
           localStorage.setItem('betster-user', JSON.stringify(newUser));
         } catch (error: any) {
           console.error("Error loading user profile:", error);
-          // We still set a basic user if the profile fetch fails
+          // Fallback to basic user info
           const newUser = {
             id: currentUser.id,
             username: currentUser.user_metadata?.username || 'Player',
@@ -52,7 +61,6 @@ export const useAuthState = () => {
           localStorage.setItem('betster-user', JSON.stringify(newUser));
         }
       } else {
-        console.log("No current user found, setting user to null");
         setUser(null);
         localStorage.removeItem('betster-user');
       }
@@ -61,7 +69,6 @@ export const useAuthState = () => {
       setUser(null);
       localStorage.removeItem('betster-user');
     } finally {
-      console.log("User data loading complete, setting isLoading to false");
       setIsLoading(false);
     }
   };
@@ -97,36 +104,34 @@ export const useAuthState = () => {
 
   useEffect(() => {
     console.log("Auth state hook initialized");
+    
+    // Load from localStorage immediately for fast UI render
     const storedUser = localStorage.getItem('betster-user');
     if (storedUser) {
-      console.log("Found stored user, setting initial state");
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        // Mark as not loading immediately when we have stored user
+        setIsLoading(false);
+        console.log("User loaded from localStorage");
       } catch (e) {
         console.error("Error parsing stored user:", e);
         localStorage.removeItem('betster-user');
       }
     }
     
-    // Load user data immediately on mount
+    // Then verify with the backend
     loadUserData();
     
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event, session ? "User session exists" : "No session");
         if (event === 'SIGNED_IN' && session) {
-          console.log("User signed in, loading user data");
           await loadUserData();
-          navigate('/dashboard');
         } else if (event === 'SIGNED_OUT') {
-          console.log("User signed out, clearing user data");
           setUser(null);
           localStorage.removeItem('betster-user');
           setIsLoading(false);
-          navigate('/login');
-        } else if (event === 'TOKEN_REFRESHED') {
-          console.log("Session token refreshed");
         }
       }
     );

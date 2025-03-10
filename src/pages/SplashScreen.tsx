@@ -6,51 +6,35 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const SplashScreen = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading, isInitialized, user } = useAuth();
+  const { isAuthenticated, isInitialized } = useAuth();
   const [animationComplete, setAnimationComplete] = useState(false);
 
+  // Reduce animation time even further to 800ms
   useEffect(() => {
-    // Reduce animation time from 2000ms to 1000ms
     const timer = setTimeout(() => {
       setAnimationComplete(true);
       console.log("Splash animation complete");
-    }, 1000);
+    }, 800);
 
     return () => clearTimeout(timer);
   }, []);
 
+  // Simplify navigation logic to reduce conditional checks
   useEffect(() => {
-    console.log("SplashScreen effect - states:", { 
-      animationComplete, 
-      isLoading, 
-      isAuthenticated,
-      isInitialized,
-      userId: user?.id
-    });
-    
-    // Navigate as soon as animation is complete and auth is initialized
-    // Remove extra conditions that might delay navigation
     if (animationComplete && isInitialized) {
-      console.log("Ready to navigate from splash screen");
-      
-      if (isAuthenticated && user) {
-        console.log("User is authenticated, navigating to dashboard");
-        navigate('/dashboard');
-      } else {
-        console.log("User is not authenticated, navigating to login");
-        navigate('/login');
-      }
+      console.log("Navigating from splash screen");
+      navigate(isAuthenticated ? '/dashboard' : '/login');
     }
-  }, [animationComplete, isAuthenticated, isInitialized, navigate, user]);
+  }, [animationComplete, isAuthenticated, isInitialized, navigate]);
 
-  // Reduce force navigation timeout from 3000ms to 2000ms
+  // Add a very short force navigation timeout as failsafe - reduced to 1.5 seconds
   useEffect(() => {
     const forceNavigationTimer = setTimeout(() => {
       if (document.location.pathname === '/') {
         console.log("Force navigation triggered after timeout");
-        navigate('/login'); // Default to login if we're still on splash
+        navigate('/login');
       }
-    }, 2000);
+    }, 1500);
 
     return () => clearTimeout(forceNavigationTimer);
   }, [navigate]);

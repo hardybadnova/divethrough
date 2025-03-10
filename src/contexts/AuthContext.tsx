@@ -120,28 +120,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Enhanced effect to better handle auth state changes and ensure proper navigation
+  // Streamlined effect for faster initialization
   useEffect(() => {
-    console.log("Auth context state updated:", { 
-      isAuthenticated: !!user,
-      isLoading,
-      userId: user?.id,
-      isInitialized,
-      isAdmin
-    });
-
-    // Mark as initialized after the first auth check completes
+    // Mark as initialized as soon as possible if user is loaded from storage
     if (!isInitialized && !isLoading) {
+      console.log("Auth initialization complete");
       setIsInitialized(true);
     }
     
-    // Add a listener for auth state changes from Supabase directly in the context
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state change in context:", event, session ? "Session exists" : "No session");
+        console.log("Auth state change detected:", event);
         
         if (event === 'SIGNED_IN' && session) {
-          console.log("User signed in via context listener, triggering data load");
           await loadUserData();
         }
       }
@@ -150,7 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, [user, isLoading, isInitialized, isAdmin, loadUserData]);
+  }, [user, isLoading, isInitialized, loadUserData]);
 
   return (
     <AuthContext.Provider
