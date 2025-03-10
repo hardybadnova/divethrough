@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
@@ -6,7 +7,6 @@ import { format } from "date-fns";
 import { ArrowDown, ArrowUp, RefreshCw, Wallet, CreditCard } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { supabase } from '@/lib/supabase';
-import FakeMoneyPanel from "@/components/FakeMoneyPanel";
 
 interface Transaction {
   id: string;
@@ -140,7 +140,7 @@ const TransactionHistory = () => {
         <h1 className="text-2xl font-bold text-white mb-2">Transaction History</h1>
         <p className="text-betster-300 mb-6">View all your deposits and withdrawals</p>
         
-        <FakeMoneyPanel />
+        {/* Removed FakeMoneyPanel from here */}
         
         <Separator className="my-6 bg-betster-700/40" />
         

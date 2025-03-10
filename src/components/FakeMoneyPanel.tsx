@@ -23,30 +23,27 @@ const FakeMoneyPanel = () => {
       return;
     }
 
-    // Optimistic UI update - immediately show success and update UI
+    // Optimize the UX flow - simplify the operation for immediate feedback
     if (user) {
-      // Update UI immediately with optimistic state change
       setIsDepositing(true);
       
-      // Show success message immediately
+      // Show success immediately (optimistic UI)
       toast({
         title: "Success",
         description: `${amount} fake money added to your wallet`,
       });
       
-      // Optimistically update balance
+      // Use optimistic update for immediate UI change
       addFakeMoney(amount, true)
         .catch(error => {
           console.error("Error adding fake money:", error);
-          // Only show error if there's an actual failure
           toast({
             title: "Failed to add fake money",
-            description: "There was an error processing your request. Please try again.",
+            description: "There was an error processing your request",
             variant: "destructive"
           });
         })
         .finally(() => {
-          // Always clear the processing state
           setIsDepositing(false);
         });
     }
@@ -71,30 +68,27 @@ const FakeMoneyPanel = () => {
       return;
     }
 
-    // Optimistic UI update - immediately show success and update UI
+    // Optimize the UX flow - simplify the operation for immediate feedback
     if (user) {
-      // Update UI immediately with optimistic state change
       setIsWithdrawing(true);
       
-      // Show success message immediately
+      // Show success immediately (optimistic UI)
       toast({
         title: "Success",
         description: `${amount} fake money withdrawn from your wallet`,
       });
       
-      // Optimistically update balance
+      // Use optimistic update for immediate UI change
       withdrawFakeMoney(amount, true)
         .catch(error => {
           console.error("Error withdrawing fake money:", error);
-          // Only show error if there's an actual failure
           toast({
             title: "Failed to withdraw fake money",
-            description: "There was an error processing your request. Please try again.",
+            description: "There was an error processing your request",
             variant: "destructive"
           });
         })
         .finally(() => {
-          // Always clear the processing state
           setIsWithdrawing(false);
         });
     }

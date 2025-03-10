@@ -7,23 +7,23 @@ const ProtectedRoute = () => {
   const { isAuthenticated, isLoading, isInitialized, refreshUserData } = useAuth();
   const location = useLocation();
 
-  // Optimized: Only refresh data on critical paths and less frequently
+  // Super optimized: Only refresh on truly necessary paths
   useEffect(() => {
-    // Even more restricted list of routes that need refresh
-    const criticalPaths = ['/transactions'];
-    const shouldRefresh = criticalPaths.includes(location.pathname);
+    // Only refresh data on very specific screens that absolutely need it
+    const essentialPaths = ['/transactions'];
+    const shouldRefresh = essentialPaths.includes(location.pathname);
     
     if (isAuthenticated && shouldRefresh) {
-      // Use a slightly larger timeout to reduce frequency of refreshes
+      // Use a larger timeout to reduce refresh frequency
       const refreshTimer = setTimeout(() => {
         refreshUserData();
-      }, 500); // Increased to reduce refresh frequency
+      }, 1000); // Increased to further reduce refresh frequency
       
       return () => clearTimeout(refreshTimer);
     }
   }, [isAuthenticated, location.pathname, refreshUserData]);
 
-  // Super simplified loading state with faster appearance
+  // Ultra simplified loading state with near-instant appearance
   if (!isInitialized) {
     return (
       <div className="flex items-center justify-center h-8">

@@ -7,7 +7,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useKYC } from "@/contexts/KYCContext";
 import { formatCurrency } from "@/lib/formatters";
 import BetsterLogo from "./BetsterLogo";
-import SupportChatBadge from "./SupportChatBadge";
 import { initializeDeposit, initiateWithdrawal } from "@/services/paymentService";
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -15,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
+import FakeMoneyPanel from "@/components/FakeMoneyPanel";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -302,8 +302,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
 
           <div className="flex items-center gap-2">
-            <SupportChatBadge className="mr-2" />
-            
             <Sheet open={isDepositOpen} onOpenChange={setIsDepositOpen}>
               <SheetTrigger asChild>
                 <button
@@ -383,67 +381,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                   </TabsContent>
                   
                   <TabsContent value="fake">
-                    <h3 className="text-lg font-semibold mb-4 text-white">Test Money Controls</h3>
-                    <div className="space-y-4">
-                      <div className="p-3 text-xs bg-betster-800/40 rounded-md text-betster-300">
-                        For testing purposes only - add or withdraw fake money without using payment gateways
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-betster-300">Amount</label>
-                        <Input
-                          type="number"
-                          value={fakeMoneyAmount}
-                          onChange={(e) => setFakeMoneyAmount(Number(e.target.value))}
-                          min={1}
-                          className="bg-betster-900/50 border-betster-700/50 text-white"
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3">
-                        <Button 
-                          variant="default" 
-                          onClick={handleAddFakeMoney}
-                          disabled={isFakeMoneyProcessing}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          {isFakeMoneyProcessing ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add Fake Money
-                            </>
-                          )}
-                        </Button>
-                        
-                        <Button 
-                          variant="default" 
-                          onClick={handleWithdrawFakeMoney}
-                          disabled={isFakeMoneyProcessing}
-                          className="bg-amber-600 hover:bg-amber-700 text-white"
-                        >
-                          {isFakeMoneyProcessing ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              <CreditCard className="h-4 w-4 mr-1" />
-                              Withdraw
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                      
-                      <div className="text-xs text-betster-400">
-                        <p>This is for testing purposes only. In a production app, this would be replaced with a real payment gateway.</p>
-                      </div>
-                    </div>
+                    <FakeMoneyPanel />
                   </TabsContent>
                 </Tabs>
               </SheetContent>
