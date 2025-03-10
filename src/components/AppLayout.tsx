@@ -23,6 +23,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [walletPopoverOpen, setWalletPopoverOpen] = useState(false);
 
   const verificationStatus = getVerificationStatus();
   
@@ -54,6 +55,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   };
 
   const isGameScreen = location.pathname.includes("/game/");
+  const isWalletScreen = location.pathname.includes("/test-wallet");
 
   return (
     <AnimatePresence mode="wait">
@@ -140,7 +142,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Popover>
+              <Popover open={walletPopoverOpen} onOpenChange={setWalletPopoverOpen}>
                 <PopoverTrigger asChild>
                   <button
                     className="inline-flex items-center gap-1.5 rounded-full bg-betster-600/20 px-3 py-1.5 text-sm font-medium text-betster-100 transition-colors hover:bg-betster-600/30"
@@ -163,6 +165,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                         <Link 
                           to="/test-wallet" 
                           className="inline-flex items-center justify-center gap-1.5 rounded-md bg-betster-600/30 px-3 py-2 text-sm font-medium text-betster-100 transition-colors hover:bg-betster-600/50 w-full"
+                          onClick={() => setWalletPopoverOpen(false)}
                         >
                           <Wallet className="h-4 w-4" />
                           <span>Manage Wallet</span>
@@ -171,6 +174,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                         <Link 
                           to="/transaction-history" 
                           className="inline-flex items-center justify-center gap-1.5 rounded-md bg-transparent border border-betster-700/40 px-3 py-2 text-sm font-medium text-betster-100 transition-colors hover:bg-betster-800/30 w-full"
+                          onClick={() => setWalletPopoverOpen(false)}
                         >
                           <span>Transaction History</span>
                         </Link>
