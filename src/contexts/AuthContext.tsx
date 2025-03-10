@@ -5,6 +5,7 @@ import { useAuthOperations } from '@/hooks/use-auth-operations';
 import { AuthContextType } from '@/types/auth';
 import { updateWalletBalance, supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
+import { createTransaction, updateTransactionStatus } from '@/lib/supabase/transactions';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -57,21 +58,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
 
-      // Log the transaction - Only include columns that exist in the database
-      const { error: transactionError } = await supabase
-        .from('transactions')
-        .insert([{
-          user_id: user.id,
-          amount,
-          type: 'deposit',
-          status: 'completed',
-          payment_id: `fake_deposit_${Date.now()}`
-          // Removed 'gateway' field which doesn't exist in the table
-        }]);
+      // Create a transaction record
+      const transaction = await createTransaction(
+        user.id,
+        amount,
+        'deposit',
+        `fake_deposit_${Date.now()}`
+      );
       
-      if (transactionError) {
-        console.error("Error logging transaction:", transactionError);
-        throw transactionError;
+      // Update transaction status
+      if (transaction) {
+        await updateTransactionStatus(
+          transaction.id,
+          'completed',
+          `fake_deposit_${Date.now()}`
+        );
       }
 
       // Update wallet balance in the background
@@ -139,21 +140,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
 
-      // Log the transaction - Only include columns that exist in the database
-      const { error: transactionError } = await supabase
-        .from('transactions')
-        .insert([{
-          user_id: user.id,
-          amount,
-          type: 'withdrawal',
-          status: 'completed',
-          payment_id: `fake_withdrawal_${Date.now()}`
-          // Removed 'gateway' field which doesn't exist in the table
-        }]);
+      // Create a transaction record
+      const transaction = await createTransaction(
+        user.id,
+        amount,
+        'withdrawal',
+        `fake_withdrawal_${Date.now()}`
+      );
       
-      if (transactionError) {
-        console.error("Error logging transaction:", transactionError);
-        throw transactionError;
+      // Update transaction status
+      if (transaction) {
+        await updateTransactionStatus(
+          transaction.id,
+          'completed',
+          `fake_withdrawal_${Date.now()}`
+        );
       }
       
       // Update wallet balance in the background

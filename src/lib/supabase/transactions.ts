@@ -5,7 +5,7 @@ import { updateWalletBalance } from './profiles';
 // Track ongoing transactions to prevent duplicates
 const ongoingTransactions = new Set<string>();
 
-export const createTransaction = async (userId: string, amount: number, type: 'deposit' | 'withdrawal' | 'game_entry' | 'game_refund' | 'game_winning', paymentId?: string) => {
+export const createTransaction = async (userId: string, amount: number, type: 'deposit' | 'withdrawal' | 'game_entry' | 'game_refund' | 'game_winning', paymentId?: string, gateway?: string) => {
   // Create a unique transaction key to prevent duplicates
   const transactionKey = `${userId}-${type}-${amount}-${paymentId || Date.now()}`;
   
@@ -17,17 +17,23 @@ export const createTransaction = async (userId: string, amount: number, type: 'd
   try {
     ongoingTransactions.add(transactionKey);
     
+    // Prepare transaction data, conditionally adding gateway if provided
+    const transactionData: any = {
+      user_id: userId,
+      amount,
+      type,
+      status: 'pending',
+      payment_id: paymentId
+    };
+    
+    // Only add gateway field if it's provided
+    if (gateway) {
+      transactionData.gateway = gateway;
+    }
+    
     const { data, error } = await supabase
       .from('transactions')
-      .insert([
-        {
-          user_id: userId,
-          amount,
-          type,
-          status: 'pending',
-          payment_id: paymentId
-        }
-      ])
+      .insert([transactionData])
       .select()
       .single();
 

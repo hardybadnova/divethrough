@@ -1,6 +1,7 @@
 
 import { toast } from '@/hooks/use-toast';
-import { supabase, updateWalletBalance } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
+import { createTransaction, updateTransactionStatus } from '@/lib/supabase/transactions';
 
 interface TransactionDetails {
   userId: string;
@@ -13,8 +14,8 @@ interface TransactionDetails {
 }
 
 // Payment gateway configuration
-const CASHFREE_APP_ID = 'TEST95084239c7cdea0ebcb9ef6f69499153';
-const CASHFREE_SECRET_KEY = 'TEST5885e4c10d527ca4de110294ec11046c55998677';
+const CASHFREE_APP_ID = 'TEST1050364227aadbc5e977b98a56c724630501';
+const CASHFREE_SECRET_KEY = 'cfsk_ma_test_be76096631251143fd00141829278e44_7628a771';
 const STRIPE_PK = 'pk_test_51IQwmASA9GcVG1TrzK96lKaLxzkjI9LBJQe46YUXHXGnYwU0IskXGM8s5gSZgWOdREwQ0vvl3kPdfqLTntCY4Drx00wXrQyPSV';
 const PAYTM_MERCHANT_ID = 'TEST_MERCHANT_ID';
 const PAYTM_MERCHANT_KEY = 'TEST_MERCHANT_KEY';
@@ -39,42 +40,6 @@ export const calculateGameFee = (winningAmount: number): number => {
   return (winningAmount * FEE_PERCENTAGE.game) / 100;
 };
 
-// Log transaction in Supabase
-export const logTransaction = async (transaction: TransactionDetails) => {
-  try {
-    // Check if fee column exists in transactions table
-    const { error: columnCheckError } = await supabase
-      .from('transactions')
-      .select('*')
-      .limit(1);
-    
-    // If there's no error, the table and columns exist
-    if (!columnCheckError) {
-      const { error } = await supabase
-        .from('transactions')
-        .insert([{
-          user_id: transaction.userId,
-          amount: transaction.amount,
-          type: transaction.type,
-          status: transaction.status,
-          payment_id: transaction.paymentId || null,
-          transaction_id: transaction.transactionId || null,
-          gateway: transaction.gateway || null,
-          created_at: new Date().toISOString()
-        }]);
-      
-      if (error) throw error;
-    } else {
-      console.error("Error checking transactions table:", columnCheckError);
-      // If we can't log to the database, at least log to console for debugging
-      console.log("Transaction (not saved to DB):", transaction);
-    }
-  } catch (error) {
-    console.error("Error logging transaction:", error);
-    throw error;
-  }
-};
-
 // Initialize Cashfree payment
 export const initializeCashfreeDeposit = async (userId: string, amount: number) => {
   if (amount < 100) {
@@ -93,36 +58,32 @@ export const initializeCashfreeDeposit = async (userId: string, amount: number) 
   try {
     const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     
-    // Create a transaction record in pending state
-    await logTransaction({
+    // Create a transaction record in pending state using the new createTransaction function
+    const transaction = await createTransaction(
       userId,
       amount,
-      type: 'deposit',
-      status: 'pending',
-      paymentId: orderId,
-      gateway: 'cashfree'
-    });
+      'deposit',
+      orderId,
+      'cashfree' // Pass gateway as a parameter
+    );
     
     toast({
       title: "Processing with Cashfree",
       description: "You'll be redirected to complete the payment."
     });
     
-    // Mock successful payment after a delay (in real implementation, this would be handled by Cashfree)
+    // In a real implementation, this would initiate a Cashfree payment session
+    // For demo purposes, we'll simulate a successful payment after a delay
     setTimeout(async () => {
       try {
-        // Log the transaction
-        await logTransaction({
-          userId,
-          amount,
-          type: 'deposit',
-          status: 'completed',
-          paymentId: orderId,
-          gateway: 'cashfree'
-        });
-        
-        // Update user's wallet balance
-        const newBalance = await updateWalletBalance(userId, amount);
+        // Update transaction status
+        if (transaction) {
+          await updateTransactionStatus(
+            transaction.id,
+            'completed',
+            `cf_${Date.now()}`
+          );
+        }
         
         toast({
           title: "Deposit Successful",
@@ -171,36 +132,31 @@ export const initializeStripeDeposit = async (userId: string, amount: number) =>
   try {
     const paymentId = `stripe_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     
-    // Create a transaction record in pending state
-    await logTransaction({
+    // Create a transaction record using the proper function
+    const transaction = await createTransaction(
       userId,
       amount,
-      type: 'deposit',
-      status: 'pending',
-      paymentId: paymentId,
-      gateway: 'stripe'
-    });
+      'deposit',
+      paymentId,
+      'stripe'
+    );
     
     toast({
       title: "Processing with Stripe",
       description: "You'll be redirected to complete the payment."
     });
     
-    // Mock successful payment after a delay (in real implementation, this would be handled by Stripe)
+    // Mock successful payment after a delay
     setTimeout(async () => {
       try {
-        // Log the transaction
-        await logTransaction({
-          userId,
-          amount,
-          type: 'deposit',
-          status: 'completed',
-          paymentId: paymentId,
-          gateway: 'stripe'
-        });
-        
-        // Update user's wallet balance
-        const newBalance = await updateWalletBalance(userId, amount);
+        // Update transaction status
+        if (transaction) {
+          await updateTransactionStatus(
+            transaction.id,
+            'completed',
+            `stripe_${Date.now()}`
+          );
+        }
         
         toast({
           title: "Deposit Successful",
@@ -249,36 +205,31 @@ export const initializePaytmDeposit = async (userId: string, amount: number) => 
   try {
     const paymentId = `paytm_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     
-    // Create a transaction record in pending state
-    await logTransaction({
+    // Create a transaction record using the proper function
+    const transaction = await createTransaction(
       userId,
       amount,
-      type: 'deposit',
-      status: 'pending',
-      paymentId: paymentId,
-      gateway: 'paytm'
-    });
+      'deposit',
+      paymentId,
+      'paytm'
+    );
     
     toast({
       title: "Processing with Paytm",
       description: "You'll be redirected to complete the payment."
     });
     
-    // Mock successful payment after a delay (in real implementation, this would be handled by Paytm)
+    // Mock successful payment after a delay
     setTimeout(async () => {
       try {
-        // Log the transaction
-        await logTransaction({
-          userId,
-          amount,
-          type: 'deposit',
-          status: 'completed',
-          paymentId: paymentId,
-          gateway: 'paytm'
-        });
-        
-        // Update user's wallet balance
-        const newBalance = await updateWalletBalance(userId, amount);
+        // Update transaction status
+        if (transaction) {
+          await updateTransactionStatus(
+            transaction.id,
+            'completed',
+            `paytm_${Date.now()}`
+          );
+        }
         
         toast({
           title: "Deposit Successful",
@@ -338,35 +289,29 @@ export const initiateWithdrawal = async (userId: string, amount: number, account
   const totalDeduction = amount + fee;
   
   try {
-    // In a real implementation, you would call your backend to process the withdrawal
-    // For this demo, we'll simulate a successful withdrawal
-    
-    // Log the transaction
-    await logTransaction({
+    // Create a transaction record using the proper function
+    const transaction = await createTransaction(
       userId,
       amount,
-      type: 'withdrawal',
-      status: 'pending',
-    });
+      'withdrawal'
+    );
     
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     // Update user's wallet balance (deduct amount plus fee)
-    const newBalance = await updateWalletBalance(userId, -totalDeduction);
+    const newBalance = await supabase.rpc('update_wallet_balance', {
+      user_id: userId,
+      amount_change: -totalDeduction
+    });
     
-    // Update transaction status to completed
-    const { error } = await supabase
-      .from('transactions')
-      .update({ status: 'completed' })
-      .eq('user_id', userId)
-      .eq('type', 'withdrawal')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
-      .limit(1);
-    
-    if (error) {
-      console.error("Error updating transaction status:", error);
+    // Update transaction status
+    if (transaction) {
+      await updateTransactionStatus(
+        transaction.id,
+        'completed',
+        `withdrawal_${Date.now()}`
+      );
     }
     
     toast({

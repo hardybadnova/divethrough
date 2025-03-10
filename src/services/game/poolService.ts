@@ -1,7 +1,8 @@
+
 import { supabase } from '@/lib/supabase/client';
 import { Pool } from '@/types/game';
 import { updateWalletBalance } from '@/lib/supabase/profiles';
-import { createTransaction } from '@/lib/supabase/transactions';
+import { createTransaction, updateTransactionStatus } from '@/lib/supabase/transactions';
 
 // Join a specific game pool with debouncing
 let joiningPools = new Set<string>();
@@ -82,10 +83,7 @@ export const joinGamePool = async (poolId: string, player: any): Promise<void> =
       
       // Update transaction as failed
       if (transaction) {
-        await supabase
-          .from('transactions')
-          .update({ status: 'failed' })
-          .eq('id', transaction.id);
+        await updateTransactionStatus(transaction.id, 'failed');
       }
       
       throw error;
@@ -112,10 +110,7 @@ export const joinGamePool = async (poolId: string, player: any): Promise<void> =
     
     // Update transaction as completed
     if (transaction) {
-      await supabase
-        .from('transactions')
-        .update({ status: 'completed' })
-        .eq('id', transaction.id);
+      await updateTransactionStatus(transaction.id, 'completed');
     }
     
     console.log(`Successfully joined pool ${poolId}`);
@@ -186,10 +181,7 @@ export const leaveGamePool = async (poolId: string, playerId: string): Promise<v
       
       // Mark transaction as completed
       if (transaction) {
-        await supabase
-          .from('transactions')
-          .update({ status: 'completed' })
-          .eq('id', transaction.id);
+        await updateTransactionStatus(transaction.id, 'completed');
       }
       
       console.log(`Refunded ${refundAmount} to user ${playerId}'s wallet`);
@@ -242,17 +234,19 @@ export const processGameResult = async (poolId: string, winningPlayers: string[]
       // Add prize to winner's wallet
       await updateWalletBalance(playerId, prizeAmount);
       
-      // Log the winning transaction
-      await supabase
-        .from('transactions')
-        .insert([{
-          user_id: playerId,
-          amount: prizeAmount,
-          type: 'game_winning',
-          status: 'completed',
-          payment_id: `game_winning_${poolId}_${Date.now()}`,
-        }]);
-        
+      // Create winning transaction
+      const transaction = await createTransaction(
+        playerId,
+        prizeAmount,
+        'game_winning',
+        `game_winning_${poolId}_${Date.now()}`
+      );
+      
+      // Mark transaction as completed
+      if (transaction) {
+        await updateTransactionStatus(transaction.id, 'completed');
+      }
+      
       console.log(`Added ${prizeAmount} to winner ${playerId}'s wallet`);
     }
     
