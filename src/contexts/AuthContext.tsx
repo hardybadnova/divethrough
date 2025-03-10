@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { useAuthOperations } from '@/hooks/use-auth-operations';
@@ -35,8 +36,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Determine if the current user is an admin
   const isAdmin = user?.role === 'admin';
   
-  // Add fake money to user wallet
-  const addFakeMoney = async (amount: number) => {
+  // Add fake money to user wallet with optimistic UI update
+  const addFakeMoney = async (amount: number, optimistic = false) => {
     if (!user) {
       toast({
         title: "Error",
@@ -47,11 +48,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      console.log("Adding fake money, user ID:", user.id, "Amount:", amount);
-      const newBalance = await updateWalletBalance(user.id, amount);
-      console.log("New balance after adding money:", newBalance);
-      
-      // Log the transaction
+      // Optimistic UI update
+      if (optimistic) {
+        const optimisticBalance = (user.wallet || 0) + amount;
+        setUser(prev => {
+          if (!prev) return null;
+          return { ...prev, wallet: optimisticBalance };
+        });
+      }
+
+      // Log the transaction immediately
       const { error: transactionError } = await supabase
         .from('transactions')
         .insert([{
@@ -67,21 +73,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error("Error logging transaction:", transactionError);
         throw transactionError;
       }
+
+      // Update wallet balance in the background
+      const newBalance = await updateWalletBalance(user.id, amount);
       
-      // Update local user state
-      setUser(prev => {
-        if (!prev) return null;
-        return { ...prev, wallet: newBalance };
-      });
+      // Update local user state if not optimistic
+      if (!optimistic) {
+        setUser(prev => {
+          if (!prev) return null;
+          return { ...prev, wallet: newBalance };
+        });
+      } else {
+        // For optimistic updates, adjust if final value is different
+        if (newBalance !== (user.wallet + amount)) {
+          setUser(prev => {
+            if (!prev) return null;
+            return { ...prev, wallet: newBalance };
+          });
+        }
+      }
       
+      return newBalance;
     } catch (error) {
       console.error("Error adding fake money:", error);
-      throw error; // Rethrow for component handling
+      
+      // Revert optimistic update on error
+      if (optimistic) {
+        setUser(prev => {
+          if (!prev) return null;
+          return { ...prev, wallet: user.wallet };
+        });
+      }
+      
+      throw error;
     }
   };
   
-  // Withdraw fake money from user wallet
-  const withdrawFakeMoney = async (amount: number) => {
+  // Withdraw fake money from user wallet with optimistic UI update
+  const withdrawFakeMoney = async (amount: number, optimistic = false) => {
     if (!user) {
       toast({
         title: "Error",
@@ -101,11 +130,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
-      console.log("Withdrawing fake money, user ID:", user.id, "Amount:", amount);
-      const newBalance = await updateWalletBalance(user.id, -amount);
-      console.log("New balance after withdrawal:", newBalance);
-      
-      // Log the transaction
+      // Optimistic UI update
+      if (optimistic) {
+        const optimisticBalance = (user.wallet || 0) - amount;
+        setUser(prev => {
+          if (!prev) return null;
+          return { ...prev, wallet: optimisticBalance };
+        });
+      }
+
+      // Log the transaction immediately
       const { error: transactionError } = await supabase
         .from('transactions')
         .insert([{
@@ -122,15 +156,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw transactionError;
       }
       
-      // Update local user state
-      setUser(prev => {
-        if (!prev) return null;
-        return { ...prev, wallet: newBalance };
-      });
+      // Update wallet balance in the background
+      const newBalance = await updateWalletBalance(user.id, -amount);
       
+      // Update local user state if not optimistic
+      if (!optimistic) {
+        setUser(prev => {
+          if (!prev) return null;
+          return { ...prev, wallet: newBalance };
+        });
+      } else {
+        // For optimistic updates, adjust if final value is different
+        if (newBalance !== (user.wallet - amount)) {
+          setUser(prev => {
+            if (!prev) return null;
+            return { ...prev, wallet: newBalance };
+          });
+        }
+      }
+      
+      return newBalance;
     } catch (error) {
       console.error("Error withdrawing fake money:", error);
-      throw error; // Rethrow for component handling
+      
+      // Revert optimistic update on error
+      if (optimistic) {
+        setUser(prev => {
+          if (!prev) return null;
+          return { ...prev, wallet: user.wallet };
+        });
+      }
+      
+      throw error;
     }
   };
   

@@ -9,19 +9,27 @@ const ProtectedRoute = () => {
 
   // Only refresh user data when necessary and not on every route change
   useEffect(() => {
-    // Skip data refreshing on certain routes or limit refresh frequency
-    const shouldRefresh = !location.pathname.includes('/transactions');
+    // Skip data refreshing on most routes for faster navigation
+    // Only refresh on critical wallet-related paths
+    const shouldRefresh = location.pathname === '/dashboard' || 
+                        location.pathname === '/profile' || 
+                        location.pathname === '/transactions';
     
     if (isAuthenticated && shouldRefresh) {
-      refreshUserData();
+      // Use a small timeout to avoid blocking UI rendering
+      const refreshTimer = setTimeout(() => {
+        refreshUserData();
+      }, 100);
+      
+      return () => clearTimeout(refreshTimer);
     }
   }, [isAuthenticated, location.pathname, refreshUserData]);
 
   // Simplified loading state with faster spinner appearance
   if (!isInitialized) {
     return (
-      <div className="flex items-center justify-center h-20">
-        <div className="h-8 w-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex items-center justify-center h-16">
+        <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }

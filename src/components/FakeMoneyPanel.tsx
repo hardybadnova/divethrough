@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, ArrowDown } from 'lucide-react';
 
 const FakeMoneyPanel = () => {
   const { user, addFakeMoney, withdrawFakeMoney } = useAuth();
   const [amount, setAmount] = useState<number>(100);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const handleAddMoney = async () => {
     if (!amount || amount <= 0) {
@@ -22,9 +23,10 @@ const FakeMoneyPanel = () => {
       return;
     }
 
-    setIsProcessing(true);
+    setIsDepositing(true);
     try {
-      await addFakeMoney(amount);
+      // Call addFakeMoney with optimistic UI update
+      addFakeMoney(amount, true);
       
       // Show success message
       toast({
@@ -39,7 +41,7 @@ const FakeMoneyPanel = () => {
         variant: "destructive"
       });
     } finally {
-      setIsProcessing(false);
+      setIsDepositing(false);
     }
   };
 
@@ -62,9 +64,10 @@ const FakeMoneyPanel = () => {
       return;
     }
 
-    setIsProcessing(true);
+    setIsWithdrawing(true);
     try {
-      await withdrawFakeMoney(amount);
+      // Call withdrawFakeMoney with optimistic UI update
+      withdrawFakeMoney(amount, true);
       
       // Show success message
       toast({
@@ -79,7 +82,7 @@ const FakeMoneyPanel = () => {
         variant: "destructive"
       });
     } finally {
-      setIsProcessing(false);
+      setIsWithdrawing(false);
     }
   };
 
@@ -107,28 +110,38 @@ const FakeMoneyPanel = () => {
         <Button 
           variant="default" 
           onClick={handleAddMoney}
-          disabled={isProcessing}
+          disabled={isDepositing}
           className="bg-green-600 hover:bg-green-700 text-white"
         >
-          {isProcessing ? (
+          {isDepositing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
               Processing...
             </>
-          ) : 'Add Money'}
+          ) : (
+            <>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Money
+            </>
+          )}
         </Button>
         <Button 
           variant="default" 
           onClick={handleWithdrawMoney}
-          disabled={isProcessing}
+          disabled={isWithdrawing}
           className="bg-amber-600 hover:bg-amber-700 text-white"
         >
-          {isProcessing ? (
+          {isWithdrawing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
               Processing...
             </>
-          ) : 'Withdraw'}
+          ) : (
+            <>
+              <ArrowDown className="mr-2 h-4 w-4" />
+              Withdraw
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>

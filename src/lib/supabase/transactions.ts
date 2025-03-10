@@ -62,12 +62,18 @@ export const updateTransactionStatus = async (transactionId: string, status: 'co
       throw error;
     }
     
-    // If transaction is completed, update wallet balance
+    // If transaction is completed, update wallet balance immediately
     if (status === 'completed' && transaction) {
-      if (transaction.type === 'deposit') {
-        await updateWalletBalance(transaction.user_id, transaction.amount);
-      } else if (transaction.type === 'withdrawal') {
-        await updateWalletBalance(transaction.user_id, -transaction.amount);
+      try {
+        if (transaction.type === 'deposit') {
+          await updateWalletBalance(transaction.user_id, transaction.amount);
+        } else if (transaction.type === 'withdrawal') {
+          await updateWalletBalance(transaction.user_id, -transaction.amount);
+        }
+      } catch (balanceError) {
+        console.error("Failed to update wallet balance:", balanceError);
+        // Don't block the transaction update if balance update fails
+        // Just log the error
       }
     }
     
@@ -80,12 +86,13 @@ export const updateTransactionStatus = async (transactionId: string, status: 'co
 
 export const getUserTransactions = async (userId: string) => {
   try {
-    // Optimize by only selecting needed fields
+    // Optimize by only selecting needed fields and limiting results
     const { data, error } = await supabase
       .from('transactions')
       .select('id, user_id, amount, type, status, payment_id, transaction_id, gateway, created_at')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100); // Limit to most recent 100 transactions for performance
 
     if (error) {
       console.error("Error fetching user transactions:", error);
