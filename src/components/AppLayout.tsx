@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, Wallet, Home, Trophy, MessageSquare, LogOut, User, Award, Percent, Shield } from "lucide-react";
+import { Menu, Wallet, Home, Trophy, MessageSquare, LogOut, User, Award, Percent, Shield, Plus, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useKYC } from "@/contexts/KYCContext";
@@ -14,13 +13,15 @@ import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 const AppLayout = ({ children }: AppLayoutProps) => {
-  const { user, logout, refreshUserData } = useAuth();
+  const { user, logout, refreshUserData, addFakeMoney, withdrawFakeMoney } = useAuth();
   const { getVerificationStatus } = useKYC();
   const location = useLocation();
   const [isDepositOpen, setIsDepositOpen] = useState(false);
@@ -34,6 +35,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     accountHolderName: ''
   });
   const [selectedGateway, setSelectedGateway] = useState<'cashfree' | 'stripe' | 'paytm'>('cashfree');
+  
+  const [fakeMoneyAmount, setFakeMoneyAmount] = useState<number>(100);
+  const [isFakeMoneyProcessing, setIsFakeMoneyProcessing] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("real");
 
   const verificationStatus = getVerificationStatus();
   
@@ -171,6 +176,75 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     }
   };
 
+  const handleAddFakeMoney = async () => {
+    if (!fakeMoneyAmount || fakeMoneyAmount <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsFakeMoneyProcessing(true);
+    try {
+      await addFakeMoney(fakeMoneyAmount);
+      toast({
+        title: "Success",
+        description: `${fakeMoneyAmount} fake money added to your wallet`,
+      });
+      setFakeMoneyAmount(100);
+    } catch (error) {
+      console.error("Error adding fake money:", error);
+      toast({
+        title: "Failed to add fake money",
+        description: "There was an error processing your request. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsFakeMoneyProcessing(false);
+    }
+  };
+
+  const handleWithdrawFakeMoney = async () => {
+    if (!fakeMoneyAmount || fakeMoneyAmount <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (user && user.wallet < fakeMoneyAmount) {
+      toast({
+        title: "Insufficient balance",
+        description: "You don't have enough balance",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsFakeMoneyProcessing(true);
+    try {
+      await withdrawFakeMoney(fakeMoneyAmount);
+      toast({
+        title: "Success",
+        description: `${fakeMoneyAmount} fake money withdrawn from your wallet`,
+      });
+      setFakeMoneyAmount(100);
+    } catch (error) {
+      console.error("Error withdrawing fake money:", error);
+      toast({
+        title: "Failed to withdraw fake money",
+        description: "There was an error processing your request. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsFakeMoneyProcessing(false);
+    }
+  };
+
   const isGameScreen = location.pathname.includes("/game/");
 
   return (
@@ -241,64 +315,137 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 </button>
               </SheetTrigger>
               <SheetContent side="right" className="bg-black/95 backdrop-blur-xl border-l border-betster-700/40">
-                <h3 className="text-lg font-semibold mb-4 text-white">Deposit Funds</h3>
-                <div className="space-y-4">
-                  <p className="text-sm text-betster-300">
-                    Enter the amount you wish to deposit into your wallet.
-                  </p>
-                  <Input
-                    type="number"
-                    min="100"
-                    placeholder="Amount in INR (min ₹100)"
-                    value={depositAmount || ''}
-                    onChange={(e) => setDepositAmount(Number(e.target.value))}
-                    className="bg-betster-900/50 border-betster-700/50 text-white"
-                  />
+                <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="real">Real Money</TabsTrigger>
+                    <TabsTrigger value="fake">Test Money</TabsTrigger>
+                  </TabsList>
                   
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-betster-300">Select Payment Gateway</label>
-                    <Select value={selectedGateway} onValueChange={(value: 'cashfree' | 'stripe' | 'paytm') => setSelectedGateway(value)}>
-                      <SelectTrigger className="bg-betster-900/50 border-betster-700/50 text-white">
-                        <SelectValue placeholder="Select payment gateway" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-black/95 text-white border-betster-700/50">
-                        <SelectItem value="cashfree">Cashfree</SelectItem>
-                        <SelectItem value="stripe">Stripe</SelectItem>
-                        <SelectItem value="paytm">Paytm</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <TabsContent value="real">
+                    <h3 className="text-lg font-semibold mb-4 text-white">Deposit Funds</h3>
+                    <div className="space-y-4">
+                      <p className="text-sm text-betster-300">
+                        Enter the amount you wish to deposit into your wallet.
+                      </p>
+                      <Input
+                        type="number"
+                        min="100"
+                        placeholder="Amount in INR (min ₹100)"
+                        value={depositAmount || ''}
+                        onChange={(e) => setDepositAmount(Number(e.target.value))}
+                        className="bg-betster-900/50 border-betster-700/50 text-white"
+                      />
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-betster-300">Select Payment Gateway</label>
+                        <Select value={selectedGateway} onValueChange={(value: 'cashfree' | 'stripe' | 'paytm') => setSelectedGateway(value)}>
+                          <SelectTrigger className="bg-betster-900/50 border-betster-700/50 text-white">
+                            <SelectValue placeholder="Select payment gateway" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-black/95 text-white border-betster-700/50">
+                            <SelectItem value="cashfree">Cashfree</SelectItem>
+                            <SelectItem value="stripe">Stripe</SelectItem>
+                            <SelectItem value="paytm">Paytm</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <Button 
+                        className="w-full" 
+                        onClick={handleDeposit}
+                        disabled={isProcessing || !depositAmount || depositAmount < 100}
+                      >
+                        {isProcessing ? 'Processing...' : 'Deposit'}
+                      </Button>
+                      
+                      <div className="mt-4 flex justify-between">
+                        <button
+                          className="text-sm text-betster-400 hover:text-betster-300"
+                          onClick={() => {
+                            setIsDepositOpen(false);
+                            setIsWithdrawOpen(true);
+                          }}
+                        >
+                          Switch to Withdrawal
+                        </button>
+                      </div>
+                      
+                      <div className="mt-2 text-xs text-betster-400">
+                        <p>This is a test mode integration. Use these test cards:</p>
+                        <ul className="list-disc pl-4 mt-1">
+                          <li>Card: 4111 1111 1111 1111</li>
+                          <li>Expiry: Any future date</li>
+                          <li>CVV: Any 3 digits</li>
+                          <li>Name: Any name</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </TabsContent>
                   
-                  <Button 
-                    className="w-full" 
-                    onClick={handleDeposit}
-                    disabled={isProcessing || !depositAmount || depositAmount < 100}
-                  >
-                    {isProcessing ? 'Processing...' : 'Deposit'}
-                  </Button>
-                  
-                  <div className="mt-4 flex justify-between">
-                    <button
-                      className="text-sm text-betster-400 hover:text-betster-300"
-                      onClick={() => {
-                        setIsDepositOpen(false);
-                        setIsWithdrawOpen(true);
-                      }}
-                    >
-                      Switch to Withdrawal
-                    </button>
-                  </div>
-                  
-                  <div className="mt-2 text-xs text-betster-400">
-                    <p>This is a test mode integration. Use these test cards:</p>
-                    <ul className="list-disc pl-4 mt-1">
-                      <li>Card: 4111 1111 1111 1111</li>
-                      <li>Expiry: Any future date</li>
-                      <li>CVV: Any 3 digits</li>
-                      <li>Name: Any name</li>
-                    </ul>
-                  </div>
-                </div>
+                  <TabsContent value="fake">
+                    <h3 className="text-lg font-semibold mb-4 text-white">Test Money Controls</h3>
+                    <div className="space-y-4">
+                      <div className="p-3 text-xs bg-betster-800/40 rounded-md text-betster-300">
+                        For testing purposes only - add or withdraw fake money without using payment gateways
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-betster-300">Amount</label>
+                        <Input
+                          type="number"
+                          value={fakeMoneyAmount}
+                          onChange={(e) => setFakeMoneyAmount(Number(e.target.value))}
+                          min={1}
+                          className="bg-betster-900/50 border-betster-700/50 text-white"
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button 
+                          variant="default" 
+                          onClick={handleAddFakeMoney}
+                          disabled={isFakeMoneyProcessing}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          {isFakeMoneyProcessing ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-4 w-4 mr-1" />
+                              Add Fake Money
+                            </>
+                          )}
+                        </Button>
+                        
+                        <Button 
+                          variant="default" 
+                          onClick={handleWithdrawFakeMoney}
+                          disabled={isFakeMoneyProcessing}
+                          className="bg-amber-600 hover:bg-amber-700 text-white"
+                        >
+                          {isFakeMoneyProcessing ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="h-4 w-4 mr-1" />
+                              Withdraw
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      
+                      <div className="text-xs text-betster-400">
+                        <p>This is for testing purposes only. In a production app, this would be replaced with a real payment gateway.</p>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </SheetContent>
             </Sheet>
             
