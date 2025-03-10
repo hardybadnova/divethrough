@@ -8,7 +8,8 @@ import { Trophy, ThumbsUp, ThumbsDown, ArrowLeft, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateWalletBalance } from "@/lib/wallet";
+import { updateWalletBalance } from "@/lib/supabase/profiles";
+import { supabase } from "@/lib/supabase/client";
 
 interface NumberResult {
   number: number;
