@@ -17,19 +17,16 @@ export const createTransaction = async (userId: string, amount: number, type: 'd
   try {
     ongoingTransactions.add(transactionKey);
     
-    // Prepare transaction data, conditionally adding gateway if provided
+    // Prepare transaction data with all required fields
     const transactionData: any = {
       user_id: userId,
       amount,
       type,
       status: 'pending',
-      payment_id: paymentId
+      payment_id: paymentId,
+      gateway: gateway || null,
+      updated_at: new Date().toISOString()
     };
-    
-    // Only add gateway field if it's provided
-    if (gateway) {
-      transactionData.gateway = gateway;
-    }
     
     const { data, error } = await supabase
       .from('transactions')
@@ -74,7 +71,7 @@ export const updateTransactionStatus = async (transactionId: string, status: 'co
       return transaction;
     }
     
-    // Update the transaction status
+    // Update the transaction status with updated_at timestamp
     const { data, error } = await supabase
       .from('transactions')
       .update({ 
@@ -94,15 +91,15 @@ export const updateTransactionStatus = async (transactionId: string, status: 'co
     // If transaction is completed, update wallet balance immediately
     if (status === 'completed' && transaction) {
       try {
+        // Determine whether to add or subtract from wallet based on transaction type
         if (transaction.type === 'deposit' || transaction.type === 'game_refund' || transaction.type === 'game_winning') {
-          // Add delay to ensure the transaction is fully committed before updating wallet
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Add money to wallet
           await updateWalletBalance(transaction.user_id, transaction.amount);
-          console.log(`Wallet updated for ${transaction.user_id} with amount ${transaction.amount}`);
+          console.log(`Added ${transaction.amount} to user ${transaction.user_id}'s wallet`);
         } else if (transaction.type === 'withdrawal' || transaction.type === 'game_entry') {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Subtract money from wallet
           await updateWalletBalance(transaction.user_id, -transaction.amount);
-          console.log(`Wallet updated for ${transaction.user_id} with amount -${transaction.amount}`);
+          console.log(`Subtracted ${transaction.amount} from user ${transaction.user_id}'s wallet`);
         }
       } catch (balanceError) {
         console.error("Failed to update wallet balance:", balanceError);
@@ -119,10 +116,10 @@ export const updateTransactionStatus = async (transactionId: string, status: 'co
 
 export const getUserTransactions = async (userId: string) => {
   try {
-    // Optimize by only selecting needed fields and limiting results
+    // Include all fields including gateway and updated_at
     const { data, error } = await supabase
       .from('transactions')
-      .select('id, user_id, amount, type, status, payment_id, transaction_id, created_at')
+      .select('id, user_id, amount, type, status, payment_id, transaction_id, gateway, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(100); // Limit to most recent 100 transactions for performance

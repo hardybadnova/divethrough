@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
@@ -6,18 +5,19 @@ import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { ArrowDown, ArrowUp, RefreshCw, Wallet, CreditCard } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
-import { supabase } from '@/lib/supabase';
+import { getUserTransactions } from '@/lib/supabase/transactions';
 
 interface Transaction {
   id: string;
   user_id: string;
   amount: number;
-  type: 'deposit' | 'withdrawal' | 'game_winning' | 'hint_purchase';
+  type: 'deposit' | 'withdrawal' | 'game_winning' | 'hint_purchase' | 'game_entry' | 'game_refund';
   status: 'pending' | 'completed' | 'failed';
   payment_id: string | null;
   transaction_id: string | null;
   gateway?: 'cashfree' | 'stripe' | 'paytm' | 'fake_money' | null;
   created_at: string;
+  updated_at: string;
 }
 
 const TransactionHistory = () => {
@@ -32,13 +32,7 @@ const TransactionHistory = () => {
 
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
+        const data = await getUserTransactions(user.id);
         
         setTransactions(data || []);
 
@@ -101,6 +95,10 @@ const TransactionHistory = () => {
         return <Wallet className="h-5 w-5 text-blue-500" />;
       case 'hint_purchase':
         return <RefreshCw className="h-5 w-5 text-purple-500" />;
+      case 'game_entry':
+        return <CreditCard className="h-5 w-5 text-betster-400" />;
+      case 'game_refund':
+        return <CreditCard className="h-5 w-5 text-betster-400" />;
       default:
         return <Wallet className="h-5 w-5 text-betster-400" />;
     }
@@ -114,6 +112,10 @@ const TransactionHistory = () => {
       case 'withdrawal':
       case 'hint_purchase':
         return 'text-amber-500';
+      case 'game_entry':
+        return 'text-betster-400';
+      case 'game_refund':
+        return 'text-betster-400';
       default:
         return 'text-betster-400';
     }
@@ -139,8 +141,6 @@ const TransactionHistory = () => {
       <div className="container px-4 py-6 max-w-lg mx-auto">
         <h1 className="text-2xl font-bold text-white mb-2">Transaction History</h1>
         <p className="text-betster-300 mb-6">View all your deposits and withdrawals</p>
-        
-        {/* Removed FakeMoneyPanel from here */}
         
         <Separator className="my-6 bg-betster-700/40" />
         
@@ -197,7 +197,7 @@ const TransactionHistory = () => {
                   
                   <div className="text-right">
                     <p className={`font-medium ${getTransactionColor(transaction.type)}`}>
-                      {transaction.type === 'deposit' || transaction.type === 'game_winning' ? '+' : '-'}
+                      {transaction.type === 'deposit' || transaction.type === 'game_winning' || transaction.type === 'game_refund' ? '+' : '-'}
                       {formatCurrency(transaction.amount)}
                     </p>
                     <p className={`text-xs capitalize ${getStatusColor(transaction.status)}`}>

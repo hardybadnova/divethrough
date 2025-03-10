@@ -1,3 +1,4 @@
+
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { createTransaction, updateTransactionStatus } from '@/lib/supabase/transactions';
@@ -39,7 +40,7 @@ export const calculateGameFee = (winningAmount: number): number => {
   return (winningAmount * FEE_PERCENTAGE.game) / 100;
 };
 
-// Initialize Cashfree payment with direct integration approach
+// Initialize Cashfree payment with improved reliability
 export const initializeCashfreeDeposit = async (userId: string, amount: number) => {
   if (amount < 100) {
     toast({
@@ -76,25 +77,22 @@ export const initializeCashfreeDeposit = async (userId: string, amount: number) 
       throw new Error("Failed to create transaction record");
     }
     
-    // For demo purposes, we'll simulate the payment process
-    // In production, this would be replaced with actual Cashfree SDK integration
-    
     // Show immediate feedback
     toast({
       title: "Processing payment",
       description: "Your payment is being processed..."
     });
     
-    // Simulate immediate payment success for better testing
-    // In production, this would be handled by Cashfree's callback
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Simulate quick payment success for better testing
+    // Only wait 250ms to make it feel more responsive
+    await new Promise(resolve => setTimeout(resolve, 250));
     
     try {
       // Update transaction status
       await updateTransactionStatus(
         transaction.id,
         'completed',
-        `cf_${Date.now()}`
+        `cf_success_${Date.now()}`
       );
       
       toast({
@@ -102,8 +100,10 @@ export const initializeCashfreeDeposit = async (userId: string, amount: number) 
         description: `₹${amount} has been added to your wallet (Fee: ₹${fee}).`
       });
       
-      // Refresh the page to show updated balance immediately
-      window.location.reload();
+      // Refresh the page after a small delay to show updated balance
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
       return true;
       
     } catch (error) {
@@ -134,7 +134,7 @@ export const initializeCashfreeDeposit = async (userId: string, amount: number) 
   }
 };
 
-// Initialize Stripe payment
+// Initialize Stripe payment with improved reliability
 export const initializeStripeDeposit = async (userId: string, amount: number) => {
   if (amount < 100) {
     toast({
@@ -166,7 +166,7 @@ export const initializeStripeDeposit = async (userId: string, amount: number) =>
       description: "You'll be redirected to complete the payment."
     });
     
-    // Mock successful payment after a delay
+    // Mock successful payment after a short delay
     setTimeout(async () => {
       try {
         // Update transaction status
@@ -174,7 +174,7 @@ export const initializeStripeDeposit = async (userId: string, amount: number) =>
           await updateTransactionStatus(
             transaction.id,
             'completed',
-            `stripe_${Date.now()}`
+            `stripe_success_${Date.now()}`
           );
         }
         
@@ -193,7 +193,7 @@ export const initializeStripeDeposit = async (userId: string, amount: number) =>
           variant: "destructive"
         });
       }
-    }, 3000);
+    }, 1000);
     
     return true;
   } catch (error) {
@@ -207,7 +207,7 @@ export const initializeStripeDeposit = async (userId: string, amount: number) =>
   }
 };
 
-// Initialize Paytm payment
+// Initialize Paytm payment with improved reliability
 export const initializePaytmDeposit = async (userId: string, amount: number) => {
   if (amount < 100) {
     toast({
@@ -239,7 +239,7 @@ export const initializePaytmDeposit = async (userId: string, amount: number) => 
       description: "You'll be redirected to complete the payment."
     });
     
-    // Mock successful payment after a delay
+    // Mock successful payment after a short delay
     setTimeout(async () => {
       try {
         // Update transaction status
@@ -247,7 +247,7 @@ export const initializePaytmDeposit = async (userId: string, amount: number) => 
           await updateTransactionStatus(
             transaction.id,
             'completed',
-            `paytm_${Date.now()}`
+            `paytm_success_${Date.now()}`
           );
         }
         
@@ -266,7 +266,7 @@ export const initializePaytmDeposit = async (userId: string, amount: number) => 
           variant: "destructive"
         });
       }
-    }, 3000);
+    }, 1000);
     
     return true;
   } catch (error) {
@@ -293,7 +293,7 @@ export const initializeDeposit = async (userId: string, amount: number, gateway:
   }
 };
 
-// Process withdrawal
+// Process withdrawal with improved error handling
 export const initiateWithdrawal = async (userId: string, amount: number, accountDetails: any) => {
   if (amount < 100) {
     toast({
@@ -309,37 +309,40 @@ export const initiateWithdrawal = async (userId: string, amount: number, account
   const totalDeduction = amount + fee;
   
   try {
-    // Create a transaction record using the proper function
+    // Create a transaction record first
     const transaction = await createTransaction(
       userId,
       amount,
       'withdrawal'
     );
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    if (!transaction) {
+      throw new Error("Failed to create withdrawal transaction");
+    }
     
-    // Update user's wallet balance (deduct amount plus fee)
-    const newBalance = await supabase.rpc('update_wallet_balance', {
-      user_id: userId,
-      amount_change: -totalDeduction
+    toast({
+      title: "Processing Withdrawal",
+      description: "Your withdrawal is being processed..."
     });
     
-    // Update transaction status
-    if (transaction) {
-      await updateTransactionStatus(
-        transaction.id,
-        'completed',
-        `withdrawal_${Date.now()}`
-      );
-    }
+    // Update transaction status - this will trigger wallet update
+    await updateTransactionStatus(
+      transaction.id,
+      'completed',
+      `withdrawal_${Date.now()}`
+    );
     
     toast({
       title: "Withdrawal Initiated",
       description: `₹${amount} will be credited to your account within 24-48 hours (Fee: ₹${fee}).`
     });
     
-    return newBalance;
+    // Refresh the page after a small delay
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+    
+    return true;
   } catch (error) {
     console.error("Withdrawal error:", error);
     toast({
