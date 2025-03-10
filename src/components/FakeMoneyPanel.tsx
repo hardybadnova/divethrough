@@ -23,10 +23,12 @@ const FakeMoneyPanel = () => {
       return;
     }
 
+    // Set processing state
     setIsDepositing(true);
+    
     try {
-      // Call addFakeMoney with only the amount parameter
-      await addFakeMoney(amount);
+      // Call addFakeMoney with optimistic UI update for immediate visual feedback
+      await addFakeMoney(amount, true);
       
       // Show success message
       toast({
@@ -41,6 +43,7 @@ const FakeMoneyPanel = () => {
         variant: "destructive"
       });
     } finally {
+      // Always clear the processing state
       setIsDepositing(false);
     }
   };
@@ -64,10 +67,12 @@ const FakeMoneyPanel = () => {
       return;
     }
 
+    // Set processing state
     setIsWithdrawing(true);
+    
     try {
-      // Call withdrawFakeMoney with only the amount parameter
-      await withdrawFakeMoney(amount);
+      // Call withdrawFakeMoney with optimistic UI update for immediate visual feedback
+      await withdrawFakeMoney(amount, true);
       
       // Show success message
       toast({
@@ -82,6 +87,7 @@ const FakeMoneyPanel = () => {
         variant: "destructive"
       });
     } finally {
+      // Always clear the processing state
       setIsWithdrawing(false);
     }
   };
