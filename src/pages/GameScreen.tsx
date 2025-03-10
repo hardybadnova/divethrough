@@ -21,6 +21,11 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
+const actionDebounce = {
+  join: false,
+  leave: false,
+};
+
 const GameScreen = () => {
   const { poolId } = useParams<{ poolId: string }>();
   const { 
@@ -235,9 +240,10 @@ const GameScreen = () => {
   };
   
   const safeLeavePool = async () => {
-    if (isLeaving || !hasJoinedPool.current) return;
+    if (isLeaving || !hasJoinedPool.current || actionDebounce.leave) return;
     
     try {
+      actionDebounce.leave = true;
       setIsLeaving(true);
       await leavePool();
       hasJoinedPool.current = false;
@@ -256,6 +262,9 @@ const GameScreen = () => {
       console.error("Error leaving pool:", error);
     } finally {
       setIsLeaving(false);
+      setTimeout(() => {
+        actionDebounce.leave = false;
+      }, 1000);
     }
   };
   
@@ -326,6 +335,34 @@ const GameScreen = () => {
     });
   };
   
+  const renderNumberButtons = () => {
+    if (!pool) return null;
+    
+    const { numberRange } = pool;
+    const min = numberRange[0];
+    const max = numberRange[1];
+    const numbers = Array.from({ length: max - min + 1 }, (_, i) => min + i);
+    
+    return (
+      <div className="grid grid-cols-5 gap-3 w-full max-w-lg mx-auto">
+        {numbers.map((num) => (
+          <button
+            key={num}
+            onClick={() => handleNumberSelect(num)}
+            disabled={gameState !== "in-progress" || isLocked}
+            className={`
+              h-12 w-12 rounded-full font-bold transition-all duration-200
+              ${selectedNumber === num ? 'bg-betster-600 text-white scale-110' : 'bg-muted hover:bg-muted/80'}
+              ${gameState !== "in-progress" || isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+            `}
+          >
+            {num}
+          </button>
+        ))}
+      </div>
+    );
+  };
+
   if (!pool) return null;
   
   return (
