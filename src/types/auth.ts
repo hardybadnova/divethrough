@@ -20,6 +20,6 @@ export interface AuthContextType {
   logout: () => void;
   refreshUserData: () => Promise<void>;
   isAdmin: boolean;
-  addFakeMoney: (amount: number) => Promise<void>;
-  withdrawFakeMoney: (amount: number) => Promise<void>;
+  addFakeMoney: (amount: number, optimistic?: boolean) => Promise<number | void>;
+  withdrawFakeMoney: (amount: number, optimistic?: boolean) => Promise<number | void>;
 }

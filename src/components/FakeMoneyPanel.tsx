@@ -25,8 +25,8 @@ const FakeMoneyPanel = () => {
 
     setIsDepositing(true);
     try {
-      // Call addFakeMoney with optimistic UI update
-      addFakeMoney(amount, true);
+      // Call addFakeMoney with only the amount parameter
+      await addFakeMoney(amount);
       
       // Show success message
       toast({
@@ -66,8 +66,8 @@ const FakeMoneyPanel = () => {
 
     setIsWithdrawing(true);
     try {
-      // Call withdrawFakeMoney with optimistic UI update
-      withdrawFakeMoney(amount, true);
+      // Call withdrawFakeMoney with only the amount parameter
+      await withdrawFakeMoney(amount);
       
       // Show success message
       toast({
