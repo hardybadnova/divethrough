@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Pool } from "@/types/game";
+import { Pool, GameType, PoolStatus } from "@/types/game";
 import { supabase } from "@/lib/supabase/client";
 import { useGame } from "@/contexts/GameContext";
 import { toast } from "@/hooks/use-toast";
@@ -8,22 +8,22 @@ const getDefaultPools = (gameType: string): Pool[] => {
   return [
     {
       id: `${gameType}_pool_1_${Date.now()}`,
-      gameType: gameType,
+      gameType: gameType as GameType,
       entryFee: 100,
       maxPlayers: 10,
       currentPlayers: 0,
-      status: 'open',
+      status: 'waiting' as PoolStatus,
       numberRange: [1, 10] as [number, number],
       playFrequency: 'daily',
       players: []
     },
     {
       id: `${gameType}_pool_2_${Date.now()}`,
-      gameType: gameType,
+      gameType: gameType as GameType,
       entryFee: 500,
       maxPlayers: 5,
       currentPlayers: 0,
-      status: 'open',
+      status: 'waiting' as PoolStatus,
       numberRange: [1, 20] as [number, number],
       playFrequency: 'daily',
       players: []
@@ -107,11 +107,11 @@ export const usePools = (gameType: string | undefined) => {
           .filter(p => p.game_type === gameType)
           .map(pool => ({
             id: pool.id,
-            gameType: pool.game_type,
+            gameType: pool.game_type as GameType,
             entryFee: pool.entry_fee,
             maxPlayers: pool.max_players,
             currentPlayers: pool.current_players || 0,
-            status: pool.status,
+            status: pool.status as PoolStatus,
             numberRange: [pool.number_range_min, pool.number_range_max] as [number, number],
             playFrequency: pool.play_frequency,
             players: []
@@ -158,11 +158,11 @@ export const usePools = (gameType: string | undefined) => {
           .filter(p => p.game_type === gameType)
           .map(pool => ({
             id: pool.id,
-            gameType: pool.game_type,
+            gameType: pool.game_type as GameType,
             entryFee: pool.entry_fee,
             maxPlayers: pool.max_players,
             currentPlayers: pool.current_players || 0,
-            status: pool.status,
+            status: pool.status as PoolStatus,
             numberRange: [pool.number_range_min, pool.number_range_max] as [number, number],
             playFrequency: pool.play_frequency,
             players: []
