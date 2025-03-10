@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { useAuthOperations } from '@/hooks/use-auth-operations';
 import { AuthContextType } from '@/types/auth';
-import { updateWalletBalance } from '@/lib/supabase/profiles';
+import { updateWalletBalance, supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
