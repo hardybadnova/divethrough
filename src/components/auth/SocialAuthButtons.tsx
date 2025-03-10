@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -25,6 +24,9 @@ const SocialAuthButtons = ({ onGoogleLogin, isLoading }: SocialAuthButtonsProps)
       
       // Note: User will be redirected to Google, so the code below might not execute
       console.log("Google OAuth redirect initiated");
+      
+      // We're keeping isSubmitting true because the user is being redirected
+      // It will reset when they come back from Google
       
     } catch (error: any) {
       console.error("Google sign-in failed:", error);

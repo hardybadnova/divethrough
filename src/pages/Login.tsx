@@ -46,7 +46,7 @@ const Login = () => {
           <div className="h-16 w-16 rounded-full bg-gradient-to-br from-betster-500 to-betster-700 backdrop-blur-lg flex items-center justify-center mb-4">
             <BetsterLogo className="h-8" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-gradient">Welcome to Betster</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gradient">Welcome to Numbet</h1>
           <p className="text-betster-300 text-sm text-center">
             Sign in or create an account to start betting
           </p>

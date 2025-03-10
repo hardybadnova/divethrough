@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { useAuthOperations } from '@/hooks/use-auth-operations';
@@ -121,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Add effect to log auth state changes for debugging
+  // Enhanced effect to better handle auth state changes and ensure proper navigation
   useEffect(() => {
     console.log("Auth context state updated:", { 
       isAuthenticated: !!user,
@@ -135,7 +134,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isInitialized && !isLoading) {
       setIsInitialized(true);
     }
-  }, [user, isLoading, isInitialized, isAdmin]);
+    
+    // Add a listener for auth state changes from Supabase directly in the context
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state change in context:", event, session ? "Session exists" : "No session");
+        
+        if (event === 'SIGNED_IN' && session) {
+          console.log("User signed in via context listener, triggering data load");
+          await loadUserData();
+        }
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user, isLoading, isInitialized, isAdmin, loadUserData]);
 
   return (
     <AuthContext.Provider

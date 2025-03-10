@@ -59,10 +59,27 @@ export const useAuthOperations = ({
   const loginWithGoogle = async (): Promise<void> => {
     try {
       console.log("Starting Google sign-in process from hook...");
-      const response = await signInWithGoogle();
-      console.log("Google OAuth process initiated successfully", response);
       
-      // The redirect will happen automatically, no need to do anything here
+      // Explicitly set the redirectTo to include the dashboard path
+      const currentUrl = window.location.origin;
+      const redirectUrl = `${currentUrl}/dashboard`;
+      
+      console.log("Using explicit redirect URL:", redirectUrl);
+      
+      // Call the Google sign-in function with explicit redirect
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            prompt: 'select_account'  // Force Google to show account selection
+          }
+        }
+      });
+      
+      console.log("Google OAuth redirect initiated successfully");
+      
+      // The redirect will happen automatically
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       
