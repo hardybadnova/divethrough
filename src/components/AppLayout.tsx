@@ -1,58 +1,25 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, Wallet, Home, Trophy, MessageSquare, LogOut, User, Award, Percent, Shield, Plus, CreditCard } from "lucide-react";
+import { Menu, Wallet, Home, Trophy, MessageSquare, LogOut, User, Award, Percent, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useKYC } from "@/contexts/KYCContext";
-import { formatCurrency } from "@/lib/formatters";
 import BetsterLogo from "./BetsterLogo";
-import { initializeDeposit, initiateWithdrawal } from "@/services/paymentService";
 import { toast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
-import FakeMoneyPanel from "@/components/FakeMoneyPanel";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 const AppLayout = ({ children }: AppLayoutProps) => {
-  const { user, logout, refreshUserData, addFakeMoney, withdrawFakeMoney } = useAuth();
+  const { user, logout } = useAuth();
   const { getVerificationStatus } = useKYC();
   const location = useLocation();
-  const [isDepositOpen, setIsDepositOpen] = useState(false);
-  const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
-  const [depositAmount, setDepositAmount] = useState<number>(0);
-  const [withdrawAmount, setWithdrawAmount] = useState<number>(0);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [accountDetails, setAccountDetails] = useState({
-    accountNumber: '',
-    ifsc: '',
-    accountHolderName: ''
-  });
-  const [selectedGateway, setSelectedGateway] = useState<'cashfree' | 'stripe' | 'paytm'>('cashfree');
-  
-  const [fakeMoneyAmount, setFakeMoneyAmount] = useState<number>(100);
-  const [isFakeMoneyProcessing, setIsFakeMoneyProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("real");
 
   const verificationStatus = getVerificationStatus();
   
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
-    
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
   const menuItems = [
     { label: "Profile", icon: User, path: "/profile" },
     { 
@@ -64,7 +31,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       badgeColor: verificationStatus === 'verified' ? 'bg-green-500/80' : 
                  verificationStatus === 'pending' ? 'bg-amber-500/80' : 'bg-red-500/80'
     },
-    { label: "Transaction History", icon: Wallet, path: "/transactions" },
     { label: "Leaderboard", icon: Trophy, path: "/leaderboard" },
     { label: "Milestones & Bonuses", icon: Award, path: "/milestones" },
     { label: "Referral Program", icon: Percent, path: "/referral" },
@@ -76,173 +42,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     logout();
   };
 
-  const handleDeposit = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to deposit funds",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!depositAmount || depositAmount < 100) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter an amount of at least ₹100",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsProcessing(true);
-    
-    try {
-      const result = await initializeDeposit(user.id, depositAmount, selectedGateway);
-      if (result) {
-        setIsDepositOpen(false);
-        setDepositAmount(0);
-      }
-    } catch (error) {
-      console.error("Deposit error:", error);
-      toast({
-        title: "Deposit Failed",
-        description: "There was an error processing your deposit",
-        variant: "destructive"
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleWithdrawal = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to withdraw funds",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!withdrawAmount || withdrawAmount < 100) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter an amount of at least ₹100",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (withdrawAmount > (user.wallet || 0)) {
-      toast({
-        title: "Insufficient Funds",
-        description: "You don't have enough balance for this withdrawal",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!accountDetails.accountNumber || !accountDetails.ifsc || !accountDetails.accountHolderName) {
-      toast({
-        title: "Missing Account Details",
-        description: "Please fill in all account details for withdrawal",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsProcessing(true);
-    
-    try {
-      await initiateWithdrawal(user.id, withdrawAmount, accountDetails);
-      await refreshUserData();
-      setIsWithdrawOpen(false);
-      setWithdrawAmount(0);
-      setAccountDetails({
-        accountNumber: '',
-        ifsc: '',
-        accountHolderName: ''
-      });
-    } catch (error) {
-      console.error("Withdrawal error:", error);
-      toast({
-        title: "Withdrawal Failed",
-        description: "There was an error processing your withdrawal",
-        variant: "destructive"
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleAddFakeMoney = async () => {
-    if (!fakeMoneyAmount || fakeMoneyAmount <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid amount",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsFakeMoneyProcessing(true);
-    try {
-      await addFakeMoney(fakeMoneyAmount);
-      toast({
-        title: "Success",
-        description: `${fakeMoneyAmount} fake money added to your wallet`,
-      });
-      setFakeMoneyAmount(100);
-    } catch (error) {
-      console.error("Error adding fake money:", error);
-      toast({
-        title: "Failed to add fake money",
-        description: "There was an error processing your request. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsFakeMoneyProcessing(false);
-    }
-  };
-
-  const handleWithdrawFakeMoney = async () => {
-    if (!fakeMoneyAmount || fakeMoneyAmount <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid amount",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (user && user.wallet < fakeMoneyAmount) {
-      toast({
-        title: "Insufficient balance",
-        description: "You don't have enough balance",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsFakeMoneyProcessing(true);
-    try {
-      await withdrawFakeMoney(fakeMoneyAmount);
-      toast({
-        title: "Success",
-        description: `${fakeMoneyAmount} fake money withdrawn from your wallet`,
-      });
-      setFakeMoneyAmount(100);
-    } catch (error) {
-      console.error("Error withdrawing fake money:", error);
-      toast({
-        title: "Failed to withdraw fake money",
-        description: "There was an error processing your request. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsFakeMoneyProcessing(false);
-    }
+  const handleWalletClick = () => {
+    toast({
+      title: "Feature Disabled",
+      description: "Wallet functionality has been removed",
+      variant: "destructive"
+    });
   };
 
   const isGameScreen = location.pathname.includes("/game/");
@@ -268,7 +73,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                       <div>
                         <p className="font-medium text-white">{user?.username}</p>
                         <p className="text-sm text-betster-300">
-                          {formatCurrency(user?.wallet || 0)}
+                          Wallet Disabled
                         </p>
                       </div>
                     </div>
@@ -302,157 +107,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Sheet open={isDepositOpen} onOpenChange={setIsDepositOpen}>
-              <SheetTrigger asChild>
-                <button
-                  className="inline-flex items-center gap-1.5 rounded-full bg-betster-600/20 px-3 py-1.5 text-sm font-medium text-betster-100 transition-colors hover:bg-betster-600/30"
-                  onClick={() => setIsDepositOpen(true)}
-                >
-                  <Wallet className="h-4 w-4" />
-                  <span>{formatCurrency(user?.wallet || 0)}</span>
-                </button>
-              </SheetTrigger>
-              <SheetContent side="right" className="bg-black/95 backdrop-blur-xl border-l border-betster-700/40">
-                <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="real">Real Money</TabsTrigger>
-                    <TabsTrigger value="fake">Test Money</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="real">
-                    <h3 className="text-lg font-semibold mb-4 text-white">Deposit Funds</h3>
-                    <div className="space-y-4">
-                      <p className="text-sm text-betster-300">
-                        Enter the amount you wish to deposit into your wallet.
-                      </p>
-                      <Input
-                        type="number"
-                        min="100"
-                        placeholder="Amount in INR (min ₹100)"
-                        value={depositAmount || ''}
-                        onChange={(e) => setDepositAmount(Number(e.target.value))}
-                        className="bg-betster-900/50 border-betster-700/50 text-white"
-                      />
-                      
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-betster-300">Select Payment Gateway</label>
-                        <Select value={selectedGateway} onValueChange={(value: 'cashfree' | 'stripe' | 'paytm') => setSelectedGateway(value)}>
-                          <SelectTrigger className="bg-betster-900/50 border-betster-700/50 text-white">
-                            <SelectValue placeholder="Select payment gateway" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-black/95 text-white border-betster-700/50">
-                            <SelectItem value="cashfree">Cashfree</SelectItem>
-                            <SelectItem value="stripe">Stripe</SelectItem>
-                            <SelectItem value="paytm">Paytm</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <Button 
-                        className="w-full" 
-                        onClick={handleDeposit}
-                        disabled={isProcessing || !depositAmount || depositAmount < 100}
-                      >
-                        {isProcessing ? 'Processing...' : 'Deposit'}
-                      </Button>
-                      
-                      <div className="mt-4 flex justify-between">
-                        <button
-                          className="text-sm text-betster-400 hover:text-betster-300"
-                          onClick={() => {
-                            setIsDepositOpen(false);
-                            setIsWithdrawOpen(true);
-                          }}
-                        >
-                          Switch to Withdrawal
-                        </button>
-                      </div>
-                      
-                      <div className="mt-2 text-xs text-betster-400">
-                        <p>This is a test mode integration. Use these test cards:</p>
-                        <ul className="list-disc pl-4 mt-1">
-                          <li>Card: 4111 1111 1111 1111</li>
-                          <li>Expiry: Any future date</li>
-                          <li>CVV: Any 3 digits</li>
-                          <li>Name: Any name</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="fake">
-                    <FakeMoneyPanel />
-                  </TabsContent>
-                </Tabs>
-              </SheetContent>
-            </Sheet>
-            
-            <Sheet open={isWithdrawOpen} onOpenChange={setIsWithdrawOpen}>
-              <SheetContent side="right" className="bg-black/95 backdrop-blur-xl border-l border-betster-700/40">
-                <h3 className="text-lg font-semibold mb-4 text-white">Withdraw Funds</h3>
-                <div className="space-y-4">
-                  <p className="text-sm text-betster-300">
-                    Enter the amount you wish to withdraw from your wallet and your account details.
-                  </p>
-                  <Input
-                    type="number"
-                    min="100"
-                    max={user?.wallet || 0}
-                    placeholder="Amount in INR (min ₹100)"
-                    value={withdrawAmount || ''}
-                    onChange={(e) => setWithdrawAmount(Number(e.target.value))}
-                    className="bg-betster-900/50 border-betster-700/50 text-white"
-                  />
-                  
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-betster-200">Account Details</p>
-                    <Input
-                      placeholder="Account Number"
-                      value={accountDetails.accountNumber}
-                      onChange={(e) => setAccountDetails({...accountDetails, accountNumber: e.target.value})}
-                      className="bg-betster-900/50 border-betster-700/50 text-white"
-                    />
-                    <Input
-                      placeholder="IFSC Code"
-                      value={accountDetails.ifsc}
-                      onChange={(e) => setAccountDetails({...accountDetails, ifsc: e.target.value})}
-                      className="bg-betster-900/50 border-betster-700/50 text-white"
-                    />
-                    <Input
-                      placeholder="Account Holder Name"
-                      value={accountDetails.accountHolderName}
-                      onChange={(e) => setAccountDetails({...accountDetails, accountHolderName: e.target.value})}
-                      className="bg-betster-900/50 border-betster-700/50 text-white"
-                    />
-                  </div>
-                  
-                  <Button 
-                    className="w-full" 
-                    onClick={handleWithdrawal}
-                    disabled={isProcessing || !withdrawAmount || withdrawAmount < 100 || withdrawAmount > (user?.wallet || 0)}
-                  >
-                    {isProcessing ? 'Processing...' : 'Withdraw'}
-                  </Button>
-                  
-                  <div className="mt-4 flex justify-between">
-                    <button
-                      className="text-sm text-betster-400 hover:text-betster-300"
-                      onClick={() => {
-                        setIsWithdrawOpen(false);
-                        setIsDepositOpen(true);
-                      }}
-                    >
-                      Switch to Deposit
-                    </button>
-                  </div>
-                  
-                  <div className="mt-2 text-xs text-betster-400">
-                    <p>In test mode, no actual money will be withdrawn.</p>
-                    <p>Your wallet balance will be updated for demonstration purposes.</p>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+            <button
+              className="inline-flex items-center gap-1.5 rounded-full bg-betster-600/20 px-3 py-1.5 text-sm font-medium text-betster-100 transition-colors hover:bg-betster-600/30"
+              onClick={handleWalletClick}
+            >
+              <Wallet className="h-4 w-4" />
+              <span>Disabled</span>
+            </button>
           </div>
         </div>
       </header>

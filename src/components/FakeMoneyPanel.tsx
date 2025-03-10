@@ -1,157 +1,19 @@
 
-import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/hooks/use-toast';
-import { Loader2, Plus, ArrowDown } from 'lucide-react';
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const FakeMoneyPanel = () => {
-  const { user, addFakeMoney, withdrawFakeMoney } = useAuth();
-  const [amount, setAmount] = useState<number>(100);
-  const [isDepositing, setIsDepositing] = useState(false);
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
-
-  const handleAddMoney = () => {
-    if (!amount || amount <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid amount",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Optimize the UX flow - simplify the operation for immediate feedback
-    if (user) {
-      setIsDepositing(true);
-      
-      // Show success immediately (optimistic UI)
-      toast({
-        title: "Success",
-        description: `${amount} fake money added to your wallet`,
-      });
-      
-      // Use optimistic update for immediate UI change
-      addFakeMoney(amount, true)
-        .catch(error => {
-          console.error("Error adding fake money:", error);
-          toast({
-            title: "Failed to add fake money",
-            description: "There was an error processing your request",
-            variant: "destructive"
-          });
-        })
-        .finally(() => {
-          setIsDepositing(false);
-        });
-    }
-  };
-
-  const handleWithdrawMoney = () => {
-    if (!amount || amount <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid amount",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (user && user.wallet < amount) {
-      toast({
-        title: "Insufficient balance",
-        description: "You don't have enough balance",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Optimize the UX flow - simplify the operation for immediate feedback
-    if (user) {
-      setIsWithdrawing(true);
-      
-      // Show success immediately (optimistic UI)
-      toast({
-        title: "Success",
-        description: `${amount} fake money withdrawn from your wallet`,
-      });
-      
-      // Use optimistic update for immediate UI change
-      withdrawFakeMoney(amount, true)
-        .catch(error => {
-          console.error("Error withdrawing fake money:", error);
-          toast({
-            title: "Failed to withdraw fake money",
-            description: "There was an error processing your request",
-            variant: "destructive"
-          });
-        })
-        .finally(() => {
-          setIsWithdrawing(false);
-        });
-    }
-  };
-
   return (
     <Card className="bg-betster-800/30 border-betster-700/40">
       <CardHeader className="pb-3">
-        <CardTitle className="text-white">Test Money Controls</CardTitle>
+        <CardTitle className="text-white">Money Controls Disabled</CardTitle>
         <CardDescription className="text-betster-300">
-          For testing purposes only
+          Payment functionality has been removed
         </CardDescription>
       </CardHeader>
       <CardContent className="pb-3">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-betster-300">Amount</label>
-          <Input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
-            min={1}
-            className="bg-betster-900/50 border-betster-700/50 text-white"
-          />
-        </div>
+        <p className="text-betster-300">Wallet and payment features are no longer available.</p>
       </CardContent>
-      <CardFooter className="flex justify-between pt-2">
-        <Button 
-          variant="default" 
-          onClick={handleAddMoney}
-          disabled={isDepositing}
-          className="bg-green-600 hover:bg-green-700 text-white"
-        >
-          {isDepositing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-              Processing...
-            </>
-          ) : (
-            <>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Money
-            </>
-          )}
-        </Button>
-        <Button 
-          variant="default" 
-          onClick={handleWithdrawMoney}
-          disabled={isWithdrawing}
-          className="bg-amber-600 hover:bg-amber-700 text-white"
-        >
-          {isWithdrawing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-              Processing...
-            </>
-          ) : (
-            <>
-              <ArrowDown className="mr-2 h-4 w-4" />
-              Withdraw
-            </>
-          )}
-        </Button>
-      </CardFooter>
     </Card>
   );
 };

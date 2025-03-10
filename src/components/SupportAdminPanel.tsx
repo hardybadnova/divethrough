@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { AlertCircle } from 'lucide-react';
 
 // Define UserType for proper typing
 interface UserType {
@@ -15,8 +16,6 @@ interface UserType {
 export default function SupportAdminPanel() {
   const { isAdmin } = useAuth();
   const [users, setUsers] = useState<UserType[]>([]);
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [amount, setAmount] = useState<number>(100);
   
   // Fetch all users for the admin
   useEffect(() => {
@@ -49,38 +48,6 @@ export default function SupportAdminPanel() {
     
     fetchUsers();
   }, [isAdmin]);
-  
-  const handleAddFunds = async () => {
-    if (!selectedUser || !amount) {
-      toast({
-        title: "Error",
-        description: "Please select a user and enter an amount",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    try {
-      const { data, error } = await supabase.rpc('admin_add_funds', {
-        p_user_id: selectedUser,
-        p_amount: amount
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: `Added ${amount} to user's wallet`
-      });
-    } catch (error) {
-      console.error("Error adding funds:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add funds to user's wallet",
-        variant: "destructive"
-      });
-    }
-  };
 
   if (!isAdmin) {
     return null;
@@ -89,36 +56,15 @@ export default function SupportAdminPanel() {
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle>Admin Controls</CardTitle>
+        <CardTitle className="flex items-center">
+          <AlertCircle className="h-5 w-5 mr-2 text-amber-500" />
+          Admin Controls Disabled
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Select User</label>
-            <select 
-              className="w-full p-2 border rounded-md"
-              value={selectedUser || ''}
-              onChange={(e) => setSelectedUser(e.target.value)}
-            >
-              <option value="">Select a user</option>
-              {users.map(user => (
-                <option key={user.id} value={user.id}>{user.username}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium mb-1">Amount</label>
-            <input 
-              type="number" 
-              className="w-full p-2 border rounded-md"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              min={1}
-            />
-          </div>
-          
-          <Button onClick={handleAddFunds}>Add Funds</Button>
+        <p className="text-betster-300 mb-4">Wallet and payment functionality has been removed from the application.</p>
+        <div className="space-y-2">
+          <p className="text-sm text-betster-400">Users in system: {users.length}</p>
         </div>
       </CardContent>
     </Card>

@@ -2,7 +2,7 @@
 export interface User {
   id: string;
   username: string;
-  wallet: number;
+  wallet: number; // Kept for compatibility but not actively used
   email?: string;
   photoURL?: string;
   role?: 'admin' | 'user';
