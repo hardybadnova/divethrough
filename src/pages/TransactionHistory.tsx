@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { ArrowDown, ArrowUp, RefreshCw, Wallet, CreditCard } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { supabase } from '@/lib/supabase';
+import FakeMoneyPanel from "@/components/FakeMoneyPanel";
 
 interface Transaction {
   id: string;
@@ -15,7 +16,7 @@ interface Transaction {
   status: 'pending' | 'completed' | 'failed';
   payment_id: string | null;
   transaction_id: string | null;
-  gateway?: 'cashfree' | 'stripe' | 'paytm' | null;
+  gateway?: 'cashfree' | 'stripe' | 'paytm' | 'fake_money' | null;
   created_at: string;
 }
 
@@ -126,6 +127,8 @@ const TransactionHistory = () => {
         return 'Stripe';
       case 'paytm':
         return 'Paytm';
+      case 'fake_money':
+        return 'Fake Money';
       default:
         return 'Default';
     }
@@ -137,7 +140,9 @@ const TransactionHistory = () => {
         <h1 className="text-2xl font-bold text-white mb-2">Transaction History</h1>
         <p className="text-betster-300 mb-6">View all your deposits and withdrawals</p>
         
-        <Separator className="mb-6 bg-betster-700/40" />
+        <FakeMoneyPanel />
+        
+        <Separator className="my-6 bg-betster-700/40" />
         
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12">
