@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { Player, Pool, ChatMessage } from '@/types/game';
@@ -17,25 +16,28 @@ export function useGameActions(
   players: Player[]
 ) {
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
   
   // Initialize Firebase data once if needed
   const initializeData = async () => {
-    if (isInitialized) return;
+    if (isInitialized || isInitializing) return;
+    
+    setIsInitializing(true);
     
     try {
       await initializeGameData(pools);
       setIsInitialized(true);
-      toast({
-        title: "Game Data Initialized",
-        description: "The game data has been set up for multiplayer."
-      });
+      console.log("Game data initialized successfully");
     } catch (error) {
       console.error("Error initializing game data:", error);
       toast({
         title: "Initialization Error",
-        description: "Failed to set up game data. Please try again.",
+        description: "Failed to set up game data. Please refresh and try again.",
         variant: "destructive"
       });
+      throw error;
+    } finally {
+      setIsInitializing(false);
     }
   };
 
@@ -45,6 +47,15 @@ export function useGameActions(
       toast({
         title: "Authentication Required",
         description: "Please log in to join a pool",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!isInitialized) {
+      toast({
+        title: "Please Wait",
+        description: "Game is still initializing. Please try again in a moment.",
         variant: "destructive"
       });
       return;
@@ -78,7 +89,7 @@ export function useGameActions(
       });
       return;
     }
-    
+
     // Find current player or create a new one
     let currentPlayer = players.find(p => p.id === user.id);
     if (!currentPlayer) {
@@ -127,7 +138,7 @@ export function useGameActions(
         description: "Failed to join the pool. Please try again.",
         variant: "destructive"
       });
-      throw error; // Propagate the error to handle in the UI
+      throw error;
     }
   };
 
@@ -275,6 +286,7 @@ export function useGameActions(
     sendMessage,
     addReferral,
     resetGame,
-    isInitialized
+    isInitialized,
+    isInitializing
   };
 }
