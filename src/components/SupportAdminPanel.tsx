@@ -133,7 +133,6 @@ const SupportAdminPanel = () => {
     }
   };
 
-  // This is just a placeholder - in a real app, this would be part of an admin dashboard
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Support Admin Panel</h1>
