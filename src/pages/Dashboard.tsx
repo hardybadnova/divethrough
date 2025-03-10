@@ -2,7 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
-import { ArrowRight, Trophy, Shield, Zap, Sparkles, Clock } from "lucide-react";
+import { ArrowRight, Trophy, Shield, Zap, Sparkles, Clock, Star, Users, Coins } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -32,7 +32,9 @@ const Dashboard = () => {
       icon: <Shield className="h-5 w-5" />,
       tags: ["strategy", "multi-winner", "popular"],
       currentPlayers: 187,
-      timeLeft: "4h 32m"
+      timeLeft: "4h 32m",
+      payout: "₹25,000",
+      difficulty: "medium"
     },
     {
       id: "topspot",
@@ -43,7 +45,9 @@ const Dashboard = () => {
       icon: <Trophy className="h-5 w-5" />,
       tags: ["winner-takes-all", "difficult"],
       currentPlayers: 92,
-      timeLeft: "2h 45m"
+      timeLeft: "2h 45m",
+      payout: "₹12,000",
+      difficulty: "hard"
     },
     {
       id: "jackpot",
@@ -55,6 +59,8 @@ const Dashboard = () => {
       tags: ["daily", "high-stakes", "new"],
       currentPlayers: 2453,
       timeLeft: "21h 12m",
+      payout: "₹100,000",
+      difficulty: "easy",
       featured: true
     }
   ];
@@ -100,6 +106,36 @@ const Dashboard = () => {
           <p className="text-betster-300">
             Select a game module to start playing. Remember, the least picked numbers win!
           </p>
+          
+          {/* Quick Stats Section */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            className="grid grid-cols-3 gap-3 mt-4"
+          >
+            <div className="bg-black/30 backdrop-blur-sm rounded-xl p-3 border border-betster-700/30">
+              <div className="flex items-center mb-1">
+                <Coins className="h-4 w-4 mr-1.5 text-amber-400" />
+                <span className="text-xs text-betster-300">Balance</span>
+              </div>
+              <p className="text-lg font-semibold text-white">₹{user?.wallet || 0}</p>
+            </div>
+            <div className="bg-black/30 backdrop-blur-sm rounded-xl p-3 border border-betster-700/30">
+              <div className="flex items-center mb-1">
+                <Trophy className="h-4 w-4 mr-1.5 text-blue-400" />
+                <span className="text-xs text-betster-300">Active Games</span>
+              </div>
+              <p className="text-lg font-semibold text-white">3</p>
+            </div>
+            <div className="bg-black/30 backdrop-blur-sm rounded-xl p-3 border border-betster-700/30">
+              <div className="flex items-center mb-1">
+                <Users className="h-4 w-4 mr-1.5 text-green-400" />
+                <span className="text-xs text-betster-300">Players</span>
+              </div>
+              <p className="text-lg font-semibold text-white">2.7K</p>
+            </div>
+          </motion.div>
           
           <div className="mt-4">
             <Tabs defaultValue="all" value={selectedTab} onValueChange={setSelectedTab}>
@@ -155,7 +191,7 @@ const Dashboard = () => {
                   <div className="aspect-video relative overflow-hidden">
                     <div className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-20 group-hover:opacity-30 transition-opacity`}></div>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="bg-white/10 backdrop-blur-md rounded-full p-6 shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                      <div className="bg-white/10 backdrop-blur-md rounded-full p-6 shadow-lg transform group-hover:scale-110 transition-transform duration-300 border border-white/20">
                         <img
                           src={game.image}
                           alt={game.title}
@@ -166,6 +202,20 @@ const Dashboard = () => {
                           }}
                         />
                       </div>
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-black/40 backdrop-blur-md rounded-full px-3 py-1 text-xs flex items-center border border-white/10">
+                      <Clock className="h-3 w-3 mr-1.5 text-betster-400" />
+                      {game.timeLeft} remaining
+                    </div>
+                    <div className="absolute bottom-3 right-3 bg-black/40 backdrop-blur-md rounded-full px-3 py-1 text-xs flex items-center border border-white/10">
+                      <span className="flex items-center">
+                        {Array.from({ length: game.difficulty === 'easy' ? 1 : game.difficulty === 'medium' ? 2 : 3 }).map((_, i) => (
+                          <Star key={i} className="h-3 w-3 text-amber-400 fill-amber-400" />
+                        ))}
+                        {Array.from({ length: 3 - (game.difficulty === 'easy' ? 1 : game.difficulty === 'medium' ? 2 : 3) }).map((_, i) => (
+                          <Star key={i + 3} className="h-3 w-3 text-betster-700" />
+                        ))}
+                      </span>
                     </div>
                   </div>
                   <div className="p-6">
@@ -191,7 +241,7 @@ const Dashboard = () => {
                     
                     <p className="text-betster-300 mb-4">{game.description}</p>
                     
-                    <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="grid grid-cols-3 gap-3 mb-4">
                       <div className="bg-black/20 backdrop-blur-sm rounded-lg p-3 border border-betster-700/20">
                         <div className="flex items-center text-betster-300 mb-1 text-xs">
                           <Trophy className="h-3 w-3 mr-1" /> Current Players
@@ -204,14 +254,21 @@ const Dashboard = () => {
                         </div>
                         <p className="font-semibold text-white">{game.timeLeft}</p>
                       </div>
+                      <div className="bg-black/20 backdrop-blur-sm rounded-lg p-3 border border-betster-700/20">
+                        <div className="flex items-center text-betster-300 mb-1 text-xs">
+                          <Coins className="h-3 w-3 mr-1" /> Prize Pool
+                        </div>
+                        <p className="font-semibold text-white">{game.payout}</p>
+                      </div>
                     </div>
                     
                     <div className="mt-4 flex justify-end">
                       <button
                         onClick={() => navigate(`/pools/${game.id}`)}
-                        className="betster-button flex items-center transform transition-transform duration-200 hover:scale-105 text-white"
+                        className="betster-button flex items-center transform transition-transform duration-200 hover:scale-105 text-white group"
                       >
-                        Play Now <ArrowRight className="h-4 w-4 ml-1" />
+                        Play Now 
+                        <ArrowRight className="h-4 w-4 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
                       </button>
                     </div>
                   </div>
