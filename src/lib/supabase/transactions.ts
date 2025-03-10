@@ -44,7 +44,7 @@ export const createTransaction = async (userId: string, amount: number, type: 'd
     console.error("Failed to create transaction:", error);
     throw error;
   } finally {
-    // Remove transaction from tracking immediately to prevent blocking retries
+    // Remove transaction from tracking immediately to allow retry if needed
     ongoingTransactions.delete(transactionKey);
   }
 };

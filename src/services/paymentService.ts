@@ -102,7 +102,7 @@ export const initializeCashfreeDeposit = async (userId: string, amount: number) 
       // Refresh the page after a small delay to show updated balance
       setTimeout(() => {
         window.location.reload();
-      }, 1000);
+      }, 1500);
       return true;
       
     } catch (error) {
@@ -160,6 +160,10 @@ export const initializeStripeDeposit = async (userId: string, amount: number) =>
       'stripe'
     );
     
+    if (!transaction) {
+      throw new Error("Failed to create transaction record");
+    }
+    
     toast({
       title: "Processing with Stripe",
       description: "You'll be redirected to complete the payment."
@@ -169,13 +173,11 @@ export const initializeStripeDeposit = async (userId: string, amount: number) =>
     setTimeout(async () => {
       try {
         // Update transaction status
-        if (transaction) {
-          await updateTransactionStatus(
-            transaction.id,
-            'completed',
-            `stripe_success_${Date.now()}`
-          );
-        }
+        await updateTransactionStatus(
+          transaction.id,
+          'completed',
+          `stripe_success_${Date.now()}`
+        );
         
         toast({
           title: "Deposit Successful",
@@ -192,7 +194,7 @@ export const initializeStripeDeposit = async (userId: string, amount: number) =>
           variant: "destructive"
         });
       }
-    }, 1000);
+    }, 1500);
     
     return true;
   } catch (error) {
@@ -233,6 +235,10 @@ export const initializePaytmDeposit = async (userId: string, amount: number) => 
       'paytm'
     );
     
+    if (!transaction) {
+      throw new Error("Failed to create transaction record");
+    }
+    
     toast({
       title: "Processing with Paytm",
       description: "You'll be redirected to complete the payment."
@@ -242,13 +248,11 @@ export const initializePaytmDeposit = async (userId: string, amount: number) => 
     setTimeout(async () => {
       try {
         // Update transaction status
-        if (transaction) {
-          await updateTransactionStatus(
-            transaction.id,
-            'completed',
-            `paytm_success_${Date.now()}`
-          );
-        }
+        await updateTransactionStatus(
+          transaction.id,
+          'completed',
+          `paytm_success_${Date.now()}`
+        );
         
         toast({
           title: "Deposit Successful",
@@ -265,7 +269,7 @@ export const initializePaytmDeposit = async (userId: string, amount: number) => 
           variant: "destructive"
         });
       }
-    }, 1000);
+    }, 1500);
     
     return true;
   } catch (error) {
@@ -339,7 +343,7 @@ export const initiateWithdrawal = async (userId: string, amount: number, account
     // Refresh the page after a small delay
     setTimeout(() => {
       window.location.reload();
-    }, 1000);
+    }, 1500);
     
     return true;
   } catch (error) {
