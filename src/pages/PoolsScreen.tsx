@@ -78,7 +78,7 @@ const PoolsScreen = () => {
       
       await joinPool(poolId);
       
-      // Don't refresh wallet data here to avoid resetting balance
+      // Navigate immediately to game screen
       navigate(`/game/${poolId}`);
     } catch (error) {
       console.error("Error joining pool:", error);
