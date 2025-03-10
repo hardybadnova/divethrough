@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { 
@@ -16,7 +16,7 @@ export const useAuthState = () => {
   const navigate = useNavigate();
 
   // Optimized to be faster and more efficient
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     console.log("Loading user data...");
     try {
       const currentUser = await getCurrentUser();
@@ -27,7 +27,8 @@ export const useAuthState = () => {
           const storedUser = localStorage.getItem('betster-user');
           if (storedUser) {
             try {
-              setUser(JSON.parse(storedUser));
+              const parsedUser = JSON.parse(storedUser);
+              setUser(parsedUser);
             } catch (e) {
               console.error("Error parsing stored user:", e);
             }
@@ -44,8 +45,14 @@ export const useAuthState = () => {
             wallet: profile.wallet_balance || 0,
           };
           
-          setUser(newUser);
-          localStorage.setItem('betster-user', JSON.stringify(newUser));
+          // Only update state if wallet value is different to avoid unnecessary re-renders
+          setUser(prevUser => {
+            if (!prevUser || prevUser.wallet !== newUser.wallet) {
+              localStorage.setItem('betster-user', JSON.stringify(newUser));
+              return newUser;
+            }
+            return prevUser;
+          });
         } catch (error: any) {
           console.error("Error loading user profile:", error);
           // Fallback to basic user info
@@ -71,9 +78,9 @@ export const useAuthState = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const refreshUserData = async () => {
+  const refreshUserData = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -84,6 +91,11 @@ export const useAuthState = () => {
           
           setUser(prev => {
             if (!prev) return null;
+            
+            // Only update if wallet balance has changed
+            if (prev.wallet === profile.wallet_balance) {
+              return prev;
+            }
             
             const updated = {
               ...prev,
@@ -100,7 +112,7 @@ export const useAuthState = () => {
     } catch (error) {
       console.error("Error refreshing user data:", error);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     console.log("Auth state hook initialized");
@@ -139,7 +151,7 @@ export const useAuthState = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, loadUserData]);
 
   return {
     user,

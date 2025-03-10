@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useGame } from "@/contexts/GameContext";
@@ -9,6 +9,7 @@ import { usePools } from "@/hooks/use-pools";
 import { PoolsHeader } from "@/components/pools/PoolsHeader";
 import { PoolsList } from "@/components/pools/PoolsList";
 import { gameTitles, isValidGameType } from "@/utils/game-titles";
+import { Pool } from "@/types/game";
 
 const PoolsScreen = () => {
   const { gameType } = useParams<{ gameType: string }>();
@@ -16,6 +17,18 @@ const PoolsScreen = () => {
   const { user, refreshUserData } = useAuth();
   const navigate = useNavigate();
   const { pools, isLoading, fetchPools } = usePools(gameType);
+
+  // For immediate UI response, show skeleton loading state for a very short time
+  const [showLoading, setShowLoading] = useState(true);
+  
+  useEffect(() => {
+    // Very short loading state for better user experience
+    const timer = setTimeout(() => {
+      setShowLoading(false);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Validate game type and redirect if invalid
   useEffect(() => {
@@ -47,6 +60,13 @@ const PoolsScreen = () => {
 
     try {
       console.log(`PoolsScreen: Joining pool ${poolId}`);
+      
+      // Show success message immediately for better UX
+      toast({
+        title: "Joining Pool",
+        description: "Processing your request...",
+      });
+      
       await joinPool(poolId);
       
       // Refresh user data to update wallet balance after joining
@@ -72,12 +92,34 @@ const PoolsScreen = () => {
           onRefresh={fetchPools} 
         />
         
-        <PoolsList 
-          pools={pools} 
-          isLoading={isLoading} 
-          onJoinPool={handleJoinPool} 
-          onRefresh={fetchPools} 
-        />
+        {(showLoading && isLoading) ? (
+          <div className="grid grid-cols-1 gap-4">
+            {[1, 2].map((i) => (
+              <div 
+                key={i} 
+                className="rounded-xl glass-card p-5 animate-pulse"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="h-5 w-20 bg-betster-700/50 rounded mb-2"></div>
+                    <div className="h-6 w-32 bg-betster-700/50 rounded"></div>
+                    <div className="h-4 w-24 bg-betster-700/30 rounded mt-2"></div>
+                  </div>
+                  <div>
+                    <div className="h-9 w-24 bg-betster-700/50 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <PoolsList 
+            pools={pools} 
+            isLoading={isLoading && !showLoading} 
+            onJoinPool={handleJoinPool} 
+            onRefresh={fetchPools} 
+          />
+        )}
       </div>
     </AppLayout>
   );

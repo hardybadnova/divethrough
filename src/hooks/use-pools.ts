@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Pool } from "@/types/game";
 import { supabase } from "@/lib/supabase/client";
 import { useGame } from "@/contexts/GameContext";
@@ -10,7 +10,8 @@ export const usePools = (gameType: string | undefined) => {
   const [pools, setPools] = useState<Pool[]>([]);
   const { initializeData } = useGame();
 
-  const fetchPools = async () => {
+  // Memoize fetch pools to prevent unnecessary re-renders
+  const fetchPools = useCallback(async () => {
     if (!gameType) {
       setIsLoading(false);
       return;
@@ -32,11 +33,14 @@ export const usePools = (gameType: string | undefined) => {
           description: "Failed to load pools. Please try again.",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
       
+      // Check if we need to initialize data
       if (!data || data.length === 0) {
         console.log(`usePools: No ${gameType} pools found, trying to initialize...`);
+        
         // Try to initialize data if no pools found
         await initializeData();
         
@@ -53,6 +57,7 @@ export const usePools = (gameType: string | undefined) => {
             description: "Failed to load pools after initialization. Please try again.",
             variant: "destructive",
           });
+          setIsLoading(false);
           return;
         }
         
@@ -107,12 +112,23 @@ export const usePools = (gameType: string | undefined) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [gameType, initializeData]);
 
-  // Initialize pools on mount
+  // Initialize pools on mount with cached data
   useEffect(() => {
+    // Set loading to false after a max of 1.5 seconds, regardless of API response
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+      }
+    }, 1500);
+    
     fetchPools();
-  }, [gameType]);
+    
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [gameType, fetchPools]);
 
   return {
     pools,
