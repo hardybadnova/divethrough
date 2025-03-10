@@ -84,11 +84,10 @@ export const initializeCashfreeDeposit = async (userId: string, amount: number) 
     });
     
     // Simulate quick payment success for better testing
-    // Only wait 250ms to make it feel more responsive
-    await new Promise(resolve => setTimeout(resolve, 250));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     try {
-      // Update transaction status
+      // Update transaction status - in test mode, always succeed
       await updateTransactionStatus(
         transaction.id,
         'completed',
