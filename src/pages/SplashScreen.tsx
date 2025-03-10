@@ -10,11 +10,11 @@ const SplashScreen = () => {
   const [animationComplete, setAnimationComplete] = useState(false);
 
   useEffect(() => {
-    // Simulate loading time for splash animation
+    // Reduce animation time from 2000ms to 1000ms
     const timer = setTimeout(() => {
       setAnimationComplete(true);
       console.log("Splash animation complete");
-    }, 2000);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -28,7 +28,8 @@ const SplashScreen = () => {
       userId: user?.id
     });
     
-    // Only proceed when animation is complete and auth state is determined
+    // Navigate as soon as animation is complete and auth is initialized
+    // Remove extra conditions that might delay navigation
     if (animationComplete && isInitialized) {
       console.log("Ready to navigate from splash screen");
       
@@ -42,14 +43,14 @@ const SplashScreen = () => {
     }
   }, [animationComplete, isAuthenticated, isInitialized, navigate, user]);
 
-  // Force navigation after a timeout to prevent getting stuck
+  // Reduce force navigation timeout from 3000ms to 2000ms
   useEffect(() => {
     const forceNavigationTimer = setTimeout(() => {
       if (document.location.pathname === '/') {
         console.log("Force navigation triggered after timeout");
         navigate('/login'); // Default to login if we're still on splash
       }
-    }, 3000); // Force navigation after 3 seconds if still on splash screen
+    }, 2000);
 
     return () => clearTimeout(forceNavigationTimer);
   }, [navigate]);
