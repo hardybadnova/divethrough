@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Pool, GameType, PoolStatus } from "@/types/game";
 import { supabase } from "@/lib/supabase/client";
 import { useGame } from "@/contexts/GameContext";
@@ -36,8 +37,11 @@ export const usePools = (gameType: string | undefined) => {
   const [pools, setPools] = useState<Pool[]>([]);
   const { initializeData } = useGame();
   const fetchAttempts = useRef(0);
-  const localCacheKey = `betster-pools-${gameType}`;
+  const localCacheKey = useMemo(() => `betster-pools-${gameType}`, [gameType]);
+  const lastFetchTime = useRef(0);
+  const isMounted = useRef(true);
   
+  // Load cached pools immediately on mount for instant UI
   useEffect(() => {
     if (!gameType) return;
     
@@ -48,23 +52,55 @@ export const usePools = (gameType: string | undefined) => {
         if (Array.isArray(parsedPools) && parsedPools.length > 0) {
           console.log(`Using cached ${gameType} pools for instant UI`);
           setPools(parsedPools);
-          // Still keep loading to refresh with real data
+          // Reduce initial loading indication time
+          setTimeout(() => {
+            if (isMounted.current) {
+              setIsLoading(false);
+            }
+          }, 100);
         }
+      } else {
+        // If no cache exists, use default pools immediately
+        const defaultPools = getDefaultPools(gameType);
+        setPools(defaultPools);
+        localStorage.setItem(localCacheKey, JSON.stringify(defaultPools));
+        setTimeout(() => {
+          if (isMounted.current) {
+            setIsLoading(false);
+          }
+        }, 100);
       }
     } catch (error) {
       console.error("Error loading cached pools:", error);
+      // If cache fails, use defaults
+      const defaultPools = getDefaultPools(gameType);
+      setPools(defaultPools);
+      setIsLoading(false);
     }
+    
+    return () => {
+      isMounted.current = false;
+    };
   }, [gameType, localCacheKey]);
 
-  const fetchPools = useCallback(async () => {
+  const fetchPools = useCallback(async (force = false) => {
     if (!gameType) {
       setIsLoading(false);
       return;
     }
 
+    // Throttle fetches to prevent excessive requests
+    const now = Date.now();
+    if (!force && now - lastFetchTime.current < 2000) {
+      console.log("Skipping fetch - throttled");
+      return;
+    }
+    
+    lastFetchTime.current = now;
+
     try {
       setIsLoading(true);
-      console.log(`usePools: Directly fetching ${gameType} pools from Supabase`);
+      console.log(`usePools: Fetching ${gameType} pools from Supabase`);
       
       const { data, error } = await supabase
         .from('pools')
@@ -74,9 +110,15 @@ export const usePools = (gameType: string | undefined) => {
       if (error) {
         console.error("usePools: Error fetching pools:", error);
         
-        const fallbackPools = getDefaultPools(gameType);
-        setPools(fallbackPools);
-        localStorage.setItem(localCacheKey, JSON.stringify(fallbackPools));
+        // Use cached pools if available, otherwise use defaults
+        const cachedPools = localStorage.getItem(localCacheKey);
+        if (cachedPools) {
+          setPools(JSON.parse(cachedPools));
+        } else {
+          const fallbackPools = getDefaultPools(gameType);
+          setPools(fallbackPools);
+          localStorage.setItem(localCacheKey, JSON.stringify(fallbackPools));
+        }
         
         fetchAttempts.current += 1;
         if (fetchAttempts.current <= 2) {
@@ -123,15 +165,22 @@ export const usePools = (gameType: string | undefined) => {
     } catch (error) {
       console.error("usePools: Unexpected error:", error);
       
-      const fallbackPools = getDefaultPools(gameType);
-      setPools(fallbackPools);
-      localStorage.setItem(localCacheKey, JSON.stringify(fallbackPools));
+      // Use cached pools if available, otherwise use defaults
+      const cachedPools = localStorage.getItem(localCacheKey);
+      if (cachedPools) {
+        setPools(JSON.parse(cachedPools));
+      } else {
+        const fallbackPools = getDefaultPools(gameType);
+        setPools(fallbackPools);
+        localStorage.setItem(localCacheKey, JSON.stringify(fallbackPools));
+      }
       
       toast({
         title: "Error",
         description: "Using local pool data due to connection issues.",
       });
     } finally {
+      // Ensure loading state is cleared quickly
       setIsLoading(false);
     }
   }, [gameType, initializeData, localCacheKey]);
@@ -176,15 +225,28 @@ export const usePools = (gameType: string | undefined) => {
     }
   };
 
+  // Smart fetching on mount - only if no cache or enough time has passed
   useEffect(() => {
     if (gameType) {
-      fetchPools();
+      const now = Date.now();
+      const cachedTime = localStorage.getItem(`${localCacheKey}-timestamp`);
+      const shouldFetch = !cachedTime || (now - parseInt(cachedTime, 10)) > 30000; // 30 seconds cache
+      
+      if (shouldFetch) {
+        fetchPools();
+        localStorage.setItem(`${localCacheKey}-timestamp`, now.toString());
+      } else {
+        console.log("Using recent cache, skipping initial fetch");
+        // Still mark as not loading since we're using cache
+        setIsLoading(false);
+      }
     } else {
       setIsLoading(false);
     }
     
+    // Maximum loading time failsafe - never show loading for more than 500ms
     const timeoutId = setTimeout(() => {
-      if (isLoading) {
+      if (isMounted.current) {
         setIsLoading(false);
         if (pools.length === 0 && gameType) {
           const defaultPools = getDefaultPools(gameType);
@@ -192,12 +254,12 @@ export const usePools = (gameType: string | undefined) => {
           localStorage.setItem(localCacheKey, JSON.stringify(defaultPools));
         }
       }
-    }, 1000);
+    }, 500);
     
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [gameType, fetchPools, isLoading, pools.length, localCacheKey]);
+  }, [gameType, fetchPools, pools.length, localCacheKey]);
 
   return {
     pools,

@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useGame } from "@/contexts/GameContext";
@@ -9,7 +9,6 @@ import { usePools } from "@/hooks/use-pools";
 import { PoolsHeader } from "@/components/pools/PoolsHeader";
 import { PoolsList } from "@/components/pools/PoolsList";
 import { gameTitles, isValidGameType } from "@/utils/game-titles";
-import { Pool } from "@/types/game";
 
 const PoolsScreen = () => {
   const { gameType } = useParams<{ gameType: string }>();
@@ -18,13 +17,16 @@ const PoolsScreen = () => {
   const navigate = useNavigate();
   const { pools, isLoading, fetchPools } = usePools(gameType);
 
-  // For better UX, ensure we never show loading for more than 500ms
-  const [showLoading, setShowLoading] = useState(true);
+  // For better UX, ensure we never show loading for more than 200ms
+  const [showSkeleton, setShowSkeleton] = useState(true);
+  
+  // Use this flag to track if we need to fetch more data
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
   useEffect(() => {
-    // Very short loading state for better user experience
+    // Very short skeleton state for instant UI feedback
     const timer = setTimeout(() => {
-      setShowLoading(false);
+      setShowSkeleton(false);
     }, 200);
     
     return () => clearTimeout(timer);
@@ -38,13 +40,13 @@ const PoolsScreen = () => {
     }
   }, [gameType, navigate]);
 
-  // Immediate force refresh of pools on mount
-  useEffect(() => {
-    if (gameType) {
-      fetchPools();
-    }
-  }, [gameType, fetchPools]);
+  // Force a refresh only if we have no pools data
+  const refreshPoolsData = useCallback(() => {
+    console.log("Forcing pools refresh");
+    fetchPools(true); // true forces a refresh
+  }, [fetchPools]);
 
+  // Optimized join pool function
   const handleJoinPool = async (poolId: string, entryFee: number) => {
     if (!user) {
       console.log("PoolsScreen: Cannot join pool, user not authenticated");
@@ -76,9 +78,7 @@ const PoolsScreen = () => {
       
       await joinPool(poolId);
       
-      // Refresh user data to update wallet balance after joining
-      await refreshUserData();
-      
+      // Don't refresh wallet data here to avoid resetting balance
       navigate(`/game/${poolId}`);
     } catch (error) {
       console.error("Error joining pool:", error);
@@ -90,13 +90,14 @@ const PoolsScreen = () => {
     }
   };
 
-  // If we have pools data but it's empty, we should manually create at least one pool
+  // If pools data is empty after loading, trigger a data fetch
   useEffect(() => {
-    if (!isLoading && pools.length === 0 && gameType) {
+    if (!isLoading && !initialLoadComplete && pools.length === 0 && gameType) {
       console.log("PoolsScreen: No pools found, triggering initialization");
-      fetchPools();
+      refreshPoolsData();
+      setInitialLoadComplete(true);
     }
-  }, [isLoading, pools, gameType, fetchPools]);
+  }, [isLoading, pools, gameType, refreshPoolsData, initialLoadComplete]);
 
   return (
     <AppLayout>
@@ -104,10 +105,10 @@ const PoolsScreen = () => {
         <PoolsHeader 
           gameTitle={gameTitles[gameType || ""]} 
           isLoading={isLoading} 
-          onRefresh={fetchPools} 
+          onRefresh={refreshPoolsData} 
         />
         
-        {(showLoading && isLoading) ? (
+        {showSkeleton ? (
           <div className="grid grid-cols-1 gap-4">
             {[1, 2, 3].map((i) => (
               <div 
@@ -130,9 +131,9 @@ const PoolsScreen = () => {
         ) : (
           <PoolsList 
             pools={pools} 
-            isLoading={isLoading && !showLoading} 
+            isLoading={isLoading && !showSkeleton} 
             onJoinPool={handleJoinPool} 
-            onRefresh={fetchPools} 
+            onRefresh={refreshPoolsData} 
           />
         )}
       </div>

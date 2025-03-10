@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,23 +6,24 @@ const ProtectedRoute = () => {
   const { isAuthenticated, isLoading, isInitialized, refreshUserData } = useAuth();
   const location = useLocation();
 
-  // Only refresh on essential paths, much less frequently
+  // Prevent refreshes on any game-related screens to avoid wallet balance issues
   useEffect(() => {
-    // Don't refresh on game paths to prevent wallet issues
-    const nonRefreshPaths = ['/game', '/pools'];
+    // Skip user data refreshes on these paths to preserve wallet balance
+    const nonRefreshPaths = ['/game', '/pools', '/result'];
     const shouldSkipRefresh = nonRefreshPaths.some(path => location.pathname.includes(path));
     
+    // Only refresh on dashboard to keep wallet value consistent
     if (isAuthenticated && !shouldSkipRefresh) {
-      // One immediate refresh when entering specific screens
-      if (location.pathname === '/transactions' || location.pathname === '/dashboard') {
+      if (location.pathname === '/dashboard') {
+        console.log("Refreshing user data on dashboard");
         refreshUserData();
       }
     }
   }, [isAuthenticated, location.pathname, refreshUserData]);
 
-  // Simplified loading state with near-instant appearance
+  // Near-instant appearance by showing nothing during init
   if (!isInitialized) {
-    return null; // Return nothing for fastest possible loading
+    return null;
   }
 
   if (!isAuthenticated) {
