@@ -1,9 +1,11 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuthState } from '@/hooks/use-auth-state';
 import { useAuthOperations } from '@/hooks/use-auth-operations';
 import { AuthContextType } from '@/types/auth';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
+import { initializeDeposit, initiateWithdrawal } from '@/services/paymentService';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -35,24 +37,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Determine if the current user is an admin
   const isAdmin = user?.role === 'admin';
   
-  // Placeholder for removed wallet functionality
-  const addFakeMoney = async () => {
-    toast({
-      title: "Feature Disabled",
-      description: "Wallet functionality has been removed",
-      variant: "destructive"
-    });
-    return;
+  // Re-enable wallet functionality
+  const addFakeMoney = async (amount: number) => {
+    if (!user?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to add money",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    try {
+      const result = await initializeDeposit(user.id, amount);
+      if (result.success) {
+        await refreshUserData();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error adding fake money:", error);
+      return false;
+    }
   };
   
-  // Placeholder for removed wallet functionality
-  const withdrawFakeMoney = async () => {
-    toast({
-      title: "Feature Disabled",
-      description: "Wallet functionality has been removed",
-      variant: "destructive"
-    });
-    return;
+  // Re-enable withdrawal functionality
+  const withdrawFakeMoney = async (amount: number) => {
+    if (!user?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to withdraw money",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    try {
+      const success = await initiateWithdrawal(user.id, amount);
+      if (success) {
+        await refreshUserData();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error withdrawing fake money:", error);
+      return false;
+    }
   };
   
   // Streamlined effect for faster initialization

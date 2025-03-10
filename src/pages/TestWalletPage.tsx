@@ -1,11 +1,17 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TestWalletPanel } from '@/components/wallet/TestWalletPanel';
 import { useAuth } from '@/contexts/AuthContext';
+import AppLayout from '@/components/AppLayout';
 
 const TestWalletPage = () => {
-  const { user } = useAuth();
+  const { user, refreshUserData } = useAuth();
+  
+  useEffect(() => {
+    // Refresh wallet balance when page loads
+    refreshUserData();
+  }, [refreshUserData]);
   
   return (
     <div className="container mx-auto py-8 max-w-3xl">
@@ -39,6 +45,7 @@ const TestWalletPage = () => {
               <li>5% of deposits and 10% of withdrawals will randomly fail</li>
               <li>Transactions will appear in your transaction history</li>
               <li>You can use this test money to join game pools</li>
+              <li>Winning games will add prize money to your wallet automatically</li>
             </ul>
           </CardContent>
         </Card>

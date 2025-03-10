@@ -36,18 +36,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     { label: "Referral Program", icon: Percent, path: "/referral" },
     { label: "Chat Support", icon: MessageSquare, path: "/support" },
     { label: "Game History", icon: Home, path: "/game-history" },
+    { label: "Test Wallet", icon: Wallet, path: "/test-wallet" },
   ];
 
   const handleLogout = () => {
     logout();
-  };
-
-  const handleWalletClick = () => {
-    toast({
-      title: "Feature Disabled",
-      description: "Wallet functionality has been removed",
-      variant: "destructive"
-    });
   };
 
   const isGameScreen = location.pathname.includes("/game/");
@@ -73,7 +66,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                       <div>
                         <p className="font-medium text-white">{user?.username}</p>
                         <p className="text-sm text-betster-300">
-                          Wallet Disabled
+                          ₹{user?.wallet || 0}
                         </p>
                       </div>
                     </div>
@@ -107,13 +100,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <Link
+              to="/test-wallet"
               className="inline-flex items-center gap-1.5 rounded-full bg-betster-600/20 px-3 py-1.5 text-sm font-medium text-betster-100 transition-colors hover:bg-betster-600/30"
-              onClick={handleWalletClick}
             >
               <Wallet className="h-4 w-4" />
-              <span>Disabled</span>
-            </button>
+              <span>₹{user?.wallet || 0}</span>
+            </Link>
           </div>
         </div>
       </header>
