@@ -31,6 +31,7 @@ import TestWalletPage from "./pages/TestWalletPage";
 import ProfilePage from "./pages/ProfilePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import GameHistoryPage from "./pages/GameHistoryPage";
+import CompetitionsPage from "./pages/CompetitionsPage";
 import AppLayout from "./components/AppLayout";
 
 const queryClient = new QueryClient({
@@ -74,6 +75,7 @@ function App() {
                           <Route path="/transactions" element={<TransactionHistory />} />
                           <Route path="/staking" element={<StakingScreen />} />
                           <Route path="/support" element={<SupportChat />} />
+                          <Route path="/competitions" element={<CompetitionsPage />} />
                           <Route path="/test-wallet" element={
                             <AppLayout>
                               <TestWalletPage />
