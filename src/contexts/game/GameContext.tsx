@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { useGameState } from './useGameState';
-import { GameContextType, League, Tournament, SpecialEvent } from './gameContextTypes';
+import { GameContextType } from './gameContextTypes';
 import { getPoolsByGameType, getWinners, getReferralInfo } from './gameUtils';
 import { getMilestoneBonus, getMilestoneProgress } from './milestones';
 import { useGameActions } from './useGameActions';
@@ -11,6 +11,7 @@ import { useEnhancedGameFormats } from './useEnhancedGameFormats';
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Basic game state
   const {
     pools,
     currentPool,
@@ -21,6 +22,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user
   } = useGameState();
   
+  // Game actions
   const {
     initializeData,
     joinPool,
@@ -31,28 +33,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resetGame
   } = useGameActions(pools, setCurrentPool, setPlayers, players);
 
-  // Enhanced game formats
-  const {
-    leagues,
-    tournaments,
-    specialEvents,
-    currentLeague,
-    currentTournament,
-    currentSpecialEvent,
-    joinLeague,
-    joinTournament,
-    joinSpecialEvent,
-    getLeagues,
-    getTournaments,
-    getSpecialEvents,
-    getCurrentLeague,
-    getCurrentTournament,
-    getCurrentSpecialEvent
-  } = useEnhancedGameFormats();
+  // Enhanced game formats (leagues, tournaments, special events)
+  const enhancedGameFormats = useEnhancedGameFormats();
 
   return (
     <GameContext.Provider
       value={{
+        // Basic game state and actions
         pools,
         currentPool,
         players,
@@ -69,16 +56,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         lockInNumber,
         sendMessage,
         initializeData,
-        // New enhanced game format methods
-        getLeagues,
-        getTournaments,
-        getSpecialEvents,
-        joinLeague,
-        joinTournament,
-        joinSpecialEvent,
-        getCurrentLeague,
-        getCurrentTournament,
-        getCurrentSpecialEvent,
+        
+        // Enhanced game formats
+        ...enhancedGameFormats
       }}
     >
       {children}
