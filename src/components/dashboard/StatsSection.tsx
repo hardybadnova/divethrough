@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import GameStatsChart from './GameStatsChart';
@@ -79,7 +78,10 @@ const StatsSection: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <GameStatsChart data={getWinRateData()} />
+            <GameStatsChart 
+              data={getWinRateData()} 
+              title={timeRange === 'week' ? 'Weekly Win Rate' : 'Monthly Win Rate'}
+            />
           </CardContent>
         </Card>
         
@@ -94,7 +96,10 @@ const StatsSection: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <GameStatsChart data={popularNumbersStats} />
+            <GameStatsChart 
+              data={popularNumbersStats} 
+              title="Popular Numbers Distribution"
+            />
           </CardContent>
         </Card>
       </div>
