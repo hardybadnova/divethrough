@@ -47,10 +47,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      console.log("Adding fake money, user ID:", user.id, "Amount:", amount);
       const newBalance = await updateWalletBalance(user.id, amount);
+      console.log("New balance after adding money:", newBalance);
       
       // Log the transaction
-      await supabase
+      const { error: transactionError } = await supabase
         .from('transactions')
         .insert([{
           user_id: user.id,
@@ -60,6 +62,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           payment_id: `fake_deposit_${Date.now()}`,
           gateway: 'fake_money'
         }]);
+      
+      if (transactionError) {
+        console.error("Error logging transaction:", transactionError);
+        throw transactionError;
+      }
       
       // Update local user state
       setUser(prev => {
@@ -94,10 +101,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
+      console.log("Withdrawing fake money, user ID:", user.id, "Amount:", amount);
       const newBalance = await updateWalletBalance(user.id, -amount);
+      console.log("New balance after withdrawal:", newBalance);
       
       // Log the transaction
-      await supabase
+      const { error: transactionError } = await supabase
         .from('transactions')
         .insert([{
           user_id: user.id,
@@ -107,6 +116,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           payment_id: `fake_withdrawal_${Date.now()}`,
           gateway: 'fake_money'
         }]);
+      
+      if (transactionError) {
+        console.error("Error logging transaction:", transactionError);
+        throw transactionError;
+      }
       
       // Update local user state
       setUser(prev => {

@@ -1,10 +1,18 @@
 
 import { useEffect } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const ProtectedRoute = () => {
-  const { isAuthenticated, isLoading, isInitialized } = useAuth();
+  const { isAuthenticated, isLoading, isInitialized, refreshUserData } = useAuth();
+  const navigate = useNavigate();
+
+  // Refresh user data when navigating to protected routes
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshUserData();
+    }
+  }, [isAuthenticated, refreshUserData]);
 
   // Simplified loading state with faster spinner appearance
   if (!isInitialized) {

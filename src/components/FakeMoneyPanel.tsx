@@ -8,7 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 const FakeMoneyPanel = () => {
-  const { user, addFakeMoney, withdrawFakeMoney } = useAuth();
+  const { user, addFakeMoney, withdrawFakeMoney, refreshUserData } = useAuth();
   const [amount, setAmount] = useState<number>(100);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -25,6 +25,7 @@ const FakeMoneyPanel = () => {
     setIsProcessing(true);
     try {
       await addFakeMoney(amount);
+      await refreshUserData(); // Refresh wallet balance after transaction
       toast({
         title: "Success",
         description: `${amount} fake money added to your wallet`,
@@ -63,6 +64,7 @@ const FakeMoneyPanel = () => {
     setIsProcessing(true);
     try {
       await withdrawFakeMoney(amount);
+      await refreshUserData(); // Refresh wallet balance after transaction
       toast({
         title: "Success",
         description: `${amount} fake money withdrawn from your wallet`,
