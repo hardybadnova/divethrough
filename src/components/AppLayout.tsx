@@ -13,6 +13,11 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+// Type guard for background sync support
+const hasBackgroundSync = (registration: ServiceWorkerRegistration): registration is ServiceWorkerRegistration & { sync: { register(tag: string): Promise<void> } } => {
+  return 'sync' in registration;
+};
+
 const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -43,15 +48,21 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       if (offlineMode) {
         toast({
           title: "Back Online",
-          description: "Connection restored. Syncing your data...",
-          icon: <Wifi className="h-4 w-4 text-green-500" />
+          description: (
+            <div className="flex items-center">
+              <Wifi className="h-4 w-4 text-green-500 mr-2" />
+              Connection restored. Syncing your data...
+            </div>
+          )
         });
         
         // Trigger background sync if available
-        if ('serviceWorker' in navigator && 'SyncManager' in window) {
+        if ('serviceWorker' in navigator) {
           navigator.serviceWorker.ready.then(registration => {
-            registration.sync.register('betster-bet-sync');
-            registration.sync.register('betster-transaction-sync');
+            if (hasBackgroundSync(registration)) {
+              registration.sync.register('betster-bet-sync');
+              registration.sync.register('betster-transaction-sync');
+            }
           });
         }
       }
@@ -62,8 +73,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       setOfflineMode(true);
       toast({
         title: "You're Offline",
-        description: "Limited functionality available. Changes will sync when online.",
-        icon: <WifiOff className="h-4 w-4 text-amber-500" />,
+        description: (
+          <div className="flex items-center">
+            <WifiOff className="h-4 w-4 text-amber-500 mr-2" />
+            Limited functionality available. Changes will sync when online.
+          </div>
+        ),
         duration: 5000
       });
     };

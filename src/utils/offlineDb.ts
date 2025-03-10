@@ -1,4 +1,3 @@
-
 /**
  * Utility for managing offline data with IndexedDB
  */
@@ -13,6 +12,11 @@ const STORES = {
   PENDING_TRANSACTIONS: 'pending-transactions',
   GAME_CACHE: 'game-cache',
   USER_DATA: 'user-data'
+};
+
+// Type guard for background sync
+const hasBackgroundSync = (registration: ServiceWorkerRegistration): registration is ServiceWorkerRegistration & { sync: { register(tag: string): Promise<void> } } => {
+  return 'sync' in registration;
 };
 
 // Initialize the database
@@ -60,7 +64,6 @@ export async function savePendingBet(bet: any): Promise<void> {
     const transaction = db.transaction([STORES.PENDING_BETS], 'readwrite');
     const store = transaction.objectStore(STORES.PENDING_BETS);
     
-    // Ensure the bet has an ID
     if (!bet.id) {
       bet.id = crypto.randomUUID();
     }
@@ -69,10 +72,11 @@ export async function savePendingBet(bet: any): Promise<void> {
     
     request.onsuccess = () => {
       console.log('Bet saved for offline sync');
-      // Register for background sync if available
-      if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(registration => {
-          registration.sync.register('betster-bet-sync');
+          if (hasBackgroundSync(registration)) {
+            registration.sync.register('betster-bet-sync');
+          }
         });
       }
       resolve();
@@ -91,7 +95,6 @@ export async function savePendingTransaction(transaction: any): Promise<void> {
     const tx = db.transaction([STORES.PENDING_TRANSACTIONS], 'readwrite');
     const store = tx.objectStore(STORES.PENDING_TRANSACTIONS);
     
-    // Ensure the transaction has an ID
     if (!transaction.id) {
       transaction.id = crypto.randomUUID();
     }
@@ -100,10 +103,11 @@ export async function savePendingTransaction(transaction: any): Promise<void> {
     
     request.onsuccess = () => {
       console.log('Transaction saved for offline sync');
-      // Register for background sync
-      if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(registration => {
-          registration.sync.register('betster-transaction-sync');
+          if (hasBackgroundSync(registration)) {
+            registration.sync.register('betster-transaction-sync');
+          }
         });
       }
       resolve();
