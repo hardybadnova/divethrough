@@ -31,20 +31,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadUserData
   });
   
+  // Determine if the current user is an admin
+  const isAdmin = user?.role === 'admin';
+  
   // Add effect to log auth state changes for debugging
   useEffect(() => {
     console.log("Auth context state updated:", { 
       isAuthenticated: !!user,
       isLoading,
       userId: user?.id,
-      isInitialized
+      isInitialized,
+      isAdmin
     });
 
     // Mark as initialized after the first auth check completes
     if (!isInitialized && !isLoading) {
       setIsInitialized(true);
     }
-  }, [user, isLoading, isInitialized]);
+  }, [user, isLoading, isInitialized, isAdmin]);
 
   return (
     <AuthContext.Provider
@@ -59,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         logout,
         refreshUserData,
+        isAdmin
       }}
     >
       {children}

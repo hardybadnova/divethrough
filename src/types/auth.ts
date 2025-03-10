@@ -5,6 +5,7 @@ export interface User {
   wallet: number;
   email?: string;
   photoURL?: string;
+  role?: 'admin' | 'user';
 }
 
 export interface AuthContextType {
@@ -18,4 +19,5 @@ export interface AuthContextType {
   signUp: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   refreshUserData: () => Promise<void>;
+  isAdmin: boolean;
 }

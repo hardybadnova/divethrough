@@ -16,6 +16,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import PoolsScreen from "./pages/PoolsScreen";
 import GameScreen from "./pages/GameScreen";
 import GameResultScreen from "./pages/GameResultScreen";
@@ -24,6 +25,7 @@ import ReferralScreen from "./pages/ReferralScreen";
 import TransactionHistory from "./pages/TransactionHistory";
 import StakingScreen from "./pages/StakingScreen";
 import SupportChat from "./pages/SupportChat";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +68,11 @@ const App = () => {
                         <Route path="/transactions" element={<TransactionHistory />} />
                         <Route path="/staking" element={<StakingScreen />} />
                         <Route path="/support" element={<SupportChat />} />
+                      </Route>
+                      
+                      {/* Admin Routes */}
+                      <Route element={<AdminRoute />}>
+                        <Route path="/admin" element={<AdminDashboard />} />
                       </Route>
                       
                       <Route path="*" element={<NotFound />} />

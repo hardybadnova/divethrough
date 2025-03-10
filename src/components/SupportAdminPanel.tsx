@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, User } from 'lucide-react';
+import { format } from 'date-fns';
 
-interface User {
+interface UserType {
   id: string;
   username: string;
 }
@@ -20,7 +21,7 @@ interface SupportMessage {
 }
 
 const SupportAdminPanel = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -43,7 +44,7 @@ const SupportAdminPanel = () => {
           // Extract unique users with proper type handling
           const uniqueUserIds = Array.from(new Set(data.map(item => item.user_id)));
           
-          const uniqueUsers: User[] = uniqueUserIds.map(userId => {
+          const uniqueUsers: UserType[] = uniqueUserIds.map(userId => {
             const userRecord = data.find(item => item.user_id === userId);
             return {
               id: userId,
@@ -134,44 +135,54 @@ const SupportAdminPanel = () => {
   };
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Support Admin Panel</h1>
+    <div className="bg-betster-800/30 p-4 rounded-lg border border-betster-700/40 max-w-full">
+      <h2 className="text-xl font-semibold mb-4 text-white">Support Tickets</h2>
       
-      <div className="grid grid-cols-3 gap-4 h-[600px]">
-        <div className="col-span-1 border rounded-lg overflow-hidden">
-          <div className="bg-gray-100 p-3 font-medium">Users</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
+        <div className="md:col-span-1 bg-betster-900/60 rounded-lg overflow-hidden border border-betster-700/40">
+          <div className="bg-betster-800/80 p-3 font-medium text-betster-100 border-b border-betster-700/40 flex items-center gap-2">
+            <User className="h-4 w-4" /> Users
+          </div>
           <div className="p-2 h-[550px] overflow-y-auto">
             {isLoading && !users.length ? (
               <div className="flex justify-center py-4">
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className="h-6 w-6 animate-spin text-betster-300" />
               </div>
-            ) : (
+            ) : users.length > 0 ? (
               users.map(user => (
                 <div 
                   key={user.id}
-                  className={`p-2 cursor-pointer rounded ${selectedUser === user.id ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
+                  className={`p-2 cursor-pointer rounded transition-colors ${
+                    selectedUser === user.id 
+                      ? 'bg-betster-600 text-white' 
+                      : 'hover:bg-betster-700/40 text-betster-200'
+                  }`}
                   onClick={() => setSelectedUser(user.id)}
                 >
                   {user.username}
                 </div>
               ))
+            ) : (
+              <div className="text-center py-4 text-betster-400">
+                No support requests
+              </div>
             )}
           </div>
         </div>
         
-        <div className="col-span-2 border rounded-lg overflow-hidden">
+        <div className="md:col-span-2 bg-betster-900/60 rounded-lg overflow-hidden border border-betster-700/40">
           {selectedUser ? (
             <>
-              <div className="bg-gray-100 p-3 font-medium">
+              <div className="bg-betster-800/80 p-3 font-medium text-betster-100 border-b border-betster-700/40">
                 Chat with {users.find(u => u.id === selectedUser)?.username}
               </div>
               
-              <div className="p-4 h-[500px] overflow-y-auto">
+              <div className="p-4 h-[500px] overflow-y-auto bg-gradient-to-b from-betster-900/30 to-betster-900/10">
                 {isLoading ? (
                   <div className="flex justify-center py-4">
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <Loader2 className="h-6 w-6 animate-spin text-betster-300" />
                   </div>
-                ) : (
+                ) : messages.length > 0 ? (
                   messages.map(message => (
                     <div 
                       key={message.id}
@@ -179,36 +190,41 @@ const SupportAdminPanel = () => {
                     >
                       <div className={`inline-block rounded-lg px-3 py-2 max-w-[80%] ${
                         message.sender === 'support' 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-gray-200'
+                          ? 'bg-betster-600 text-white rounded-br-none' 
+                          : 'bg-betster-800/40 text-betster-100 rounded-bl-none border border-betster-700/40'
                       }`}>
                         {message.message}
                         <div className="text-xs mt-1 opacity-70">
-                          {new Date(message.timestamp).toLocaleString()}
+                          {format(new Date(message.timestamp), 'MMM d, h:mm a')}
                         </div>
                       </div>
                     </div>
                   ))
+                ) : (
+                  <div className="flex items-center justify-center h-full text-betster-400">
+                    No messages yet
+                  </div>
                 )}
               </div>
               
-              <div className="p-2 border-t flex gap-2">
+              <div className="p-2 border-t border-betster-700/40 flex gap-2">
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type your message..."
-                  className="flex-1"
+                  className="flex-1 bg-betster-900/50 border-betster-700/50 text-white"
                 />
                 <Button 
                   onClick={sendSupportMessage}
                   disabled={isSending || !newMessage.trim()}
+                  className="bg-betster-600 hover:bg-betster-500"
                 >
                   {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
             </>
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
+            <div className="flex items-center justify-center h-full text-betster-400">
               Select a user to view chat
             </div>
           )}
