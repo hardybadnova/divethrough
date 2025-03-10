@@ -9,14 +9,13 @@ import { useGame } from "@/contexts/GameContext";
 import { toast } from "@/hooks/use-toast";
 import AppLayout from "@/components/AppLayout";
 import { Sun, Moon } from "lucide-react";
-
-// Import our new components
 import QuickStats from "@/components/dashboard/QuickStats";
 import StatsSection from "@/components/dashboard/StatsSection";
 import GamesList from "@/components/dashboard/GamesList";
 import TabsSection from "@/components/dashboard/TabsSection";
 import HowToPlay from "@/components/dashboard/HowToPlay";
 import { gameModules } from "@/data/gameModules";
+import { CompetitionsTabs } from "@/components/competitions/CompetitionsTabs";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -55,7 +54,6 @@ const Dashboard = () => {
   ]);
 
   useEffect(() => {
-    // Initialize game data if needed
     const initGame = async () => {
       try {
         await initializeData();
@@ -66,14 +64,12 @@ const Dashboard = () => {
     
     initGame();
     
-    // Simulate loading state for smoother transitions
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 500);
     return () => clearTimeout(timer);
   }, [initializeData]);
 
-  // Apply search filter
   const applySearchFilter = (games: GameDetails[]) => {
     if (!searchQuery) return games;
     
@@ -84,14 +80,12 @@ const Dashboard = () => {
     );
   };
 
-  // Apply tab filter
   const applyTabFilter = (games: GameDetails[]) => {
     if (selectedTab === "all") return games;
     if (selectedTab === "featured") return games.filter(game => game.featured);
     return games.filter(game => game.tags.includes(selectedTab));
   };
 
-  // Combined filtering
   const filteredGames = applySearchFilter(applyTabFilter(gameModules));
 
   const openGameDetails = (game: GameDetails) => {
@@ -126,7 +120,8 @@ const Dashboard = () => {
 
   return (
     <AppLayout>
-      <div className="flex-1 container max-w-2xl mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-8">
+        <CompetitionsTabs />
         <div className="space-y-4 mb-8">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold tracking-tight text-gradient">
@@ -145,7 +140,6 @@ const Dashboard = () => {
                   <Moon className="h-5 w-5 text-betster-400" />
                 )}
               </motion.button>
-              {/* We're keeping the NotificationSystem component here as is */}
               <NotificationSystem 
                 notifications={notifications} 
                 onMarkAsRead={handleMarkAsRead} 
@@ -157,13 +151,10 @@ const Dashboard = () => {
             Select a game module to start playing. Remember, the least picked numbers win!
           </p>
           
-          {/* Quick Stats Section */}
           <QuickStats user={user} />
           
-          {/* Game statistics charts */}
           <StatsSection />
           
-          {/* Game Tabs and Search */}
           <TabsSection 
             selectedTab={selectedTab} 
             setSelectedTab={setSelectedTab}
@@ -173,7 +164,6 @@ const Dashboard = () => {
 
         <Separator className="my-6" />
 
-        {/* Games List */}
         <GamesList 
           filteredGames={filteredGames}
           isLoading={isLoading}
@@ -181,7 +171,6 @@ const Dashboard = () => {
           resetFilters={resetFilters}
         />
         
-        {/* How To Play Section */}
         <HowToPlay />
 
         <GameDetailsModal 
