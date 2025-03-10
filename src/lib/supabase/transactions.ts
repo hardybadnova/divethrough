@@ -2,7 +2,7 @@
 import { supabase } from './client';
 import { updateWalletBalance } from './profiles';
 
-export const createTransaction = async (userId: string, amount: number, type: 'deposit' | 'withdrawal', paymentId?: string, gateway?: string) => {
+export const createTransaction = async (userId: string, amount: number, type: 'deposit' | 'withdrawal', paymentId?: string) => {
   try {
     const { data, error } = await supabase
       .from('transactions')
@@ -12,8 +12,7 @@ export const createTransaction = async (userId: string, amount: number, type: 'd
           amount,
           type,
           status: 'pending',
-          payment_id: paymentId,
-          gateway
+          payment_id: paymentId
         }
       ])
       .select()
@@ -89,7 +88,7 @@ export const getUserTransactions = async (userId: string) => {
     // Optimize by only selecting needed fields and limiting results
     const { data, error } = await supabase
       .from('transactions')
-      .select('id, user_id, amount, type, status, payment_id, transaction_id, gateway, created_at')
+      .select('id, user_id, amount, type, status, payment_id, transaction_id, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(100); // Limit to most recent 100 transactions for performance

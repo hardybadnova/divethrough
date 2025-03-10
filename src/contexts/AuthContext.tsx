@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
 
-      // Log the transaction immediately
+      // Log the transaction - Only include columns that exist in the database
       const { error: transactionError } = await supabase
         .from('transactions')
         .insert([{
@@ -65,8 +65,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           amount,
           type: 'deposit',
           status: 'completed',
-          payment_id: `fake_deposit_${Date.now()}`,
-          gateway: 'fake_money'
+          payment_id: `fake_deposit_${Date.now()}`
+          // Removed 'gateway' field which doesn't exist in the table
         }]);
       
       if (transactionError) {
@@ -122,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (user.wallet < amount) {
       toast({
-        title: "Error",
+        title: "Insufficient balance",
         description: "Insufficient balance",
         variant: "destructive"
       });
@@ -139,7 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
 
-      // Log the transaction immediately
+      // Log the transaction - Only include columns that exist in the database
       const { error: transactionError } = await supabase
         .from('transactions')
         .insert([{
@@ -147,8 +147,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           amount,
           type: 'withdrawal',
           status: 'completed',
-          payment_id: `fake_withdrawal_${Date.now()}`,
-          gateway: 'fake_money'
+          payment_id: `fake_withdrawal_${Date.now()}`
+          // Removed 'gateway' field which doesn't exist in the table
         }]);
       
       if (transactionError) {
