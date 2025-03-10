@@ -9,6 +9,7 @@ import { GameProvider } from "./contexts/GameContext";
 import { KYCProvider } from './contexts/KYCContext';
 import { StakingProvider } from './contexts/StakingContext';
 import { SupportProvider } from './contexts/SupportContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { useEffect } from "react";
 import KYCVerificationScreen from './pages/KYCVerificationScreen';
 import SplashScreen from "./pages/SplashScreen";
@@ -51,48 +52,50 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <TooltipProvider>
-            <GameProvider>
-              <KYCProvider>
-                <StakingProvider>
-                  <SupportProvider>
-                    <Toaster />
-                    <Sonner />
-                    <Routes>
-                      <Route path="/" element={<SplashScreen />} />
-                      <Route path="/login" element={<Login />} />
-                      
-                      <Route element={<ProtectedRoute />}>
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/pools/:gameType" element={<PoolsScreen />} />
-                        <Route path="/game/:poolId" element={<GameScreen />} />
-                        <Route path="/result/:poolId" element={<GameResultScreen />} />
-                        <Route path="/milestones" element={<MilestonesScreen />} />
-                        <Route path="/referral" element={<ReferralScreen />} />
-                        <Route path="/kyc" element={<KYCVerificationScreen />} />
-                        <Route path="/transactions" element={<TransactionHistory />} />
-                        <Route path="/staking" element={<StakingScreen />} />
-                        <Route path="/support" element={<SupportChat />} />
-                        <Route path="/test-wallet" element={
-                          <AppLayout>
-                            <TestWalletPage />
-                          </AppLayout>
-                        } />
-                        <Route path="/profile" element={<ProfilePage />} />
-                        <Route path="/leaderboard" element={<LeaderboardPage />} />
-                        <Route path="/game-history" element={<GameHistoryPage />} />
-                      </Route>
-                      
-                      {/* Admin Routes */}
-                      <Route element={<AdminRoute />}>
-                        <Route path="/admin" element={<AdminDashboard />} />
-                      </Route>
-                      
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </SupportProvider>
-                </StakingProvider>
-              </KYCProvider>
-            </GameProvider>
+            <ThemeProvider>
+              <GameProvider>
+                <KYCProvider>
+                  <StakingProvider>
+                    <SupportProvider>
+                      <Toaster />
+                      <Sonner />
+                      <Routes>
+                        <Route path="/" element={<SplashScreen />} />
+                        <Route path="/login" element={<Login />} />
+                        
+                        <Route element={<ProtectedRoute />}>
+                          <Route path="/dashboard" element={<Dashboard />} />
+                          <Route path="/pools/:gameType" element={<PoolsScreen />} />
+                          <Route path="/game/:poolId" element={<GameScreen />} />
+                          <Route path="/result/:poolId" element={<GameResultScreen />} />
+                          <Route path="/milestones" element={<MilestonesScreen />} />
+                          <Route path="/referral" element={<ReferralScreen />} />
+                          <Route path="/kyc" element={<KYCVerificationScreen />} />
+                          <Route path="/transactions" element={<TransactionHistory />} />
+                          <Route path="/staking" element={<StakingScreen />} />
+                          <Route path="/support" element={<SupportChat />} />
+                          <Route path="/test-wallet" element={
+                            <AppLayout>
+                              <TestWalletPage />
+                            </AppLayout>
+                          } />
+                          <Route path="/profile" element={<ProfilePage />} />
+                          <Route path="/leaderboard" element={<LeaderboardPage />} />
+                          <Route path="/game-history" element={<GameHistoryPage />} />
+                        </Route>
+                        
+                        {/* Admin Routes */}
+                        <Route element={<AdminRoute />}>
+                          <Route path="/admin" element={<AdminDashboard />} />
+                        </Route>
+                        
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </SupportProvider>
+                  </StakingProvider>
+                </KYCProvider>
+              </GameProvider>
+            </ThemeProvider>
           </TooltipProvider>
         </AuthProvider>
       </BrowserRouter>

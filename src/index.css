@@ -47,35 +47,47 @@
     --betster-900: 248 69% 27%;
     --betster-950: 247 74% 16%;
   }
- 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
- 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
- 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
- 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
- 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
- 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
- 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
- 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
- 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+  
+  .light-mode {
+    --background: 0 0% 98%;
+    --foreground: 240 10% 3.9%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    
+    --primary: 252 78% 60%;
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 240 5.9% 90%;
+    --secondary-foreground: 240 5.9% 10%;
+    
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 252 78% 60%;
+    
+    --betster-50: 262 83% 96%;
+    --betster-100: 262 100% 92%;
+    --betster-200: 260 92% 85%;
+    --betster-300: 258 91% 76%;
+    --betster-400: 257 89% 66%;
+    --betster-500: 255 87% 57%;
+    --betster-600: 253 78% 48%;
+    --betster-700: 252 78% 40%;
+    --betster-800: 250 74% 33%;
+    --betster-900: 248 69% 27%;
+    --betster-950: 247 74% 16%;
   }
 }
  
@@ -87,6 +99,10 @@
     @apply bg-betster-950 text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     background: linear-gradient(135deg, #1a0033 0%, #4a0080 100%) fixed;
+  }
+  
+  .light-mode body {
+    background: linear-gradient(135deg, #f5f1ff 0%, #ede2ff 100%) fixed;
   }
 }
 
@@ -100,6 +116,10 @@
     @apply border border-betster-600 text-betster-300 hover:bg-betster-950/50 px-4 py-2 rounded-md transition-colors;
   }
   
+  .light-mode .betster-button-outline {
+    @apply border border-betster-600 text-betster-800 hover:bg-betster-100/50;
+  }
+  
   .betster-chip {
     @apply text-xs px-3 py-1 rounded-full bg-betster-900/50 text-betster-200;
   }
@@ -107,6 +127,11 @@
   .glass-card {
     @apply bg-black/30 dark:bg-gray-800/30 backdrop-blur-sm border border-betster-700/30;
     background: linear-gradient(135deg, rgba(74, 0, 128, 0.2) 0%, rgba(26, 0, 51, 0.5) 100%);
+  }
+  
+  .light-mode .glass-card {
+    @apply bg-white/80 backdrop-blur-sm border border-betster-200/50;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(245, 241, 255, 0.8) 100%);
   }
   
   /* Loader animation */
@@ -119,8 +144,49 @@
     @apply bg-gradient-to-r from-betster-300 to-betster-600 bg-clip-text text-transparent;
   }
   
+  .light-mode .text-gradient {
+    @apply bg-gradient-to-r from-betster-700 to-betster-500 bg-clip-text text-transparent;
+  }
+  
   /* Premium glass effect */
   .premium-glass {
     @apply bg-black/40 backdrop-blur-xl border border-betster-700/30 shadow-lg shadow-betster-600/10;
+  }
+  
+  .light-mode .premium-glass {
+    @apply bg-white/90 backdrop-blur-xl border border-betster-200/50 shadow-lg shadow-betster-300/10;
+  }
+  
+  /* Scrollbar customization */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Page transitions */
+  .page-enter {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  
+  .page-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .page-exit {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .page-exit-active {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 300ms, transform 300ms;
   }
 }
