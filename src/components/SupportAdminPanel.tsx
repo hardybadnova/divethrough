@@ -40,10 +40,10 @@ const SupportAdminPanel = () => {
         if (error) throw error;
         
         if (data) {
-          // Extract unique users
-          const uniqueUsers = Array.from(
-            new Set(data.map(item => item.user_id))
-          ).map(userId => {
+          // Extract unique users with proper type handling
+          const uniqueUserIds = Array.from(new Set(data.map(item => item.user_id)));
+          
+          const uniqueUsers: User[] = uniqueUserIds.map(userId => {
             const userRecord = data.find(item => item.user_id === userId);
             return {
               id: userId,
