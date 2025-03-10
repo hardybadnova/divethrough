@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -69,11 +70,9 @@ function App() {
                         <Route path="/staking" element={<StakingScreen />} />
                         <Route path="/support" element={<SupportChat />} />
                         <Route path="/test-wallet" element={
-                          <ProtectedRoute>
-                            <AppLayout>
-                              <TestWalletPage />
-                            </AppLayout>
-                          </ProtectedRoute>
+                          <AppLayout>
+                            <TestWalletPage />
+                          </AppLayout>
                         } />
                       </Route>
                       
