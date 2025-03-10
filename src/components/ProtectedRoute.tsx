@@ -1,24 +1,27 @@
 
 import { useEffect } from "react";
-import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const ProtectedRoute = () => {
   const { isAuthenticated, isLoading, isInitialized, refreshUserData } = useAuth();
-  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Refresh user data when navigating to protected routes
+  // Only refresh user data when necessary and not on every route change
   useEffect(() => {
-    if (isAuthenticated) {
+    // Skip data refreshing on certain routes or limit refresh frequency
+    const shouldRefresh = !location.pathname.includes('/transactions');
+    
+    if (isAuthenticated && shouldRefresh) {
       refreshUserData();
     }
-  }, [isAuthenticated, refreshUserData]);
+  }, [isAuthenticated, location.pathname, refreshUserData]);
 
   // Simplified loading state with faster spinner appearance
   if (!isInitialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-betster-gradient">
-        <div className="h-10 w-10 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex items-center justify-center h-20">
+        <div className="h-8 w-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }

@@ -8,7 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 const FakeMoneyPanel = () => {
-  const { user, addFakeMoney, withdrawFakeMoney, refreshUserData } = useAuth();
+  const { user, addFakeMoney, withdrawFakeMoney } = useAuth();
   const [amount, setAmount] = useState<number>(100);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -25,7 +25,8 @@ const FakeMoneyPanel = () => {
     setIsProcessing(true);
     try {
       await addFakeMoney(amount);
-      await refreshUserData(); // Refresh wallet balance after transaction
+      
+      // Show success message
       toast({
         title: "Success",
         description: `${amount} fake money added to your wallet`,
@@ -64,7 +65,8 @@ const FakeMoneyPanel = () => {
     setIsProcessing(true);
     try {
       await withdrawFakeMoney(amount);
-      await refreshUserData(); // Refresh wallet balance after transaction
+      
+      // Show success message
       toast({
         title: "Success",
         description: `${amount} fake money withdrawn from your wallet`,
@@ -83,27 +85,25 @@ const FakeMoneyPanel = () => {
 
   return (
     <Card className="bg-betster-800/30 border-betster-700/40">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle className="text-white">Test Money Controls</CardTitle>
         <CardDescription className="text-betster-300">
-          For testing purposes only - add or withdraw fake money
+          For testing purposes only
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-betster-300">Amount</label>
-            <Input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              min={1}
-              className="bg-betster-900/50 border-betster-700/50 text-white"
-            />
-          </div>
+      <CardContent className="pb-3">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-betster-300">Amount</label>
+          <Input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(Number(e.target.value))}
+            min={1}
+            className="bg-betster-900/50 border-betster-700/50 text-white"
+          />
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex justify-between pt-2">
         <Button 
           variant="default" 
           onClick={handleAddMoney}
@@ -115,7 +115,7 @@ const FakeMoneyPanel = () => {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
               Processing...
             </>
-          ) : 'Add Fake Money'}
+          ) : 'Add Money'}
         </Button>
         <Button 
           variant="default" 
@@ -128,12 +128,9 @@ const FakeMoneyPanel = () => {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
               Processing...
             </>
-          ) : 'Withdraw Fake Money'}
+          ) : 'Withdraw'}
         </Button>
       </CardFooter>
-      <div className="px-6 pb-4 text-xs text-betster-400">
-        <p>This is for testing purposes only. In a production app, this would be replaced with a real payment gateway.</p>
-      </div>
     </Card>
   );
 };

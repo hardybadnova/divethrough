@@ -9,49 +9,41 @@ const SplashScreen = () => {
   const { isAuthenticated, isInitialized } = useAuth();
   const [animationComplete, setAnimationComplete] = useState(false);
 
-  // Reduce animation time even further to 800ms
+  // Even faster animation time - 500ms
   useEffect(() => {
     const timer = setTimeout(() => {
       setAnimationComplete(true);
-      console.log("Splash animation complete");
-    }, 800);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, []);
 
-  // Simplify navigation logic to reduce conditional checks
+  // Optimized navigation logic
   useEffect(() => {
     if (animationComplete && isInitialized) {
-      console.log("Navigating from splash screen");
-      navigate(isAuthenticated ? '/dashboard' : '/login');
+      // Use requestAnimationFrame for smoother transition
+      requestAnimationFrame(() => {
+        navigate(isAuthenticated ? '/dashboard' : '/login');
+      });
     }
   }, [animationComplete, isAuthenticated, isInitialized, navigate]);
 
-  // Add a very short force navigation timeout as failsafe - reduced to 1.5 seconds
+  // Very short force navigation timeout - reduced to 1 second
   useEffect(() => {
     const forceNavigationTimer = setTimeout(() => {
       if (document.location.pathname === '/') {
-        console.log("Force navigation triggered after timeout");
         navigate('/login');
       }
-    }, 1500);
+    }, 1000);
 
     return () => clearTimeout(forceNavigationTimer);
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-betster-gradient">
-      <div className="flex flex-col items-center space-y-6 animate-slideUp">
-        <div className="h-20 w-20 rounded-full bg-white/10 backdrop-blur-lg flex items-center justify-center mb-6">
-          <div className="h-16 w-16 rounded-full bg-betster-600 flex items-center justify-center animate-pulse">
-            <BetsterLogo className="h-10" />
-          </div>
-        </div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">
-          <BetsterLogo className="h-12" />
-        </h1>
+    <div className="min-h-screen flex items-center justify-center bg-betster-gradient">
+      <div className="flex flex-col items-center space-y-4 animate-slideUp">
+        <BetsterLogo className="h-16" />
         <p className="text-betster-200 text-sm">Premium Betting Experience</p>
-        <div className="loader mt-8"></div>
       </div>
     </div>
   );

@@ -3,8 +3,6 @@ import { supabase } from './client';
 import { updateWalletBalance } from './profiles';
 
 export const createTransaction = async (userId: string, amount: number, type: 'deposit' | 'withdrawal', paymentId?: string, gateway?: string) => {
-  console.log(`Creating transaction for user ${userId}: ${type} of ${amount}`);
-  
   try {
     const { data, error } = await supabase
       .from('transactions')
@@ -26,7 +24,6 @@ export const createTransaction = async (userId: string, amount: number, type: 'd
       throw error;
     }
     
-    console.log("Transaction created successfully:", data);
     return data;
   } catch (error) {
     console.error("Failed to create transaction:", error);
@@ -35,9 +32,20 @@ export const createTransaction = async (userId: string, amount: number, type: 'd
 };
 
 export const updateTransactionStatus = async (transactionId: string, status: 'completed' | 'failed', transactionReceipt?: string) => {
-  console.log(`Updating transaction ${transactionId} status to ${status}`);
-  
   try {
+    // First, get the transaction details to avoid an extra query later
+    const { data: transaction, error: fetchError } = await supabase
+      .from('transactions')
+      .select('user_id, amount, type')
+      .eq('id', transactionId)
+      .single();
+    
+    if (fetchError) {
+      console.error("Error fetching transaction details:", fetchError);
+      throw fetchError;
+    }
+    
+    // Update the transaction status
     const { data, error } = await supabase
       .from('transactions')
       .update({ 
@@ -54,30 +62,15 @@ export const updateTransactionStatus = async (transactionId: string, status: 'co
       throw error;
     }
     
-    // If transaction is completed and it's a deposit, update wallet balance
-    if (status === 'completed') {
-      const { data: transaction, error: fetchError } = await supabase
-        .from('transactions')
-        .select('user_id, amount, type')
-        .eq('id', transactionId)
-        .single();
-      
-      if (fetchError) {
-        console.error("Error fetching transaction details:", fetchError);
-        throw fetchError;
-      }
-      
-      if (transaction) {
-        console.log("Processing wallet update for transaction:", transaction);
-        if (transaction.type === 'deposit') {
-          await updateWalletBalance(transaction.user_id, transaction.amount);
-        } else if (transaction.type === 'withdrawal') {
-          await updateWalletBalance(transaction.user_id, -transaction.amount);
-        }
+    // If transaction is completed, update wallet balance
+    if (status === 'completed' && transaction) {
+      if (transaction.type === 'deposit') {
+        await updateWalletBalance(transaction.user_id, transaction.amount);
+      } else if (transaction.type === 'withdrawal') {
+        await updateWalletBalance(transaction.user_id, -transaction.amount);
       }
     }
     
-    console.log("Transaction status updated successfully:", data);
     return data;
   } catch (error) {
     console.error("Failed to update transaction status:", error);
@@ -86,12 +79,11 @@ export const updateTransactionStatus = async (transactionId: string, status: 'co
 };
 
 export const getUserTransactions = async (userId: string) => {
-  console.log(`Fetching transactions for user ${userId}`);
-  
   try {
+    // Optimize by only selecting needed fields
     const { data, error } = await supabase
       .from('transactions')
-      .select('*')
+      .select('id, user_id, amount, type, status, payment_id, transaction_id, gateway, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -100,7 +92,6 @@ export const getUserTransactions = async (userId: string) => {
       throw error;
     }
     
-    console.log(`Retrieved ${data?.length || 0} transactions`);
     return data || [];
   } catch (error) {
     console.error("Failed to get user transactions:", error);
