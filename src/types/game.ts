@@ -2,6 +2,10 @@
 export type GameType = 'bluff' | 'topspot' | 'jackpot';
 export type PoolStatus = 'waiting' | 'active' | 'completed';
 export type PlayerStatus = 'waiting' | 'ready' | 'playing';
+export type CompetitionFormat = 'league' | 'tournament' | 'specialEvent';
+export type TournamentFormat = 'knockout' | 'roundRobin' | 'swiss';
+export type CompetitionStatus = 'upcoming' | 'ongoing' | 'completed';
+export type MatchStatus = 'scheduled' | 'in_progress' | 'completed';
 
 export interface Player {
   id: string;
@@ -54,4 +58,85 @@ export interface ChatMessage {
   sender: string;
   message: string;
   timestamp: string;
+}
+
+// Enhanced game formats
+export interface League {
+  id: string;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  entryFee: number;
+  prizePool: number;
+  maxParticipants: number;
+  currentParticipants: number;
+  gameType: string;
+  status: CompetitionStatus;
+  rounds: LeagueRound[];
+}
+
+export interface LeagueRound {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  pools: string[]; // IDs of the pools in this round
+}
+
+export interface Tournament {
+  id: string;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  entryFee: number;
+  prizePool: number;
+  maxParticipants: number;
+  currentParticipants: number;
+  gameType: string;
+  status: CompetitionStatus;
+  format: TournamentFormat;
+  rounds: TournamentRound[];
+}
+
+export interface TournamentRound {
+  id: string;
+  name: string;
+  order: number;
+  startDate: string;
+  endDate: string;
+  matches: TournamentMatch[];
+}
+
+export interface TournamentMatch {
+  id: string;
+  poolId: string;
+  player1Id: string | null;
+  player2Id: string | null;
+  winnerId: string | null;
+  status: MatchStatus;
+}
+
+export interface SpecialEvent {
+  id: string;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  entryFee: number;
+  prizePool: number;
+  maxParticipants: number;
+  currentParticipants: number;
+  gameType: string;
+  status: CompetitionStatus;
+  specialRules: SpecialRule[];
+  pools: string[]; // IDs of the pools in this event
+}
+
+export interface SpecialRule {
+  id: string;
+  name: string;
+  description: string;
+  effect: string;
 }

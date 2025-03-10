@@ -1,10 +1,11 @@
 
 import React, { createContext, useContext } from 'react';
 import { useGameState } from './useGameState';
-import { GameContextType } from './gameContextTypes';
+import { GameContextType, League, Tournament, SpecialEvent } from './gameContextTypes';
 import { getPoolsByGameType, getWinners, getReferralInfo } from './gameUtils';
 import { getMilestoneBonus, getMilestoneProgress } from './milestones';
 import { useGameActions } from './useGameActions';
+import { useEnhancedGameFormats } from './useEnhancedGameFormats';
 
 // Create a game context
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -30,6 +31,25 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resetGame
   } = useGameActions(pools, setCurrentPool, setPlayers, players);
 
+  // Enhanced game formats
+  const {
+    leagues,
+    tournaments,
+    specialEvents,
+    currentLeague,
+    currentTournament,
+    currentSpecialEvent,
+    joinLeague,
+    joinTournament,
+    joinSpecialEvent,
+    getLeagues,
+    getTournaments,
+    getSpecialEvents,
+    getCurrentLeague,
+    getCurrentTournament,
+    getCurrentSpecialEvent
+  } = useEnhancedGameFormats();
+
   return (
     <GameContext.Provider
       value={{
@@ -49,6 +69,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         lockInNumber,
         sendMessage,
         initializeData,
+        // New enhanced game format methods
+        getLeagues,
+        getTournaments,
+        getSpecialEvents,
+        joinLeague,
+        joinTournament,
+        joinSpecialEvent,
+        getCurrentLeague,
+        getCurrentTournament,
+        getCurrentSpecialEvent,
       }}
     >
       {children}
