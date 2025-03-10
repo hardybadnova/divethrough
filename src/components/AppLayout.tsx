@@ -10,6 +10,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 import BetsterLogo from "./BetsterLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -138,13 +140,52 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Link
-                to="/test-wallet"
-                className="inline-flex items-center gap-1.5 rounded-full bg-betster-600/20 px-3 py-1.5 text-sm font-medium text-betster-100 transition-colors hover:bg-betster-600/30"
-              >
-                <Wallet className="h-4 w-4" />
-                <span>₹{user?.wallet || 0}</span>
-              </Link>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    className="inline-flex items-center gap-1.5 rounded-full bg-betster-600/20 px-3 py-1.5 text-sm font-medium text-betster-100 transition-colors hover:bg-betster-600/30"
+                  >
+                    <Wallet className="h-4 w-4" />
+                    <span>₹{user?.wallet || 0}</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-4 bg-black/90 backdrop-blur-lg border border-betster-700/40 text-white">
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-betster-100">Wallet Balance</h3>
+                    <div className="flex items-center justify-between">
+                      <span className="text-betster-300">Available</span>
+                      <span className="text-lg font-bold">₹{user?.wallet || 0}</span>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-betster-700/40">
+                      <h4 className="text-sm font-medium text-betster-300 mb-2">Quick Actions</h4>
+                      <div className="flex flex-col gap-2">
+                        <Link 
+                          to="/test-wallet" 
+                          className="inline-flex items-center justify-center gap-1.5 rounded-md bg-betster-600/30 px-3 py-2 text-sm font-medium text-betster-100 transition-colors hover:bg-betster-600/50 w-full"
+                        >
+                          <Wallet className="h-4 w-4" />
+                          <span>Manage Wallet</span>
+                        </Link>
+                        
+                        <Link 
+                          to="/transaction-history" 
+                          className="inline-flex items-center justify-center gap-1.5 rounded-md bg-transparent border border-betster-700/40 px-3 py-2 text-sm font-medium text-betster-100 transition-colors hover:bg-betster-800/30 w-full"
+                        >
+                          <span>Transaction History</span>
+                        </Link>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-betster-700/40">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="betsterOutline" size="sm">New</Badge>
+                        <p className="text-xs text-betster-300">Instant withdrawals now available!</p>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </header>
