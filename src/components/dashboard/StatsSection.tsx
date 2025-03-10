@@ -1,12 +1,15 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import GameStatsChart from './GameStatsChart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowUpRight, TrendingUp, ChevronUp, ChevronDown, Clock } from 'lucide-react';
+import { ArrowUpRight, TrendingUp, ChevronUp, ChevronDown, Clock, Sparkles, Users, Trophy } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const StatsSection: React.FC = () => {
   const [timeRange, setTimeRange] = useState('week');
+  const [activeChart, setActiveChart] = useState('winRate');
   
   // Game statistics for charts
   const weeklyWinRateStats = [
@@ -46,6 +49,14 @@ const StatsSection: React.FC = () => {
     return timeRange === 'week' ? weeklyWinRateStats : monthlyWinRateStats;
   };
 
+  // Additional stats
+  const overallStats = {
+    winRate: '68%',
+    gamesPlayed: 87,
+    totalWinnings: '₹27,500',
+    mostSelectedNumber: '7'
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -63,14 +74,69 @@ const StatsSection: React.FC = () => {
         </Tabs>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Overall stats summary cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="bg-black/30 backdrop-blur-sm border border-betster-700/30">
+          <CardContent className="p-4">
+            <div className="flex flex-col">
+              <span className="text-xs text-betster-400 flex items-center">
+                <Trophy className="h-3 w-3 mr-1" /> Win Rate
+              </span>
+              <span className="text-xl font-bold text-betster-100">{overallStats.winRate}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-black/30 backdrop-blur-sm border border-betster-700/30">
+          <CardContent className="p-4">
+            <div className="flex flex-col">
+              <span className="text-xs text-betster-400 flex items-center">
+                <Sparkles className="h-3 w-3 mr-1" /> Games Played
+              </span>
+              <span className="text-xl font-bold text-betster-100">{overallStats.gamesPlayed}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-black/30 backdrop-blur-sm border border-betster-700/30">
+          <CardContent className="p-4">
+            <div className="flex flex-col">
+              <span className="text-xs text-betster-400 flex items-center">
+                <TrendingUp className="h-3 w-3 mr-1" /> Total Winnings
+              </span>
+              <span className="text-xl font-bold text-betster-100">{overallStats.totalWinnings}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-black/30 backdrop-blur-sm border border-betster-700/30">
+          <CardContent className="p-4">
+            <div className="flex flex-col">
+              <span className="text-xs text-betster-400 flex items-center">
+                <Users className="h-3 w-3 mr-1" /> Favorite Number
+              </span>
+              <span className="text-xl font-bold text-betster-100">{overallStats.mostSelectedNumber}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Chart tabs selection */}
+      <Tabs value={activeChart} onValueChange={setActiveChart} className="w-full">
+        <TabsList className="w-full h-10 bg-black/30 border border-betster-700/30 mb-4">
+          <TabsTrigger value="winRate" className="flex-1">Win Rate</TabsTrigger>
+          <TabsTrigger value="numbers" className="flex-1">Popular Numbers</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      
+      {/* Conditionally render charts based on activeChart */}
+      {activeChart === 'winRate' ? (
         <Card className="bg-black/30 backdrop-blur-sm border border-betster-700/30">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center">
               <TrendingUp className="h-4 w-4 mr-2 text-betster-400" />
               Your Win Rate
-              <span className="ml-auto text-xs bg-betster-700/30 px-2 py-0.5 rounded-full">
-                {timeRange === 'week' ? 'Weekly' : 'Monthly'}
+              <span className="ml-auto">
+                <Badge variant="outline" className="bg-betster-700/30 text-xs">
+                  {timeRange === 'week' ? 'Weekly' : 'Monthly'}
+                </Badge>
               </span>
             </CardTitle>
             <CardDescription className="text-xs text-betster-400">
@@ -84,7 +150,7 @@ const StatsSection: React.FC = () => {
             />
           </CardContent>
         </Card>
-        
+      ) : (
         <Card className="bg-black/30 backdrop-blur-sm border border-betster-700/30">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center">
@@ -102,7 +168,7 @@ const StatsSection: React.FC = () => {
             />
           </CardContent>
         </Card>
-      </div>
+      )}
       
       <Card className="bg-black/30 backdrop-blur-sm border border-betster-700/30">
         <CardHeader className="pb-2">
@@ -117,9 +183,13 @@ const StatsSection: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {recentTopNumbersStats.map((stat, index) => (
-              <div 
+              <motion.div 
                 key={index} 
                 className="flex flex-col items-center justify-center p-3 rounded-lg bg-betster-900/50 border border-betster-700/30"
+                whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 * index, duration: 0.3 }}
               >
                 <span className="text-xl font-bold" style={{ color: stat.fill }}>{stat.name}</span>
                 <span className="text-sm text-betster-300 mt-1">Picked {stat.value}x</span>
@@ -127,7 +197,7 @@ const StatsSection: React.FC = () => {
                   {stat.isUp ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                   <span>{stat.change}</span>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </CardContent>

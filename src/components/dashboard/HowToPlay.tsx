@@ -1,34 +1,62 @@
 
-import React from 'react';
-import { Shield, ArrowRight, ChevronRight, Gift, Trophy, Percent } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { Shield, ArrowRight, ChevronRight, Gift, Trophy, Percent, ChevronDown, Info, HelpCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from '@/components/ui/button';
 
 const HowToPlay: React.FC = () => {
+  const [expanded, setExpanded] = useState(false);
+  
   const steps = [
     { 
       icon: <Trophy className="h-5 w-5 text-betster-400" />,
       title: "Choose a Game Type",
-      description: "Select a game type and pool based on your preferred entry fee"
+      description: "Select a game type and pool based on your preferred entry fee",
+      detail: "Browse through our selection of games, each with different mechanics and prize pools. You can filter games by difficulty, stake amount, and more to find ones that match your style."
     },
     { 
       icon: <Shield className="h-5 w-5 text-betster-400" />,
       title: "Pick Your Number",
-      description: "The goal is to pick a number that few others will select"
+      description: "The goal is to pick a number that few others will select",
+      detail: "Think strategically! Look at the trending numbers section to see which numbers are commonly chosen. The least picked numbers have the best chance of winning."
     },
     { 
       icon: <ChevronRight className="h-5 w-5 text-betster-400" />,
       title: "Wait for Results",
-      description: "Wait for the timer to end and see which numbers were least picked"
+      description: "Wait for the timer to end and see which numbers were least picked",
+      detail: "Once the timer runs out, our system calculates which numbers were chosen the least. This is completely transparent and verifiable on the blockchain."
     },
     { 
       icon: <Gift className="h-5 w-5 text-betster-400" />,
       title: "Win Prizes",
-      description: "The least picked numbers win prizes from the pool!"
+      description: "The least picked numbers win prizes from the pool!",
+      detail: "If your number is among the least chosen, you win a share of the prize pool. The fewer people who picked your number, the bigger your share of the winnings."
     },
     { 
       icon: <Percent className="h-5 w-5 text-betster-400" />,
       title: "Earn Bonuses",
-      description: "Play more games to earn milestone bonuses (5-30% based on games played)"
+      description: "Play more games to earn milestone bonuses (5-30% based on games played)",
+      detail: "The more you play, the more bonuses you unlock. These bonuses increase your winnings by a percentage, making each victory more valuable as you continue playing."
+    }
+  ];
+
+  const faqs = [
+    {
+      question: "Is this gambling?",
+      answer: "No, this is a game of skill and strategy. You need to predict which numbers will be less popular among other players, making it a game of psychological strategy rather than chance."
+    },
+    {
+      question: "How are winners determined?",
+      answer: "Winners are determined by selecting players who chose the least picked numbers. If multiple players chose the same number, they share the prize for that position."
+    },
+    {
+      question: "Can I play multiple games at once?",
+      answer: "Yes, you can join multiple game pools at the same time, as long as you have enough balance in your wallet to cover the entry fees."
+    },
+    {
+      question: "How do I withdraw my winnings?",
+      answer: "Winnings are automatically credited to your wallet balance. You can withdraw them anytime through the wallet section."
     }
   ];
 
@@ -54,13 +82,24 @@ const HowToPlay: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="flex items-center space-x-3 mb-5">
-        <Shield className="h-5 w-5 text-betster-400" />
-        <h2 className="font-semibold text-white text-xl">How to Play</h2>
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center space-x-3">
+          <HelpCircle className="h-5 w-5 text-betster-400" />
+          <h2 className="font-semibold text-white text-xl">How to Play</h2>
+        </div>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => setExpanded(!expanded)}
+          className="text-betster-300 hover:text-betster-100 h-8 gap-1.5"
+        >
+          {expanded ? "Show Less" : "Show More"}
+          <ChevronDown className={`h-4 w-4 transform transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </Button>
       </div>
       
       <motion.div 
-        className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4"
         variants={container}
         initial="hidden"
         animate="show"
@@ -69,18 +108,64 @@ const HowToPlay: React.FC = () => {
           <motion.div 
             key={index}
             variants={item}
-            className="flex items-start space-x-3 p-3 bg-betster-900/30 rounded-lg border border-betster-700/20"
+            className="flex items-start space-x-3 p-4 bg-betster-900/30 rounded-lg border border-betster-700/20 group hover:border-betster-600/40 transition-colors"
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
-            <div className="flex-shrink-0 rounded-full bg-betster-800/50 p-2">
+            <div className="flex-shrink-0 rounded-full bg-betster-800/50 p-2 group-hover:bg-betster-700/70 transition-colors">
               {step.icon}
             </div>
             <div>
               <h3 className="text-betster-100 font-medium">{step.title}</h3>
               <p className="text-sm text-betster-300 mt-1">{step.description}</p>
+              <AnimatePresence>
+                {expanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="text-xs text-betster-400 mt-2 border-t border-betster-700/20 pt-2">
+                      {step.detail}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         ))}
       </motion.div>
+      
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-6"
+          >
+            <div className="border-t border-betster-700/20 pt-4">
+              <div className="flex items-center mb-4">
+                <Info className="h-5 w-5 text-betster-400 mr-2" />
+                <h3 className="text-betster-100 font-medium">Frequently Asked Questions</h3>
+              </div>
+              
+              <Accordion type="single" collapsible className="w-full">
+                {faqs.map((faq, index) => (
+                  <AccordionItem key={index} value={`faq-${index}`} className="border-betster-700/20">
+                    <AccordionTrigger className="text-sm text-betster-200 hover:text-betster-100">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-sm text-betster-300">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       <motion.div 
         className="mt-5 p-4 bg-gradient-to-r from-betster-800/40 to-betster-700/20 rounded-lg"
@@ -91,6 +176,7 @@ const HowToPlay: React.FC = () => {
         <p className="text-sm text-betster-200 flex items-center">
           <Trophy className="h-4 w-4 mr-2 text-yellow-500" />
           <span>Tip: Refer friends to earn 5% of their first deposit!</span>
+          <ArrowRight className="h-4 w-4 ml-2 text-betster-400" />
         </p>
       </motion.div>
     </motion.div>
