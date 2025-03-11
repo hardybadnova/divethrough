@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Pool } from "@/types/game";
 import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 interface UseGameTabsProps {
   pool: Pool | null;
@@ -33,8 +34,9 @@ export function useGameTabs({
       title: "Stats Access Fee",
       description: `View detailed stats from the last 10 games for ${statsFee}?`,
       action: (
-        <button 
-          className="betster-button py-1 px-3 text-xs"
+        <Button 
+          variant="secondary"
+          className="px-3 py-1 text-xs"
           onClick={() => {
             setStatsCharged(true);
             setShowStats(true);
@@ -45,7 +47,7 @@ export function useGameTabs({
           }}
         >
           Pay Fee
-        </button>
+        </Button>
       ),
     });
   };
