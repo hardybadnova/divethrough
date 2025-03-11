@@ -17,9 +17,8 @@ export function useGameTabs({
   setStatsCharged, 
   statsCharged 
 }: UseGameTabsProps) {
-  const [activeTab, setActiveTab] = useState("game");
+  const [activeTab, setActiveTab] = useState<"game" | "chat" | "hints">("game");
 
-  // Stats viewing handlers
   const handleViewStats = () => {
     if (statsCharged) {
       setShowStats(true);
@@ -41,7 +40,7 @@ export function useGameTabs({
             setStatsCharged(true);
             setShowStats(true);
             toast({
-              title: "Stats Unlocked",
+              title: "Stats Unlocked", 
               description: "You now have access to the last 10 games statistics"
             });
           }}
