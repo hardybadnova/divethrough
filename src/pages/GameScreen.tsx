@@ -16,11 +16,13 @@ import HintsTab from "@/components/game/HintsTab";
 import ShareDialog from "@/components/game/ShareDialog";
 import ExitDialog from "@/components/game/ExitDialog";
 import MobileNavigation from "@/components/game/MobileNavigation";
+import OfflineGameIndicator from "@/components/game/OfflineGameIndicator";
 
 // Custom hooks
 import { useGameTimer } from "@/hooks/game/useGameTimer";
 import { useGamePool } from "@/hooks/game/useGamePool";
 import { useGameNumberSelection } from "@/hooks/game/useGameNumberSelection";
+import { useOfflineSync } from "@/hooks/useOfflineSync";
 
 // Icons
 import { HelpCircle, MessageCircle, Info } from "lucide-react";
@@ -29,6 +31,7 @@ const GameScreen = () => {
   const { poolId } = useParams<{ poolId: string }>();
   const { chatMessages, sendMessage } = useGame();
   const { user } = useAuth();
+  const { isOnline } = useOfflineSync();
   
   // State
   const [gameState, setGameState] = useState<"pre-game" | "in-progress" | "completed">("pre-game");
@@ -118,6 +121,11 @@ const GameScreen = () => {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
           </span>
         </div>
+        
+        <OfflineGameIndicator 
+          isOnline={isOnline} 
+          gameState={gameState} 
+        />
         
         {gameState === "pre-game" && (
           <PreGameCountdown preGameCountdown={preGameCountdown} />
