@@ -23,7 +23,7 @@ import { useGameTimer } from "@/hooks/game/useGameTimer";
 import { useGamePool } from "@/hooks/game/useGamePool";
 import { useGameNumberSelection } from "@/hooks/game/useGameNumberSelection";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
-import { useGameTabs } from "@/hooks/game/useGameTabs";
+import { useGameTabs, GameTabType } from "@/hooks/game/useGameTabs";
 
 // Icons
 import { HelpCircle, MessageCircle, Info } from "lucide-react";
@@ -79,6 +79,7 @@ const GameScreen = () => {
     <AppLayout>
       <GameErrorBoundary>
         <div className="flex-1 container max-w-5xl mx-auto px-4 py-4 md:py-6">
+          {/* Game header component */}
           <GameHeader
             pool={pool}
             gameUrl={gameUrl}
@@ -87,6 +88,7 @@ const GameScreen = () => {
             setShowShareDialog={setShowShareDialog}
           />
           
+          {/* Player count indicator */}
           <div className="mb-4 glass-card inline-flex items-center rounded-full px-4 py-1">
             <span className="text-sm font-medium">Players Online: </span>
             <span className="ml-2 text-sm font-bold text-betster-500">
@@ -98,11 +100,13 @@ const GameScreen = () => {
             </span>
           </div>
           
+          {/* Offline indicator */}
           <OfflineGameIndicator 
             isOnline={isOnline} 
             gameState={gameState} 
           />
           
+          {/* Pre-game countdown */}
           {gameState === "pre-game" && (
             <PreGameCountdown 
               preGameCountdown={preGameCountdown} 
@@ -110,11 +114,12 @@ const GameScreen = () => {
             />
           )}
           
+          {/* Game tabs */}
           <Tabs
             defaultValue="game"
             className="w-full"
             value={activeTab}
-            onValueChange={setActiveTab}
+            onValueChange={(value) => setActiveTab(value as GameTabType)}
           >
             <TabsList className="grid grid-cols-3 mb-4">
               <TabsTrigger
@@ -140,6 +145,7 @@ const GameScreen = () => {
               </TabsTrigger>
             </TabsList>
             
+            {/* Game tab content */}
             <TabsContent value="game">
               <GamePlayTab
                 gameState={gameState}
@@ -154,6 +160,7 @@ const GameScreen = () => {
               />
             </TabsContent>
 
+            {/* Chat tab content */}
             <TabsContent value="chat">
               <ChatTab
                 chatMessages={chatMessages}
@@ -162,6 +169,7 @@ const GameScreen = () => {
               />
             </TabsContent>
 
+            {/* Hints tab content */}
             <TabsContent value="hints">
               <HintsTab
                 pool={pool}
@@ -173,6 +181,7 @@ const GameScreen = () => {
           </Tabs>
         </div>
         
+        {/* Dialogs */}
         <ExitDialog
           open={showExitDialog}
           setOpen={setShowExitDialog}
