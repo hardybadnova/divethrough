@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase/client';
 import { Pool } from '@/types/game';
+import { toast } from '@/hooks/use-toast';
 
 // Listen for changes in a specific pool
 export const subscribeToPool = (poolId: string, callback: (pool: Pool) => void): (() => void) => {
@@ -20,11 +21,32 @@ export const subscribeToPool = (poolId: string, callback: (pool: Pool) => void):
               console.log(`Pool ${poolId} updated:`, pool);
               callback(pool);
             }
+          }).catch(error => {
+            console.error(`Error fetching pool ${poolId} after change:`, error);
+            toast({
+              title: "Error",
+              description: "Unable to update game data. Please try refreshing.",
+              variant: "destructive"
+            });
           });
         }
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log(`Subscription status for pool ${poolId}:`, status);
+      
+      // Handle connection issues
+      if (status === 'SUBSCRIBED') {
+        console.log(`Successfully subscribed to pool ${poolId}`);
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error(`Error subscribing to pool ${poolId}`);
+        toast({
+          title: "Connection Issue",
+          description: "Having trouble connecting to the game server. Some updates may be delayed.",
+          variant: "destructive"
+        });
+      }
+    });
   
   // Initial fetch of pool data
   fetchPoolWithPlayers(poolId).then(pool => {
@@ -32,6 +54,13 @@ export const subscribeToPool = (poolId: string, callback: (pool: Pool) => void):
       console.log(`Initial fetch of pool ${poolId}:`, pool);
       callback(pool);
     }
+  }).catch(error => {
+    console.error(`Error during initial fetch of pool ${poolId}:`, error);
+    toast({
+      title: "Error Loading Game",
+      description: "Could not load game data. Please try again later.",
+      variant: "destructive"
+    });
   });
   
   // Return unsubscribe function

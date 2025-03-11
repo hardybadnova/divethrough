@@ -5,8 +5,8 @@ import { syncPendingBets, syncPendingTransactions } from './syncService';
 import { 
   getAllPendingBets, 
   getAllPendingTransactions,
-  storePendingBet,
-  storePendingTransaction,
+  savePendingBet,
+  savePendingTransaction,
   markBetSynced, 
   markTransactionSynced,
   cleanupSyncedItems
@@ -14,7 +14,7 @@ import {
 
 // Status tracking
 let isSyncing = false;
-let syncQueue: Array<() => Promise<void>> = [];
+let syncQueue: Array<() => Promise<any>> = [];
 let syncAttempts = 0;
 const MAX_SYNC_ATTEMPTS = 3;
 
@@ -170,7 +170,7 @@ const performSync = async () => {
 export const createOfflineBet = async (playerId: string, poolId: string, playerData: any) => {
   try {
     // Store bet in local DB
-    const betId = await storePendingBet({
+    const betId = await savePendingBet({
       id: `bet_${Date.now()}`,
       playerId,
       poolId,
@@ -207,7 +207,7 @@ export const createOfflineTransaction = async (
 ) => {
   try {
     // Store transaction in local DB
-    const txId = await storePendingTransaction({
+    const txId = await savePendingTransaction({
       id: `tx_${Date.now()}`,
       userId,
       amount,

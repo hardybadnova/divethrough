@@ -2,6 +2,7 @@
 import React from "react";
 import { Progress } from "@/components/ui/progress";
 import { WifiOff } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface PreGameCountdownProps {
   preGameCountdown: number;
@@ -13,7 +14,12 @@ const PreGameCountdown: React.FC<PreGameCountdownProps> = ({
   isOnline = true
 }) => {
   return (
-    <div className={`glass-card rounded-xl p-4 mb-4 ${isOnline ? 'bg-betster-900/70' : 'bg-betster-900/90 border-red-500/50 border'}`}>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className={`glass-card rounded-xl p-4 mb-4 ${isOnline ? 'bg-betster-900/70' : 'bg-betster-900/90 border-red-500/50 border'}`}
+    >
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-medium text-betster-300">
@@ -34,16 +40,22 @@ const PreGameCountdown: React.FC<PreGameCountdownProps> = ({
             )}
           </p>
         </div>
-        <div className="flex flex-col items-center">
+        <motion.div 
+          className="flex flex-col items-center"
+          key={preGameCountdown}
+          initial={{ scale: 1.2 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.2 }}
+        >
           <span className="text-2xl font-bold text-betster-400">{preGameCountdown}</span>
           <span className="text-xs text-muted-foreground">seconds</span>
-        </div>
+        </motion.div>
       </div>
       <Progress 
         value={(preGameCountdown / 20) * 100} 
         className={`h-2 mt-2 ${!isOnline ? 'bg-red-950' : ''}`} 
       />
-    </div>
+    </motion.div>
   );
 };
 
