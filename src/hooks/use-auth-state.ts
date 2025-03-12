@@ -37,12 +37,14 @@ export const useAuthState = () => {
           // Then load profile in background
           const profile = await getUserProfile(currentUser.id);
           
-          const newUser = {
+          const newUser: User = {
             id: currentUser.id,
             username: profile.username || currentUser.user_metadata?.username || 'Player',
-            email: currentUser.email || undefined,
+            email: currentUser.email || null,
+            avatarUrl: currentUser.user_metadata?.avatar_url || null,
             photoURL: currentUser.user_metadata?.avatar_url,
             wallet: profile.wallet_balance || 0,
+            role: profile.role
           };
           
           // Only update state if wallet value is different to avoid unnecessary re-renders
@@ -56,10 +58,11 @@ export const useAuthState = () => {
         } catch (error: any) {
           console.error("Error loading user profile:", error);
           // Fallback to basic user info
-          const newUser = {
+          const newUser: User = {
             id: currentUser.id,
             username: currentUser.user_metadata?.username || 'Player',
-            email: currentUser.email || undefined,
+            email: currentUser.email || null,
+            avatarUrl: null,
             photoURL: currentUser.user_metadata?.avatar_url,
             wallet: 0,
           };
@@ -97,7 +100,7 @@ export const useAuthState = () => {
               return prev;
             }
             
-            const updated = {
+            const updated: User = {
               ...prev,
               wallet: profile.wallet_balance || 0,
             };

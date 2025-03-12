@@ -7,7 +7,6 @@ export interface User {
   wallet: number;
   role?: string;
   photoURL?: string;
-  walletBalance?: number;
 }
 
 export interface AuthContextType {
