@@ -16,7 +16,6 @@ import ShareDialog from "@/components/game/ShareDialog";
 import ExitDialog from "@/components/game/ExitDialog";
 import MobileNavigation from "@/components/game/MobileNavigation";
 import OfflineGameIndicator from "@/components/game/OfflineGameIndicator";
-import { GameErrorBoundary } from "@/components/game/GameErrorBoundary";
 
 // Custom hooks
 import { useGameTimer } from "@/hooks/game/useGameTimer";
@@ -37,8 +36,6 @@ const GameScreen = () => {
   // State
   const [gameState, setGameState] = useState<"pre-game" | "in-progress" | "completed">("pre-game");
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const [showStats, setShowStats] = useState(false);
-  const [statsCharged, setStatsCharged] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -61,11 +58,8 @@ const GameScreen = () => {
     gameState,
   });
   
-  const { activeTab, setActiveTab, handleViewStats } = useGameTabs({
+  const { activeTab, setActiveTab } = useGameTabs({
     pool,
-    setShowStats,
-    setStatsCharged,
-    statsCharged
   });
 
   // Exit dialog handlers
@@ -77,125 +71,118 @@ const GameScreen = () => {
   
   return (
     <AppLayout>
-      <GameErrorBoundary>
-        <div className="flex-1 container max-w-5xl mx-auto px-4 py-4 md:py-6">
-          {/* Game header component */}
-          <GameHeader
-            pool={pool}
-            gameUrl={gameUrl}
-            handleExitGame={handleExitGame}
-            handleChangeTable={handleChangeTable}
-            setShowShareDialog={setShowShareDialog}
-          />
-          
-          {/* Player count indicator */}
-          <div className="mb-4 glass-card inline-flex items-center rounded-full px-4 py-1">
-            <span className="text-sm font-medium">Players Online: </span>
-            <span className="ml-2 text-sm font-bold text-betster-500">
-              {pool.currentPlayers}
-            </span>
-            <span className="ml-1 relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-            </span>
-          </div>
-          
-          {/* Offline indicator */}
-          <OfflineGameIndicator 
-            isOnline={isOnline} 
-            gameState={gameState} 
-          />
-          
-          {/* Pre-game countdown */}
-          {gameState === "pre-game" && (
-            <PreGameCountdown 
-              preGameCountdown={preGameCountdown} 
-              isOnline={isOnline} 
-            />
-          )}
-          
-          {/* Game tabs */}
-          <Tabs
-            defaultValue="game"
-            className="w-full"
-            value={activeTab}
-            onValueChange={(value) => setActiveTab(value as GameTabType)}
-          >
-            <TabsList className="grid grid-cols-3 mb-4">
-              <TabsTrigger
-                value="game"
-                className="flex items-center gap-1"
-              >
-                <HelpCircle className="h-4 w-4" />
-                <span>Game</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="chat"
-                className="flex items-center gap-1"
-              >
-                <MessageCircle className="h-4 w-4" />
-                <span>Chat</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="hints"
-                className="flex items-center gap-1"
-              >
-                <Info className="h-4 w-4" />
-                <span>Hints</span>
-              </TabsTrigger>
-            </TabsList>
-            
-            {/* Game tab content */}
-            <TabsContent value="game">
-              <GamePlayTab
-                gameState={gameState}
-                gameTimer={gameTimer}
-                formatTime={formatTime}
-                pool={pool}
-                selectedNumber={selectedNumber}
-                isLocked={isLocked}
-                handleNumberSelect={handleNumberSelect}
-                handleLockNumber={handleLockNumber}
-                user={user}
-              />
-            </TabsContent>
-
-            {/* Chat tab content */}
-            <TabsContent value="chat">
-              <ChatTab
-                chatMessages={chatMessages}
-                user={user}
-                sendMessage={sendMessage}
-              />
-            </TabsContent>
-
-            {/* Hints tab content */}
-            <TabsContent value="hints">
-              <HintsTab
-                pool={pool}
-                handleViewStats={handleViewStats}
-                showStats={showStats}
-                statsCharged={statsCharged}
-              />
-            </TabsContent>
-          </Tabs>
+      <div className="flex-1 container max-w-5xl mx-auto px-4 py-4 md:py-6">
+        {/* Game header component */}
+        <GameHeader
+          pool={pool}
+          gameUrl={gameUrl}
+          handleExitGame={handleExitGame}
+          handleChangeTable={handleChangeTable}
+          setShowShareDialog={setShowShareDialog}
+        />
+        
+        {/* Player count indicator */}
+        <div className="mb-4 glass-card inline-flex items-center rounded-full px-4 py-1">
+          <span className="text-sm font-medium">Players Online: </span>
+          <span className="ml-2 text-sm font-bold text-betster-500">
+            {pool.currentPlayers}
+          </span>
+          <span className="ml-1 relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
         </div>
         
-        {/* Dialogs */}
-        <ExitDialog
-          open={showExitDialog}
-          setOpen={setShowExitDialog}
-          gameState={gameState}
-          confirmExit={confirmExit}
+        {/* Offline indicator */}
+        <OfflineGameIndicator 
+          isOnline={isOnline} 
+          gameState={gameState} 
         />
         
-        <ShareDialog
-          open={showShareDialog}
-          setOpen={setShowShareDialog}
-          gameUrl={gameUrl}
-          pool={pool}
-        />
-      </GameErrorBoundary>
+        {/* Pre-game countdown */}
+        {gameState === "pre-game" && (
+          <PreGameCountdown 
+            preGameCountdown={preGameCountdown} 
+            isOnline={isOnline} 
+          />
+        )}
+        
+        {/* Game tabs */}
+        <Tabs
+          defaultValue="game"
+          className="w-full"
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as GameTabType)}
+        >
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger
+              value="game"
+              className="flex items-center gap-1"
+            >
+              <HelpCircle className="h-4 w-4" />
+              <span>Game</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="chat"
+              className="flex items-center gap-1"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Chat</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="hints"
+              className="flex items-center gap-1"
+            >
+              <Info className="h-4 w-4" />
+              <span>Hints</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* Game tab content */}
+          <TabsContent value="game">
+            <GamePlayTab
+              gameState={gameState}
+              gameTimer={gameTimer}
+              formatTime={formatTime}
+              pool={pool}
+              selectedNumber={selectedNumber}
+              isLocked={isLocked}
+              handleNumberSelect={handleNumberSelect}
+              handleLockNumber={handleLockNumber}
+              user={user}
+            />
+          </TabsContent>
+
+          {/* Chat tab content */}
+          <TabsContent value="chat">
+            <ChatTab
+              chatMessages={chatMessages}
+              user={user}
+              sendMessage={sendMessage}
+            />
+          </TabsContent>
+
+          {/* Hints tab content */}
+          <TabsContent value="hints">
+            <HintsTab pool={pool} />
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      {/* Dialogs */}
+      <ExitDialog
+        open={showExitDialog}
+        setOpen={setShowExitDialog}
+        gameState={gameState}
+        confirmExit={confirmExit}
+      />
+      
+      <ShareDialog
+        open={showShareDialog}
+        setOpen={setShowShareDialog}
+        gameUrl={gameUrl}
+        pool={pool}
+      />
       
       <MobileNavigation />
     </AppLayout>
