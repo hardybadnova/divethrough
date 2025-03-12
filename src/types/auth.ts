@@ -6,7 +6,7 @@ export interface User {
   avatarUrl: string | null;
   wallet: number;
   role?: string;
-  photoURL?: string;
+  photoURL?: string | null;
 }
 
 export interface AuthContextType {
@@ -18,7 +18,7 @@ export interface AuthContextType {
   isAdmin?: boolean;
   login?: (email: string, password: string) => Promise<void>;
   loginWithGoogle?: () => Promise<void>;
-  signUp?: (email: string, password: string, username: string) => Promise<void>;
+  signUp?: (username: string, email: string, password: string) => Promise<void>;
   logout?: () => Promise<void>;
   refreshUserData?: () => Promise<void>;
   addFakeMoney?: (amount: number, optimistic?: boolean) => Promise<number | void>;
