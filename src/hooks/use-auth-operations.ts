@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -117,25 +116,26 @@ export const useAuthOperations = ({
     }
   };
 
-  const logout = () => {
-    supabaseSignOut()
-      .then(() => {
-        setUser(null);
-        localStorage.removeItem('betster-user');
-        navigate('/login');
-        toast({
-          title: "Logged out",
-          description: "You've been successfully logged out.",
-        });
-      })
-      .catch(error => {
-        console.error("Error signing out:", error);
-        toast({
-          title: "Error",
-          description: "Failed to log out. Please try again.",
-          variant: "destructive",
-        });
+  // Fix: Update logout function to return a Promise
+  const logout = async (): Promise<void> => {
+    try {
+      await supabaseSignOut();
+      setUser(null);
+      localStorage.removeItem('betster-user');
+      navigate('/login');
+      toast({
+        title: "Logged out",
+        description: "You've been successfully logged out.",
       });
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast({
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive",
+      });
+      throw error; // Rethrow to allow proper handling
+    }
   };
 
   return {

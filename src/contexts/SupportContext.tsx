@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types/auth';
 import { supabase } from '@/lib/supabase/client';
@@ -35,10 +34,15 @@ export const SupportProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const getCurrentUser = async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session?.user) {
+        // Fix: Include all required User properties
         setUser({
           id: data.session.user.id,
+          email: data.session.user.email || null,
           username: data.session.user.user_metadata?.username || 'User',
-          wallet: 0
+          avatarUrl: data.session.user.user_metadata?.avatar_url || null,
+          photoURL: data.session.user.user_metadata?.avatar_url || null,
+          wallet: 0,
+          role: data.session.user.user_metadata?.role
         });
       }
     };
